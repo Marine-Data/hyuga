@@ -686,14 +686,12 @@
 </div>
 
 <!-- ACCESS MODAL -->
-<div id="accessModal" class="modal active">
-  <div class="modal-content" style="max-width: 400px;">
-    <div style="text-align: center;">
-      <h1 style="font-family: 'Press Start 2P', cursive; font-size: 24px; color: var(--primary); text-shadow: 2px 2px 0 var(--accent-gold); margin-bottom: 20px;">🎮 SARAILLON</h1>
-      <p style="color: var(--primary-light); margin-bottom: 16px;">Entre le code d'accès.</p>
-      <input type="password" id="accessCode" placeholder="Code..." style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; margin-bottom: 12px; font-size: 14px;">
-      <button class="btn btn-primary" onclick="checkAccess()" style="width: 100%;">ACCÉDER</button>
-    </div>
+<div id="accessModal" style="display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: white; padding: 40px; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+    <h1 style="font-family: 'Press Start 2P', cursive; font-size: 24px; color: #2b3a55; text-shadow: 2px 2px 0 #e3b94f; margin-bottom: 20px;">🎮 SARAILLON</h1>
+    <p style="color: #5b6c8a; margin-bottom: 20px;">Entre le code d'accès</p>
+    <input type="password" id="accessCode" placeholder="Code..." style="width: 100%; padding: 12px; border: 2px solid #aecbe8; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">
+    <button onclick="verifyCode()" style="width: 100%; padding: 12px; background: #2b3a55; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">ACCÉDER</button>
   </div>
 </div>
 
@@ -1053,14 +1051,66 @@ let historyIndex = -1;
 let isOnline = navigator.onLine;
 
 // ============== INIT ==============
-// ============== ACCESS ==============
-function checkAccess() {
-  if (document.getElementById('accessCode').value === '2026') {
-    document.getElementById('accessModal').classList.remove('active');
+// ============== VERIFY ACCESS ==============
+function verifyCode() {
+  const input = document.getElementById('accessCode');
+  const code = input.value.trim();
+  
+  if (code === '2026') {
+    document.getElementById('accessModal').style.display = 'none';
     document.getElementById('appContainer').style.display = 'block';
-    startApp();
+    setTimeout(() => {
+      loadAllData();
+      initChallenges();
+      renderPlanning();
+      renderProfile();
+      renderAllProfiles();
+      renderShopping();
+      renderGallery();
+      renderFeed();
+      renderDaySelector();
+      renderChallenges();
+      renderInscriptions();
+      syncData();
+      addNotification('✅ Connecté!');
+    }, 100);
   } else {
-    showNotification('❌ Code incorrect', 'error');
+    input.value = '';
+    input.style.borderColor = '#e07a96';
+    input.style.backgroundColor = '#ffe7e7';
+    setTimeout(() => {
+      input.style.borderColor = '#aecbe8';
+      input.style.backgroundColor = 'white';
+    }, 1000);
+  }
+}
+
+function checkAccess() {
+  const code = document.getElementById('accessCode').value;
+  if (code === '2026') {
+    document.getElementById('accessModal').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'flex';
+    setTimeout(() => {
+      loadAllData();
+      initChallenges();
+      renderPlanning();
+      renderProfile();
+      renderAllProfiles();
+      renderShopping();
+      renderGallery();
+      renderFeed();
+      renderDaySelector();
+      renderChallenges();
+      renderInscriptions();
+      syncData();
+      addNotification('✅ Connecté!');
+    }, 100);
+  } else {
+    document.getElementById('accessCode').value = '';
+    document.getElementById('accessCode').style.borderColor = '#e07a96';
+    setTimeout(() => {
+      document.getElementById('accessCode').style.borderColor = '';
+    }, 500);
   }
 }
 
@@ -1972,10 +2022,28 @@ function quickEditGallery(idx) {
 
 // ============== INIT STARTUP ==============
 window.addEventListener('load', () => {
-  if (document.getElementById('appContainer').style.display !== 'none') {
-    loadAllData();
-  }
+  // Modal d'accès reste visible au démarrage
+  // Rien à faire ici, le modal attend le code 2026
 });
+
+// Permettre Entrée sur input d'accès
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const accessInput = document.getElementById('accessCode');
+    if (accessInput) {
+      accessInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') verifyCode();
+      });
+    }
+  });
+} else {
+  const accessInput = document.getElementById('accessCode');
+  if (accessInput) {
+    accessInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') verifyCode();
+    });
+  }
+}
 </script>
 
 </body>
