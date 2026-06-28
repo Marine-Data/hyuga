@@ -141,7 +141,7 @@ const GamesTab = () => {
     'Faire les lits',
   ];
 
-  const friends = ['Marie', 'Sophie', 'Alice', 'Julie', 'Emma'];
+  const friends = [const friends = ['Marine', 'Delphine', 'Chunfei', 'Audrey', 'Inès', 'Nawaeëlle']
 
   const rollChallenge = () => {
     setDailyChallenge(challenges[Math.floor(Math.random() * challenges.length)]);
