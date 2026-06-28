@@ -1,14 +1,1198 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Séjour Magique - App privée pour organiser un séjour entre amies" />
-    <title>✨ Séjour Magique Entre Amies</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎮 SARAILLON ULTIME PRO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2b3a55;
+      --primary-soft: #5b6c8a;
+      --primary-light: #93a6c2;
+      --bg: #f8fafc;
+      --bg-raised: #ffffff;
+      --bg-sunken: #eaf2fb;
+      --border: #aecbe8;
+      --accent-purple: #9933ff;
+      --accent-pink: #e07a96;
+      --accent-pink-soft: #fbdde6;
+      --accent-cyan: #6fb8b0;
+      --accent-gold: #e3b94f;
+      --neon-green: #00ff00;
+      --neon-cyan: #00ccff;
+      --neon-yellow: #ffff00;
+      --neon-pink: #ff00ff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========== CONTAINER LAYOUT ========== */
+    .app-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ========== SIDEBAR MENU ========== */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 22px;
+      height: 100vh;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      cursor: pointer;
+      z-index: 100;
+      border-right: 2px solid var(--accent-purple);
+      transition: width 0.3s ease;
+    }
+
+    .sidebar.open {
+      width: 280px;
+      align-items: flex-start;
+      padding: 20px 15px;
+      overflow-y: auto;
+      box-shadow: 3px 0 12px rgba(0,0,0,0.15);
+    }
+
+    .sidebar-toggle {
+      width: 22px;
+      height: 50px;
+      border: none;
+      background: var(--accent-purple);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 0 8px 8px 0;
+      position: relative;
+      z-index: 101;
+    }
+
+    .sidebar.open .sidebar-toggle { display: none; }
+
+    .sidebar-content {
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+    }
+
+    .sidebar.open .sidebar-content { display: flex; }
+
+    .sidebar-title {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      color: var(--accent-gold);
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-link {
+      background: var(--bg-raised);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--primary);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      text-align: center;
+      width: 100%;
+    }
+
+    .sidebar-link:hover {
+      background: var(--accent-purple);
+      color: white;
+      border-color: var(--accent-purple);
+      transform: translateX(4px);
+    }
+
+    .sidebar-link.active {
+      background: var(--accent-purple);
+      color: white;
+      border-color: var(--accent-purple);
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    .main-content {
+      margin-left: 22px;
+      flex: 1;
+      padding-bottom: 100px;
+    }
+
+    .sidebar.open ~ .main-content {
+      margin-left: 280px;
+    }
+
+    /* ========== TOP HEADER ========== */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%);
+      border-bottom: 2px solid var(--border);
+      padding: 16px 20px;
+      backdrop-filter: blur(10px);
+      background-color: rgba(255,255,255,0.95);
+      transition: padding 0.3s ease;
+    }
+
+    .app-header.scrolled { padding: 10px 20px; }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .header-logo h1 {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 16px;
+      color: var(--primary);
+      text-shadow: 2px 2px 0 var(--accent-gold);
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-raised);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      background: var(--accent-purple);
+      color: white;
+      border-color: var(--accent-purple);
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      min-width: 22px;
+      height: 22px;
+      background: var(--accent-pink);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      border: 2px solid var(--bg-raised);
+    }
+
+    /* ========== TABS ========== */
+    .tab-navigation {
+      display: flex;
+      gap: 10px;
+      padding: 12px 20px 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      border: 1.5px solid var(--border);
+      background: var(--bg-raised);
+      color: var(--primary-soft);
+      padding: 10px 18px;
+      border-radius: 10px 10px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      background: var(--bg-sunken);
+      border-color: var(--accent-purple);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* ========== TAB CONTENT ========== */
+    .tab-content {
+      display: none;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ========== CARDS & CONTENT ========== */
+    .card {
+      background: var(--bg-raised);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border-color: var(--accent-purple);
+    }
+
+    .card-title {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 13px;
+      color: var(--primary);
+      margin-bottom: 12px;
+      text-shadow: 1px 1px 0 var(--accent-gold);
+    }
+
+    .day-item {
+      background: linear-gradient(135deg, var(--bg-sunken) 0%, var(--bg-raised) 100%);
+      border: 1.5px solid var(--accent-cyan);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .day-item h4 {
+      color: var(--primary);
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+    }
+
+    .day-info {
+      color: var(--primary-soft);
+      margin-bottom: 12px;
+      line-height: 1.6;
+      font-size: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--primary);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-raised);
+      color: var(--primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px rgba(153, 51, 255, 0.1);
+    }
+
+    /* ========== BUTTONS ========== */
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-purple);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(153, 51, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-raised);
+      color: var(--primary);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-sunken);
+      border-color: var(--accent-purple);
+    }
+
+    .btn-success {
+      background: var(--accent-cyan);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #5fa9a3;
+      transform: translateY(-2px);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* ========== CHALLENGES ========== */
+    .challenge-item {
+      background: var(--bg-raised);
+      border: 1.5px solid var(--accent-pink);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .challenge-item:hover {
+      box-shadow: 0 4px 12px rgba(224, 122, 150, 0.2);
+      border-color: var(--accent-purple);
+    }
+
+    .challenge-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .challenge-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .challenge-meta {
+      flex: 1;
+    }
+
+    .challenge-creator {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 13px;
+    }
+
+    .challenge-type {
+      font-size: 11px;
+      color: var(--primary-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .challenge-description {
+      color: var(--primary);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .challenge-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-sunken);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary-soft);
+      transition: all 0.2s ease;
+    }
+
+    .action-btn.liked {
+      background: var(--accent-pink-soft);
+      border-color: var(--accent-pink);
+      color: var(--accent-pink);
+    }
+
+    .action-btn:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .comments-section {
+      background: var(--bg-sunken);
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .comment {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comment:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .comment-author {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .comment-text {
+      color: var(--primary-soft);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .comment-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .comment-input input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    /* ========== NOTIFICATIONS ========== */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 16px 20px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease;
+      z-index: 200;
+      max-width: 350px;
+    }
+
+    .notification.success { background: var(--accent-cyan); }
+    .notification.error { background: var(--accent-pink); }
+    .notification.info { background: var(--primary); }
+
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ========== DEEZER MINI PLAYER ========== */
+    .deezer-tab {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 50px;
+      background: var(--accent-cyan);
+      border: none;
+      border-radius: 8px 0 0 8px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99;
+      font-size: 14px;
+      box-shadow: -2px 0 6px rgba(0,0,0,0.15);
+      transition: all 0.2s ease;
+    }
+
+    .deezer-tab:hover { background: #5fa9a3; }
+
+    .deezer-panel {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%) translateX(110%);
+      width: min(90vw, 340px);
+      max-height: 80vh;
+      background: var(--bg-raised);
+      border: 1.5px solid var(--border);
+      border-radius: 12px 0 0 12px;
+      padding: 16px;
+      z-index: 99;
+      transition: transform 0.3s ease;
+      box-shadow: -3px 0 12px rgba(0,0,0,0.15);
+      overflow-y: auto;
+    }
+
+    .deezer-panel.open { transform: translateY(-50%) translateX(0); }
+
+    .deezer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .deezer-header h3 {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      color: var(--primary);
+      margin: 0;
+    }
+
+    .deezer-close {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: var(--bg-sunken);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    .deezer-playlist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .deezer-song {
+      background: var(--bg-sunken);
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .deezer-song:hover {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold));
+      color: white;
+      border-color: var(--accent-cyan);
+    }
+
+    .deezer-song.playing {
+      background: var(--accent-cyan);
+      color: white;
+      border-color: var(--accent-cyan);
+    }
+
+    .deezer-song-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .deezer-song-artist {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+      .header-logo h1 { font-size: 12px; }
+      .tab-navigation { overflow-x: auto; padding-bottom: 10px; }
+      .sidebar.open { width: 85vw; max-width: 280px; }
+    }
+
+    /* ========== SCROLL ========== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-sunken);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-purple);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="sidebar-content">
+      <div class="sidebar-title">Menu</div>
+      <button class="sidebar-link active" onclick="switchTab('planning', 0)">📅 Planning</button>
+      <button class="sidebar-link" onclick="switchTab('challenges', 1)">🎯 Challenges</button>
+      <button class="sidebar-link" onclick="switchTab('shopping', 2)">🛒 Shopping</button>
+      <button class="sidebar-link" onclick="switchTab('surprise', 3)">🎉 Surprise</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <!-- HEADER -->
+    <div class="app-header" id="appHeader">
+      <div class="header-content">
+        <div class="header-logo">
+          <h1>🎮 SARAILLON PRO</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">
+            🔔
+            <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-navigation">
+      <button class="tab-btn active" onclick="switchTab('planning', 0)">📅 Planning</button>
+      <button class="tab-btn" onclick="switchTab('challenges', 1)">🎯 Challenges</button>
+      <button class="tab-btn" onclick="switchTab('shopping', 2)">🛒 Shopping</button>
+      <button class="tab-btn" onclick="switchTab('surprise', 3)">🎉 Surprise</button>
+    </div>
+
+    <!-- PLANNING TAB -->
+    <div id="planning-tab" class="tab-content active">
+      <div class="card">
+        <h3 class="card-title">Jour à visiter</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 8px; margin-bottom: 20px;" id="day-selector"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Jour sélectionné</h3>
+        <button class="btn btn-primary" style="margin-bottom: 16px;" onclick="spinRoulette()">🎲 LANCER LA ROULETTE CORVÉE</button>
+        <div id="planning-container"></div>
+      </div>
+    </div>
+
+    <!-- CHALLENGES TAB -->
+    <div id="challenges-tab" class="tab-content">
+      <div class="card">
+        <h3 class="card-title">➕ Créer un Challenge</h3>
+        <div class="form-group">
+          <label>👤 Ton nom</label>
+          <input type="text" id="challenge-creator" placeholder="Écris ton nom...">
+        </div>
+        <div class="form-group">
+          <label>📝 Description du défi</label>
+          <textarea id="challenge-desc" placeholder="Décris ton challenge..." style="min-height: 80px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>📸 Type</label>
+          <select id="challenge-type">
+            <option value="photo">📸 Photo</option>
+            <option value="video">📹 Vidéo</option>
+          </select>
+        </div>
+        <button class="btn btn-success" onclick="createChallenge()" style="width: 100%;">✨ PUBLIER LE CHALLENGE</button>
+      </div>
+
+      <div id="challenges-list" style="padding: 0 20px;"></div>
+    </div>
+
+    <!-- SHOPPING TAB -->
+    <div id="shopping-tab" class="tab-content">
+      <div class="card">
+        <h3 class="card-title">➕ Ajouter un article</h3>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="new-item" placeholder="Ajoute un article..." style="flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;">
+          <button class="btn btn-primary" onclick="addShoppingItem()">➕ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">🛍️ Liste</h3>
+        <div id="shopping-list"></div>
+      </div>
+    </div>
+
+    <!-- SURPRISE TAB -->
+    <div id="surprise-tab" class="tab-content">
+      <div class="card">
+        <h3 class="card-title">🤫 Déverrouiller la surprise</h3>
+        <div class="form-group">
+          <label>🔑 Code secret</label>
+          <input type="password" id="surprise-code" placeholder="Écris le code...">
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="revealSurprise()">🎉 DÉVERROUILLER</button>
+      </div>
+      <div id="surprise-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DEEZER MINI PLAYER -->
+<button class="deezer-tab" onclick="toggleDeezer()" title="Playlist Deezer">🎵</button>
+<div class="deezer-panel" id="deezerPanel">
+  <div class="deezer-header">
+    <h3>🎵 MUSIQUE</h3>
+    <button class="deezer-close" onclick="toggleDeezer()">✕</button>
+  </div>
+  <div class="deezer-playlist" id="deezerPlaylist"></div>
+</div>
+
+<!-- NOTIFICATIONS CONTAINER -->
+<div id="notificationsContainer"></div>
+
+<script>
+// ============== DATA ==============
+let selectedDay = 1;
+let planningData = [];
+let challenges = [];
+let shoppingList = [];
+let notifications = [];
+let notificationCount = 0;
+
+const playlistData = [
+  { id: 1, title: "Levé du matin", artist: "Sunny Morning", emoji: "🌅" },
+  { id: 2, title: "Énergie positive", artist: "Feel Good Vibes", emoji: "⚡" },
+  { id: 3, title: "Aventure commence", artist: "Epic Journey", emoji: "🚀" },
+  { id: 4, title: "Moments magiques", artist: "Golden Hours", emoji: "✨" },
+  { id: 5, title: "Fête du soir", artist: "Party Mix", emoji: "🎉" },
+  { id: 6, title: "Coucher de soleil", artist: "Chill Beats", emoji: "🌅" },
+];
+
+// ============== INIT ==============
+window.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  renderPlanning();
+  renderDaySelector();
+  renderChallenges();
+  renderShopping();
+  renderDeezerPlaylist();
+  setupScrollListener();
+});
+
+// ============== SCROLL BEHAVIOR ==============
+function setupScrollListener() {
+  const header = document.getElementById('appHeader');
+  let lastScroll = 0;
+
+  document.querySelector('.main-content').addEventListener('scroll', (e) => {
+    const scrollTop = e.target.scrollTop;
+    
+    if (scrollTop > 50) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+    lastScroll = scrollTop;
+  });
+}
+
+// ============== SIDEBAR ==============
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('open');
+}
+
+// ============== TABS ==============
+function switchTab(tabName, navIndex) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.getElementById(tabName + '-tab').classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-btn')[navIndex].classList.add('active');
+}
+
+// ============== DATA MANAGEMENT ==============
+function loadData() {
+  const saved = localStorage.getItem('saraillon_planning');
+  if (saved) {
+    planningData = JSON.parse(saved);
+  } else {
+    planningData = [
+      { id: 1, day: "JEUDI 10/7", matin: "Départ 7h30", am: "Voile 9h-13h", soir: "Déjeuner", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 2, day: "VENDREDI 11/7", matin: "Réveil libre", am: "Rando 10h-15h", soir: "Barbecue", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 3, day: "SAMEDI 12/7", matin: "Petit dej", am: "Visite musée", soir: "Dîner resto", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 4, day: "DIMANCHE 13/7", matin: "Repos", am: "Jeux de plage", soir: "Soirée jeux", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 5, day: "LUNDI 14/7", matin: "Atelier art", am: "Piscine", soir: "Soirée", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 6, day: "MARDI 15/7", matin: "Sport", am: "Découverte", soir: "Déjeuner spécial", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 7, day: "MERCREDI 16/7", matin: "Libre", am: "Excursion", soir: "Soirée tranquille", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 8, day: "JEUDI 17/7", matin: "Dernier matin", am: "Rangement", soir: "Dernier repas", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 9, day: "VENDREDI 18/7", matin: "Check-out", am: "Retour", soir: "Retour", sac: "", lienInscription: "", assignedChores: [] },
+      { id: 10, day: "SAMEDI 19/7", matin: "Repos", am: "Libre", soir: "Libre", sac: "", lienInscription: "", assignedChores: [] },
+    ];
+    localStorage.setItem('saraillon_planning', JSON.stringify(planningData));
+  }
+
+  const savedChallenges = localStorage.getItem('saraillon_challenges');
+  if (savedChallenges) {
+    challenges = JSON.parse(savedChallenges);
+  } else {
+    challenges = [];
+  }
+
+  const savedShopping = localStorage.getItem('saraillon_shopping');
+  if (savedShopping) {
+    shoppingList = JSON.parse(savedShopping);
+  } else {
+    shoppingList = [
+      { id: 1, item: "PAIN", done: false },
+      { id: 2, item: "FROMAGE", done: false },
+      { id: 3, item: "FRUITS", done: false },
+    ];
+    localStorage.setItem('saraillon_shopping', JSON.stringify(shoppingList));
+  }
+}
+
+// ============== PLANNING ==============
+function renderPlanning() {
+  const html = planningData.map(day => `
+    <div class="day-item">
+      <h4>${day.day}</h4>
+      <div class="day-info">
+        <strong>🌅</strong> ${day.matin}<br>
+        <strong>☀️</strong> ${day.am}<br>
+        <strong>🌙</strong> ${day.soir}
+      </div>
+      <div class="form-group">
+        <label>🎒 SAC</label>
+        <input type="text" value="${day.sac}" onchange="updateDay(${day.id}, 'sac', this.value)" placeholder="À apporter...">
+      </div>
+      <div class="form-group">
+        <label>🔗 LIEN INSCRIPTION</label>
+        <input type="text" placeholder="https://..." value="${day.lienInscription}" onchange="updateDay(${day.id}, 'lienInscription', this.value)">
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('planning-container').innerHTML = html;
+}
+
+function updateDay(dayId, field, value) {
+  const day = planningData.find(d => d.id === dayId);
+  if (day) {
+    day[field] = value;
+    localStorage.setItem('saraillon_planning', JSON.stringify(planningData));
+    showNotification('✅ Mis à jour!', 'success');
+  }
+}
+
+function renderDaySelector() {
+  const html = planningData.map(day => `
+    <button class="btn ${selectedDay === day.id ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="selectDay(${day.id})" style="flex: 1;">
+      J${day.id}
+    </button>
+  `).join('');
+  document.getElementById('day-selector').innerHTML = html;
+}
+
+function selectDay(dayId) {
+  selectedDay = dayId;
+  renderDaySelector();
+}
+
+function spinRoulette() {
+  const day = planningData.find(d => d.id === selectedDay);
+  if (!day) return;
+
+  showNotification(`🎲 Jour ${day.id} sélectionné!`, 'info');
+}
+
+// ============== CHALLENGES ==============
+function renderChallenges() {
+  const html = challenges.map(ch => `
+    <div class="challenge-item">
+      <div class="challenge-header">
+        <div class="challenge-avatar">${ch.creator.charAt(0).toUpperCase()}</div>
+        <div class="challenge-meta">
+          <div class="challenge-creator">${ch.creator}</div>
+          <div class="challenge-type">${ch.type === 'video' ? '📹 Vidéo' : '📸 Photo'}</div>
+        </div>
+      </div>
+      <div class="challenge-description">${ch.description}</div>
+      <div class="challenge-actions">
+        <button class="action-btn ${ch.liked ? 'liked' : ''}" onclick="toggleLike(${ch.id})">
+          ❤️ ${ch.likes}
+        </button>
+        <button class="action-btn" onclick="toggleComments(${ch.id})">
+          💬 ${ch.comments.length}
+        </button>
+      </div>
+      <div id="comments-${ch.id}" class="comments-section" style="display: none;">
+        ${ch.comments.map(c => `
+          <div class="comment">
+            <div class="comment-author">👤 ${c.author}</div>
+            <div class="comment-text">${c.text}</div>
+          </div>
+        `).join('')}
+        <div class="comment-input">
+          <input type="text" id="comment-input-${ch.id}" placeholder="Ajoute un commentaire...">
+          <button class="btn btn-sm btn-primary" onclick="addComment(${ch.id})">📤</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('challenges-list').innerHTML = html || '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;">Aucun challenge pour le moment 😴</div>';
+}
+
+function createChallenge() {
+  const creator = document.getElementById('challenge-creator').value;
+  const type = document.getElementById('challenge-type').value;
+  const desc = document.getElementById('challenge-desc').value;
+
+  if (!creator || !desc) {
+    showNotification('Remplis tous les champs!', 'error');
+    return;
+  }
+
+  challenges.push({
+    id: Date.now(),
+    creator: creator.toUpperCase(),
+    type,
+    description: desc,
+    likes: 0,
+    comments: [],
+    liked: false
+  });
+
+  localStorage.setItem('saraillon_challenges', JSON.stringify(challenges));
+  document.getElementById('challenge-creator').value = '';
+  document.getElementById('challenge-desc').value = '';
+  renderChallenges();
+  showNotification('✅ Challenge créé!', 'success');
+}
+
+function toggleLike(challengeId) {
+  const challenge = challenges.find(c => c.id === challengeId);
+  if (challenge) {
+    challenge.liked = !challenge.liked;
+    challenge.likes += challenge.liked ? 1 : -1;
+    localStorage.setItem('saraillon_challenges', JSON.stringify(challenges));
+    renderChallenges();
+    if (challenge.liked) {
+      showNotification('❤️ J\'aime!', 'info');
+    }
+  }
+}
+
+function toggleComments(challengeId) {
+  const el = document.getElementById('comments-' + challengeId);
+  if (el) {
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+function addComment(challengeId) {
+  const input = document.getElementById('comment-input-' + challengeId);
+  if (input && input.value.trim()) {
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (challenge) {
+      challenge.comments.push({ author: 'TOI', text: input.value });
+      localStorage.setItem('saraillon_challenges', JSON.stringify(challenges));
+      input.value = '';
+      renderChallenges();
+      showNotification('💬 Commentaire ajouté!', 'success');
+    }
+  }
+}
+
+// ============== SHOPPING ==============
+function renderShopping() {
+  const html = shoppingList.map(item => `
+    <div class="card" style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+      <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleShopping(${item.id})" style="width: 18px; height: 18px; cursor: pointer;">
+      <span style="flex: 1; ${item.done ? 'text-decoration: line-through; color: var(--primary-light);' : ''}">${item.item}</span>
+      <button class="btn btn-sm" style="background: var(--accent-pink); color: white; border: none;" onclick="removeShopping(${item.id})">🗑️</button>
+    </div>
+  `).join('');
+  document.getElementById('shopping-list').innerHTML = html || '<p style="text-align: center; color: var(--primary-light);">Liste vide! 🛍️</p>';
+}
+
+function addShoppingItem() {
+  const input = document.getElementById('new-item');
+  if (input.value.trim()) {
+    shoppingList.push({ id: Date.now(), item: input.value.toUpperCase(), done: false });
+    localStorage.setItem('saraillon_shopping', JSON.stringify(shoppingList));
+    renderShopping();
+    input.value = '';
+    showNotification('🛍️ Article ajouté!', 'success');
+  }
+}
+
+function toggleShopping(id) {
+  const item = shoppingList.find(i => i.id === id);
+  if (item) item.done = !item.done;
+  localStorage.setItem('saraillon_shopping', JSON.stringify(shoppingList));
+  renderShopping();
+}
+
+function removeShopping(id) {
+  shoppingList = shoppingList.filter(i => i.id !== id);
+  localStorage.setItem('saraillon_shopping', JSON.stringify(shoppingList));
+  renderShopping();
+}
+
+// ============== SURPRISE ==============
+function revealSurprise() {
+  if (document.getElementById('surprise-code').value.toUpperCase() === 'MAGIE') {
+    document.getElementById('surprise-content').innerHTML = `
+      <div class="card" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); color: white; text-align: center;">
+        <h3 style="font-family: 'Press Start 2P', cursive; font-size: 16px; margin-bottom: 16px;">🎉 SURPRISE!</h3>
+        <p style="font-size: 14px; line-height: 1.6; margin: 16px 0;">
+          <strong>⏰ 9H DU MATIN</strong><br>
+          <strong>📍 LIEU SECRET</strong><br>
+          <strong>⚠️ À APPORTER:</strong> Chapeau, crème solaire<br>
+          <strong>✨ THÈME:</strong> Surprise mystérieuse<br>
+          <strong>🍽️ REPAS:</strong> Inclus (surprise gourmet!)
+        </p>
+      </div>
+    `;
+    showNotification('🎉 Surprise débloquée!', 'success');
+  } else {
+    showNotification('❌ Code incorrect', 'error');
+  }
+}
+
+// ============== DEEZER PLAYLIST ==============
+function renderDeezerPlaylist() {
+  const html = playlistData.map(song => `
+    <div class="deezer-song" onclick="playSong(${song.id})">
+      <div class="deezer-song-title">${song.emoji} ${song.title}</div>
+      <div class="deezer-song-artist">${song.artist}</div>
+    </div>
+  `).join('');
+  document.getElementById('deezerPlaylist').innerHTML = html;
+}
+
+function toggleDeezer() {
+  document.getElementById('deezerPanel').classList.toggle('open');
+}
+
+function playSong(songId) {
+  const songs = document.querySelectorAll('.deezer-song');
+  songs.forEach(s => s.classList.remove('playing'));
+  event.currentTarget.classList.add('playing');
+  showNotification('🎵 Musique lancée!', 'info');
+}
+
+// ============== NOTIFICATIONS ==============
+function showNotification(message, type = 'info') {
+  const container = document.getElementById('notificationsContainer');
+  const id = Date.now();
+  
+  const notif = document.createElement('div');
+  notif.className = `notification ${type}`;
+  notif.textContent = message;
+  notif.id = 'notif-' + id;
+  
+  container.appendChild(notif);
+  
+  setTimeout(() => {
+    notif.remove();
+  }, 3000);
+}
+
+function toggleNotifications() {
+  showNotification('🔔 Notifications', 'info');
+}
+
+document.getElementById('code-input')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') checkCode();
+});
+</script>
+
+</body>
 </html>
