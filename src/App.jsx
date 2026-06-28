@@ -38,7 +38,7 @@ const supabaseCall = async (supabaseUrl, supabaseKey, method, table, data = null
 const LoginScreen = ({ onLogin }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-  const CORRECT_CODE = '2024AMIES'; // Code partagé
+  const CORRECT_CODE = '2026'; // Code partagé
 
   const handleLogin = () => {
     if (code === CORRECT_CODE) {
