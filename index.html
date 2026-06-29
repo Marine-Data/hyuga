@@ -671,6 +671,19 @@
 </head>
 <body>
 
+<!-- CODE ACCESS MODAL -->
+<div id="modalAcces" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+  <div style="background: white; padding: 50px; border-radius: 15px; text-align: center;">
+    <h1 style="font-size: 48px; margin-bottom: 20px;">🎮</h1>
+    <h2 style="margin-bottom: 20px;">SARAILLON</h2>
+    <p style="margin-bottom: 20px;">Code d'acces:</p>
+    <input type="password" id="codeInput" style="width: 100%; padding: 12px; font-size: 16px; margin-bottom: 20px; border: 2px solid #ccc; border-radius: 6px;">
+    <button onclick="verifierCode()" style="width: 100%; padding: 12px; background: #2b3a55; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;">ACCEDER</button>
+  </div>
+</div>
+
+<div id="appContent" style="display: none;">
+
 <!-- HOME PAGE -->
 <div id="homePage" class="home-page">
   <div class="home-content">
@@ -682,16 +695,6 @@
       <button class="home-btn home-btn-primary" onclick="startApp()">🚀 Accéder</button>
       <button class="home-btn home-btn-secondary" onclick="installPWA()">📱 Installer</button>
     </div>
-  </div>
-</div>
-
-<!-- ACCESS MODAL -->
-<div id="accessModal" style="display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 20px;">
-  <div style="background: white; padding: 40px; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-    <h1 style="font-family: 'Press Start 2P', cursive; font-size: 24px; color: #2b3a55; text-shadow: 2px 2px 0 #e3b94f; margin-bottom: 20px;">🎮 SARAILLON</h1>
-    <p style="color: #5b6c8a; margin-bottom: 20px;">Entre le code d'accès</p>
-    <input type="password" id="accessCode" placeholder="Code..." style="width: 100%; padding: 12px; border: 2px solid #aecbe8; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">
-    <button onclick="verifyCode()" style="width: 100%; padding: 12px; background: #2b3a55; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">ACCÉDER</button>
   </div>
 </div>
 
@@ -711,8 +714,6 @@
         <button class="sidebar-link" onclick="switchTab('feed')">📰</button>
         <button class="sidebar-link" onclick="switchTab('profile')">👤</button>
         <button class="sidebar-link" onclick="switchTab('settings')">⚙️</button>
-        <button class="sidebar-link" onclick="switchTab('surprises')">🎉</button>
-        <button class="sidebar-link" onclick="switchTab('inscriptions')">📊</button>
       </div>
     </div>
 
@@ -859,27 +860,6 @@
             <p style="font-size: 12px; color: var(--primary-light);">SARAILLON v4.0 - L'app ultime de gestion de séjour</p>
           </div>
         </div>
-      <!-- SURPRISES -->
-      <div id="surprises" class="tab-content">
-        <div class="tab-nav">
-          <button class="tab-btn active">🎉 Surprises</button>
-        </div>
-        <div class="content">
-          <div class="card">
-            <div class="card-title">🔐 Code Secret</div>
-            <input type="password" id="surprise-code" placeholder="Code..." style="margin-bottom: 10px;">
-            <button class="btn btn-primary" onclick="revealSurprise()" style="width: 100%;">Révéler</button>
-          </div>
-          <div id="surprise-content"></div>
-        </div>
-      </div>
-
-      <!-- INSCRIPTIONS -->
-      <div id="inscriptions" class="tab-content">
-        <div class="tab-nav">
-          <button class="tab-btn active">📊 Inscriptions</button>
-        </div>
-        <div class="content" id="inscriptions-content"></div>
       </div>
     </div>
   </div>
@@ -905,7 +885,6 @@
       <input type="text" id="activity-time" placeholder="Horaires">
       <input type="text" id="activity-location" placeholder="Lieu">
       <textarea id="activity-meals" placeholder="Repas" style="min-height: 60px;"></textarea>
-      <textarea id="activity-apporter" placeholder="À apporter" style="min-height: 60px;"></textarea>
       <textarea id="activity-notes" placeholder="Notes/remarques" style="min-height: 60px;"></textarea>
       <button class="btn btn-success" onclick="saveActivityEdit()" style="width: 100%; margin-bottom: 10px;">Sauvegarder</button>
       <button class="btn btn-danger" onclick="closeModal('editActivityModal')" style="width: 100%;">Annuler</button>
@@ -963,6 +942,8 @@
   <div class="offline-indicator" id="offlineIndicator">📡 Mode hors ligne</div>
 </div>
 
+</div> <!-- Fermer appContent -->
+
 <script>
 // ============== SERVICE WORKER ==============
 if ('serviceWorker' in navigator) {
@@ -1003,7 +984,6 @@ if ('serviceWorker' in navigator) {
 
 // ============== DATA ==============
 const PARTICIPANTS = [
-  { id: 0, name: "Marine", pseudo: "👑 HÔTE", bio: "L'organisatrice du séjour", avatar: null, email: "marine@email.com", phone: "06 XX XX XX", regimes: "Omnivore" },
   { id: 1, name: "Delphine", pseudo: "", bio: "", avatar: null, email: "delphine@email.com", phone: "06 XX XX XX", regimes: "Omnivore" },
   { id: 2, name: "Chunfei", pseudo: "", bio: "", avatar: null, email: "chunfei@email.com", phone: "06 XX XX XX", regimes: "Omnivore" },
   { id: 3, name: "Mathilde", pseudo: "", bio: "", avatar: null, email: "mathilde@email.com", phone: "06 XX XX XX", regimes: "Végétarienne" },
@@ -1024,16 +1004,16 @@ const CHORES = [
 ];
 
 const planningData = [
-  { jour: "Vendredi", activities: [{ nom: "Apéro au Mourillon", emoji: "🍷", horaires: "22h00", lieu: "Mourillon", inscription: false, repas: "Dîner", apporter: "À définir", comments: [], notes: "" }] },
-  { jour: "Samedi", activities: [{ nom: "Calanques + Friche", emoji: "🌊", horaires: "09h30", lieu: "Marseille", inscription: false, repas: "Déjeuner + Dîner", apporter: "Maillot, serviette, tenue de rechange", comments: [], notes: "" }] },
-  { jour: "Dimanche", activities: [{ nom: "Surprises", emoji: "🎁", horaires: "10h30", lieu: "Secret", inscription: false, repas: "Déjeuner + Dîner", apporter: "Vêtements confortables", comments: [], notes: "" }] },
-  { jour: "Lundi", activities: [{ nom: "Plongée", emoji: "🤿", horaires: "À définir", lieu: "Mer", inscription: true, link: "https://forms.gle/PMACZkefBwXW4EYf6", repas: "Déjeuner (panier repas)", apporter: "Masque, tuba, palmes", comments: [], notes: "" }] },
-  { jour: "Mardi", activities: [{ nom: "Bateau", emoji: "⛵", horaires: "Matin", lieu: "Mer", inscription: true, link: "https://forms.gle/7F35tvEUbPNTLvh5A", repas: "Déjeuner (sur bateau)", apporter: "Vêtement coupe-vent, crème solaire", comments: [], notes: "" }] },
-  { jour: "Mercredi", activities: [{ nom: "Stand-up paddle", emoji: "🏄", horaires: "Journée", lieu: "Plage", inscription: false, repas: "Déjeuner (pique-nique plage)", apporter: "Maillot, serviette, lunettes de soleil", comments: [], notes: "" }] },
-  { jour: "Jeudi", activities: [{ nom: "Via Ferrata", emoji: "🧗", horaires: "Matin", lieu: "Montagne", inscription: true, link: "https://forms.gle/TjtfUzamMA5pKdfv9", repas: "Déjeuner (après)", apporter: "Gants, chaussures fermées, bonne condition physique", comments: [], notes: "" }] },
-  { jour: "Vendredi (J8)", activities: [{ nom: "Ateliers + Réveillon", emoji: "🥂", horaires: "10h30", lieu: "Saraillon", inscription: false, repas: "Déjeuner + Dîner de fête", apporter: "Selon l'atelier choisi", comments: [], notes: "" }] },
-  { jour: "Samedi (J9)", activities: [{ nom: "Piscine + Clôture", emoji: "🏊", horaires: "Journée", lieu: "Piscine", inscription: false, repas: "Déjeuner léger + Dîner (clôture)", apporter: "Maillot, serviette, bonnet de piscine", comments: [], notes: "" }] },
-  { jour: "Dimanche (J10)", activities: [{ nom: "Départ", emoji: "✈️", horaires: "Matin", lieu: "Aéroport/gare", inscription: false, repas: "Petit-déjeuner", apporter: "Bagages prêts", comments: [], notes: "" }] }
+  { jour: "Vendredi", activities: [{ nom: "Apéro au Mourillon", emoji: "🍷", horaires: "22h00", lieu: "Mourillon", inscription: false, repas: "Dîner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Samedi", activities: [{ nom: "Calanques + Friche", emoji: "🌊", horaires: "09h30", lieu: "Marseille", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Dimanche", activities: [{ nom: "Surprises", emoji: "🎁", horaires: "10h30", lieu: "Secret", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Lundi", activities: [{ nom: "Plongée", emoji: "🤿", horaires: "À définir", lieu: "Mer", inscription: true, link: "https://forms.gle/PMACZkefBwXW4EYf6", repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Mardi", activities: [{ nom: "Bateau", emoji: "⛵", horaires: "Matin", lieu: "Mer", inscription: true, link: "https://forms.gle/7F35tvEUbPNTLvh5A", repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Mercredi", activities: [{ nom: "Stand-up paddle", emoji: "🏄", horaires: "Journée", lieu: "Plage", inscription: false, repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Jeudi", activities: [{ nom: "Via Ferrata", emoji: "🧗", horaires: "Matin", lieu: "Montagne", inscription: true, link: "https://forms.gle/TjtfUzamMA5pKdfv9", repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Vendredi (J8)", activities: [{ nom: "Ateliers + Réveillon", emoji: "🥂", horaires: "10h30", lieu: "Saraillon", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Samedi (J9)", activities: [{ nom: "Piscine + Clôture", emoji: "🏊", horaires: "Journée", lieu: "Piscine", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "" }] },
+  { jour: "Dimanche (J10)", activities: [{ nom: "Départ", emoji: "✈️", horaires: "Matin", lieu: "Aéroport", inscription: false, repas: "Petit-déj", apporter: "", comments: [], notes: "" }] }
 ];
 
 let currentUser = PARTICIPANTS[0];
@@ -1051,75 +1031,10 @@ let historyIndex = -1;
 let isOnline = navigator.onLine;
 
 // ============== INIT ==============
-// ============== VERIFY ACCESS ==============
-function verifyCode() {
-  const input = document.getElementById('accessCode');
-  const code = input.value.trim();
-  
-  if (code === '2026') {
-    document.getElementById('accessModal').style.display = 'none';
-    document.getElementById('appContainer').style.display = 'block';
-    setTimeout(() => {
-      loadAllData();
-      initChallenges();
-      renderPlanning();
-      renderProfile();
-      renderAllProfiles();
-      renderShopping();
-      renderGallery();
-      renderFeed();
-      renderDaySelector();
-      renderChallenges();
-      renderInscriptions();
-      syncData();
-      addNotification('✅ Connecté!');
-    }, 100);
-  } else {
-    input.value = '';
-    input.style.borderColor = '#e07a96';
-    input.style.backgroundColor = '#ffe7e7';
-    setTimeout(() => {
-      input.style.borderColor = '#aecbe8';
-      input.style.backgroundColor = 'white';
-    }, 1000);
-  }
-}
-
-function checkAccess() {
-  const code = document.getElementById('accessCode').value;
-  if (code === '2026') {
-    document.getElementById('accessModal').style.display = 'none';
-    document.getElementById('appContainer').style.display = 'flex';
-    setTimeout(() => {
-      loadAllData();
-      initChallenges();
-      renderPlanning();
-      renderProfile();
-      renderAllProfiles();
-      renderShopping();
-      renderGallery();
-      renderFeed();
-      renderDaySelector();
-      renderChallenges();
-      renderInscriptions();
-      syncData();
-      addNotification('✅ Connecté!');
-    }, 100);
-  } else {
-    document.getElementById('accessCode').value = '';
-    document.getElementById('accessCode').style.borderColor = '#e07a96';
-    setTimeout(() => {
-      document.getElementById('accessCode').style.borderColor = '';
-    }, 500);
-  }
-}
-
-// ============== INIT ==============
 function startApp() {
   document.getElementById('homePage').style.display = 'none';
   document.getElementById('appContainer').style.display = 'block';
   loadAllData();
-  initChallenges();
   renderPlanning();
   renderProfile();
   renderAllProfiles();
@@ -1128,7 +1043,6 @@ function startApp() {
   renderFeed();
   renderDaySelector();
   renderChallenges();
-  renderInscriptions();
   syncData();
   
   if ('serviceWorkerContainer' in navigator) {
@@ -1305,9 +1219,7 @@ function renderPlanning() {
   const html = planningData.map((day, dayIdx) => `
     <div class="card">
       <div class="card-title">${day.jour}</div>
-      ${day.activities.map((activity, actIdx) => {
-        const inscribed = inscriptions[`${dayIdx}-${actIdx}`] ? 'Inscrit ✅' : '';
-        return `
+      ${day.activities.map((activity, actIdx) => `
         <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
           <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
             <div style="flex: 1; font-weight: 700; font-size: 13px;">${activity.emoji} ${activity.nom}</div>
@@ -1316,10 +1228,7 @@ function renderPlanning() {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; font-size: 11px;">
             <div style="background: var(--bg-sunken); padding: 8px; border-radius: 6px;"><strong>⏰</strong> ${activity.horaires}</div>
             <div style="background: var(--bg-sunken); padding: 8px; border-radius: 6px;"><strong>📍</strong> ${activity.lieu}</div>
-            ${activity.apporter ? `<div style="background: var(--bg-sunken); padding: 8px; border-radius: 6px;"><strong>🎒</strong> ${activity.apporter}</div>` : ''}
-            ${activity.repas ? `<div style="background: var(--bg-sunken); padding: 8px; border-radius: 6px;"><strong>🍽️</strong> ${activity.repas}</div>` : ''}
           </div>
-          ${inscribed ? `<div style="margin-top: 6px; font-size: 10px; background: rgba(111, 184, 176, 0.2); color: var(--accent-cyan); padding: 4px 8px; border-radius: 4px; display: inline-block;">${inscribed}</div>` : ''}
           ${activity.notes ? `<div style="margin-top: 8px; font-size: 11px; color: var(--primary-soft); padding: 8px; background: var(--bg-sunken); border-radius: 6px;">📝 ${activity.notes}</div>` : ''}
           ${activity.comments.length > 0 ? `
             <div style="margin-top: 8px; font-size: 11px;">
@@ -1333,7 +1242,7 @@ function renderPlanning() {
             </div>
           ` : ''}
         </div>
-      `;.join('')}
+      `).join('')}
     </div>
   `).join('');
   
@@ -1348,7 +1257,6 @@ function openEditActivity(dayIdx, actIdx) {
   document.getElementById('activity-time').value = activity.horaires;
   document.getElementById('activity-location').value = activity.lieu;
   document.getElementById('activity-meals').value = activity.repas;
-  document.getElementById('activity-apporter').value = activity.apporter || '';
   document.getElementById('activity-notes').value = activity.notes || '';
   
   openModal('editActivityModal');
@@ -1364,7 +1272,6 @@ function saveActivityEdit() {
   activity.horaires = document.getElementById('activity-time').value;
   activity.lieu = document.getElementById('activity-location').value;
   activity.repas = document.getElementById('activity-meals').value;
-  activity.apporter = document.getElementById('activity-apporter').value;
   activity.notes = document.getElementById('activity-notes').value;
   
   closeModal('editActivityModal');
@@ -1455,7 +1362,7 @@ function spinRoulette() {
 function renderChallenges() {
   const html = challenges.map(ch => `
     <div class="card" style="border-color: var(--accent-pink);">
-      <div style="display: flex; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); align-items: center;">
+      <div style="display: flex; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
         <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0;">
           ${ch.creator.charAt(0)}
         </div>
@@ -1463,8 +1370,6 @@ function renderChallenges() {
           <div style="font-weight: 700;">${ch.creator}</div>
           <div style="font-size: 10px; color: var(--primary-light);">${new Date(ch.timestamp).toLocaleDateString('fr-FR')}</div>
         </div>
-        <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); padding: 4px 8px;" onclick="quickEditChallenge(${ch.id})">✏️</button>
-        <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); padding: 4px 8px;" onclick="duplicateChallenge(${ch.id})">📋</button>
       </div>
       ${ch.media ? `<div style="margin-bottom: 10px; border-radius: 8px; overflow: hidden; max-height: 300px;"><${ch.media.type === 'video' ? 'video' : 'img'} src="${ch.media.src}" style="width: 100%; height: auto;" controls></div>` : ''}
       <div style="margin-bottom: 10px; font-size: 12px;">${ch.description}</div>
@@ -1487,37 +1392,6 @@ function renderChallenges() {
 
 function showCreateChallenge() {
   openModal('createChallengeModal');
-}
-
-function initChallenges() {
-  if (challenges.length === 0) {
-    challenges = [{
-      id: 1,
-      creator: "DELPHINE",
-      description: "Premier coucher de soleil! 🌅",
-      media: null,
-      likes: 3,
-      comments: [{ author: "CHUNFEI", text: "Magnifique!" }],
-      timestamp: new Date()
-    }];
-  }
-}
-
-function duplicateChallenge(id) {
-  const original = challenges.find(c => c.id === id);
-  if (original) {
-    challenges.push({
-      ...original,
-      id: Date.now(),
-      creator: currentUser.name,
-      likes: 0,
-      comments: [],
-      timestamp: new Date()
-    });
-    saveAllData();
-    renderChallenges();
-    addNotification('📋 Challenge dupliqué!');
-  }
 }
 
 function createChallenge() {
@@ -1599,7 +1473,6 @@ function renderShopping() {
       <div class="card" style="display: flex; gap: 10px; align-items: center;">
         <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleShop(${item.id})" style="cursor: pointer;">
         <span style="flex: 1; font-size: 12px;">${item.item}</span>
-        <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); padding: 4px 8px;" onclick="quickEditShoppingItem(${item.id})">✏️</button>
         <button class="btn btn-small btn-danger" onclick="removeShop(${item.id})">🗑️</button>
       </div>
     `;
@@ -1649,12 +1522,9 @@ function removeShop(id) {
 // ============== GALLERY ==============
 function renderGallery() {
   const html = galleryItems.map((item, idx) => `
-    <div style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); cursor: pointer;" title="${item.location}">
-      ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;" onclick="viewGallery(${idx})">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;" onclick="viewGallery(${idx})"></video>`}
+    <div style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); cursor: pointer;" onclick="viewGallery(${idx})">
+      ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;"></video>`}
       <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">${item.location}</div>
-      <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; display: flex; align-items: flex-end; padding: 10px; gap: 8px; transition: opacity 0.2s ease;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">
-        <button class="btn btn-small" style="background: rgba(255,255,255,0.2); color: white; flex: 1; border: none; cursor: pointer;" onclick="event.stopPropagation(); quickEditGallery(${idx})">✏️</button>
-      </div>
     </div>
   `).join('');
   
@@ -1700,19 +1570,15 @@ function viewGallery(idx) {
 
 // ============== FEED ==============
 function renderFeed() {
-  const html = feed.map(item => {
-    const time = new Date(item.timestamp);
-    const heure = time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    return `
-      <div class="card" style="border-left: 4px solid var(--accent-purple);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-weight: 600;">${item.emoji} ${item.user}</span>
-          <span style="font-size: 10px; color: var(--primary-light); background: var(--bg-sunken); padding: 2px 6px; border-radius: 3px;">${heure}</span>
-        </div>
-        <div style="font-size: 11px; color: var(--primary-soft);">${item.action}</div>
+  const html = feed.map(item => `
+    <div class="card" style="border-left: 4px solid var(--accent-purple);">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span style="font-weight: 600;">${item.emoji} ${item.user}</span>
+        <span style="font-size: 10px; color: var(--primary-light);">${new Date(item.timestamp).toLocaleTimeString('fr-FR')}</span>
       </div>
-    `;
-  }).reverse().join('');
+      <div style="font-size: 11px; color: var(--primary-soft);">${item.action}</div>
+    </div>
+  `).reverse().join('');
   
   document.getElementById('feed-content').innerHTML = html || '<p style="text-align: center; color: var(--primary-light); padding: 20px;">Aucune activité</p>';
 }
@@ -1935,115 +1801,36 @@ function toggleDeezer() {
   document.getElementById('deezerPanel').classList.toggle('open');
 }
 
-// ============== SURPRISES ==============
-function revealSurprise() {
-  if (document.getElementById('surprise-code').value.toUpperCase() === 'MAGIA') {
-    document.getElementById('surprise-content').innerHTML = `
-      <div class="card" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); color: white; text-align: center; margin-top: 12px;">
-        <h3 style="font-family: 'Press Start 2P', cursive; font-size: 12px; margin-bottom: 10px;">🎉 SURPRISE!</h3>
-        <p style="font-size: 12px; line-height: 1.6;">Dimanche - Lieu secret 🤫<br>10h30 – 00h00<br>Mystère et magie ✨</p>
-      </div>
-    `;
-    addNotification('🎉 Surprise débloquée!');
+// ============== CODE ACCESS ==============
+function verifierCode() {
+  var code = document.getElementById('codeInput').value;
+  if (code === '2026') {
+    document.getElementById('modalAcces').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    loadAllData();
+    renderPlanning();
   } else {
-    addNotification('❌ Code incorrect', 'error');
+    alert('Code incorrect!');
+    document.getElementById('codeInput').value = '';
   }
 }
 
-// ============== INSCRIPTIONS ==============
-function renderInscriptions() {
-  const html = planningData.map((day, dayIdx) => {
-    const inscribed = [];
-    const notInscribed = [];
-    
-    day.activities.forEach((activity, actIdx) => {
-      if (activity.inscription) {
-        if (inscriptions[`${dayIdx}-${actIdx}`]) {
-          inscribed.push(`${activity.emoji} ${activity.nom}`);
-        } else {
-          notInscribed.push(`${activity.emoji} ${activity.nom}`);
-        }
-      }
+// Enter key
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('codeInput');
+  if (input) {
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') verifierCode();
     });
-    
-    return `
-      <div class="card">
-        <div class="card-title">${day.jour}</div>
-        ${inscribed.length > 0 ? `<div style="margin-bottom: 8px;"><strong style="font-size: 11px; color: var(--accent-cyan);">✅ INSCRITS</strong><br>${inscribed.map(i => `<div style="font-size: 12px; margin-bottom: 3px;">${i}</div>`).join('')}</div>` : ''}
-        ${notInscribed.length > 0 ? `<div><strong style="font-size: 11px; color: var(--primary-light);">❌ NON INSCRITS</strong><br>${notInscribed.map(i => `<div style="font-size: 12px; margin-bottom: 3px;">${i}</div>`).join('')}</div>` : ''}
-      </div>
-    `;
-  }).join('');
-  
-  document.getElementById('inscriptions-content').innerHTML = html;
-}
-
-// ============== QUICK EDITS INDIVIDUELS ==============
-function quickEditChallenge(id) {
-  const ch = challenges.find(c => c.id === id);
-  if (ch) {
-    const newDesc = prompt('Éditer la description:', ch.description);
-    if (newDesc !== null) {
-      ch.description = newDesc;
-      saveAllData();
-      renderChallenges();
-      addNotification('✅ Challenge modifié!');
-    }
   }
-}
-
-function quickEditShoppingItem(id) {
-  const item = shoppingList.find(i => i.id === id);
-  if (item) {
-    const newName = prompt('Éditer l\'article:', item.item);
-    if (newName !== null) {
-      item.item = newName.toUpperCase();
-      saveAllData();
-      renderShopping();
-      addNotification('✅ Article modifié!');
-    }
-  }
-}
-
-function quickEditGallery(idx) {
-  const item = galleryItems[idx];
-  const newLocation = prompt('Éditer le lieu:', item.location);
-  if (newLocation !== null) {
-    item.location = newLocation;
-    const newDesc = prompt('Éditer la description:', item.description);
-    if (newDesc !== null) {
-      item.description = newDesc;
-      saveAllData();
-      renderGallery();
-      addNotification('✅ Photo modifiée!');
-    }
-  }
-}
+});
 
 // ============== INIT STARTUP ==============
 window.addEventListener('load', () => {
-  // Modal d'accès reste visible au démarrage
-  // Rien à faire ici, le modal attend le code 2026
-});
-
-// Permettre Entrée sur input d'accès
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    const accessInput = document.getElementById('accessCode');
-    if (accessInput) {
-      accessInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') verifyCode();
-      });
-    }
-  });
-} else {
-  const accessInput = document.getElementById('accessCode');
-  if (accessInput) {
-    accessInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') verifyCode();
-    });
+  if (document.getElementById('appContainer').style.display !== 'none') {
+    loadAllData();
   }
-}
+});
 </script>
 
 </body>
