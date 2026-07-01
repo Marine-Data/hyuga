@@ -1096,7 +1096,7 @@
             <button id="spin-btn" class="btn btn-primary" style="font-size: 16px; padding: 20px 30px; transition: transform 0.8s;" onclick="spinRoulette()">🎡 SPIN!</button>
           </div>
           <div id="carousel-wheel" style="display: none; text-align: center; margin: 30px 0;">
-            <div style="display: flex; gap: 15px; justify-content: center; align-items: center; min-height: 100px; perspective: 1000px;">
+            <div class="carousel-wheel-track" style="display: flex; gap: 15px; justify-content: center; align-items: center; min-height: 100px; perspective: 1000px; overflow-x: auto; padding: 4px;">
               <div id="carousel-items" style="display: flex; gap: 20px; position: relative;"></div>
             </div>
           </div>
@@ -1317,6 +1317,17 @@ window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabaseReady = true;
 
 // Helper functions for Supabase sync
+function formatSupabaseError(err) {
+  if (!err) return 'Erreur inconnue';
+  // ✅ PostgREST/Supabase renvoie { message, details, hint, code } — on les extrait explicitement
+  const parts = [];
+  if (err.message) parts.push(err.message);
+  if (err.code) parts.push(`code: ${err.code}`);
+  if (err.details) parts.push(`détails: ${err.details}`);
+  if (err.hint) parts.push(`piste: ${err.hint}`);
+  return parts.length ? parts.join(' | ') : JSON.stringify(err);
+}
+
 window.syncToSupabase = async (table, data) => {
   try {
     // Déterminer les colonnes de matching selon la table
@@ -1331,10 +1342,10 @@ window.syncToSupabase = async (table, data) => {
     
     // Spécifier la colonne de matching pour le upsert
     const { error } = await window.supabase.from(table).upsert(data, { onConflict });
-    if (error) console.error(`Supabase sync error (${table}):`, error);
+    if (error) console.error(`Supabase sync error (${table}): ${formatSupabaseError(error)}`, data);
     return !error;
   } catch (err) {
-    console.error(`Supabase sync error (${table}):`, err);
+    console.error(`Supabase sync error (${table}): ${formatSupabaseError(err)}`, data);
     return false;
   }
 };
@@ -1343,12 +1354,12 @@ window.loadFromSupabase = async (table) => {
   try {
     const { data, error } = await window.supabase.from(table).select('*');
     if (error) {
-      console.error(`Supabase load error (${table}):`, error);
+      console.error(`Supabase load error (${table}): ${formatSupabaseError(error)}`);
       return null;
     }
     return data;
   } catch (err) {
-    console.error(`Supabase load error (${table}):`, err);
+    console.error(`Supabase load error (${table}): ${formatSupabaseError(err)}`);
     return null;
   }
 };
@@ -1914,13 +1925,19 @@ function saveAllData() {
     // Sync user profiles (avatars compressés maintenant)
     PARTICIPANTS.forEach(p => {
       const profile = personalsData[p.id];
-      if (profile) {
+      // ✅ Garde-fou : n'envoyer que des données valides pour éviter les erreurs d'upsert silencieuses
+      if (profile && Number.isInteger(p.id)) {
+        const avatarStr = typeof profile.avatar === 'string' ? profile.avatar : '';
+        if (avatarStr.length > 2000000) {
+          console.error(`Avatar trop volumineux pour ${p.name} (${avatarStr.length} caractères), sync ignorée`);
+          return;
+        }
         window.syncToSupabase('user_profiles', {
           person_id: p.id,
-          pseudo: p.pseudo || '',
-          bio: profile.bio || '',
-          avatar: profile.avatar || '',
-          regimes: p.regimes || ''
+          pseudo: String(p.pseudo || ''),
+          bio: String(profile.bio || ''),
+          avatar: avatarStr,
+          regimes: String(p.regimes || '')
         }).catch(() => {});
       }
     });
@@ -2438,8 +2455,12 @@ function spinRoulette() {
   carouselWheel.style.display = 'block';
   
   // Créer les items du carousel
+  const isMobileWheel = window.innerWidth <= 768;
+  const wheelItemSize = isMobileWheel ? 38 : 80;
+  const wheelGap = isMobileWheel ? 4 : 20;
+  carouselItems.style.gap = wheelGap + 'px';
   carouselItems.innerHTML = CHORES.map(chore => `
-    <div style="min-width: 80px; padding: 10px; background: white; border-radius: 10px; border: 2px solid #e0e0e0; text-align: center; font-size: 28px; opacity: 0.4; transform: scale(0.8); transition: all 0.3s ease;">
+    <div style="min-width: ${wheelItemSize}px; padding: ${isMobileWheel ? 6 : 10}px; background: white; border-radius: 10px; border: 2px solid #e0e0e0; text-align: center; font-size: ${isMobileWheel ? 18 : 28}px; opacity: 0.4; transform: scale(0.8); transition: all 0.3s ease;">
       ${chore.emoji}
     </div>
   `).join('');
