@@ -1499,35 +1499,65 @@ let isOnline = navigator.onLine;
 let selectedProfileData = null;
 
 function startProfileSelection() {
+  loadAllData(); // ✅ Charger les données (avatars inclus) AVANT d'afficher la grille
   document.getElementById('modalProfileSelect').style.display = 'flex';
   renderProfileSelectGrid();
 }
 
 function renderProfileSelectGrid() {
   const grid = document.getElementById('profileSelectGrid');
-  grid.innerHTML = PARTICIPANTS.map(p => `
+  grid.innerHTML = PARTICIPANTS.map(p => {
+    const avatar = (personalsData[p.id] && personalsData[p.id].avatar) || null; // ✅ avatar vit dans personalsData
+    return `
     <div onclick="selectProfile(${p.id})" style="cursor: pointer; padding: 15px; border: 2px solid var(--border); border-radius: 10px; transition: all 0.2s; text-align: center; background: white;" onmouseover="this.style.background='var(--bg-sunken)'; this.style.borderColor='var(--accent-purple)';" onmouseout="this.style.background='white'; this.style.borderColor='var(--border)';">
       <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; border: 2px solid var(--accent-gold); margin: 0 auto 8px;">
-        ${p.avatar ? `<img src="${p.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : p.name[0]}
+        ${avatar ? `<img src="${avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : p.name[0]}
       </div>
       <div style="font-weight: 600; color: var(--primary); font-size: 13px;">${p.name}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
-function selectProfile(id) {
+let autoSaveStarted = false; // ✅ Empêche de démarrer plusieurs intervals d'auto-save
+
+// ✅ Point d'entrée unique dans l'app : attend Supabase AVANT d'afficher les données,
+// puis démarre l'auto-save. Utilisé par selectProfile() ET finishProfileSetup().
+async function enterMainApp() {
+  document.getElementById('appContent').style.display = 'block';
+  loadAllData();
+  switchTab('home');
+  showNotification('⏳ Synchronisation des données...', 'success'); // attente visible
+
+  await loadFromSupabaseCloud(); // ✅ ATTEND avant de render, plus d'écran vide
+
+  loadAllData();
+  renderPlanning();
+  showMyProfile();
+  renderShopping();
+  renderGallery();
+  renderFeed();
+  renderHome(); // ✅ Rafraîchir le widget d'activité récente sur Home
+  renderDaySelector();
+  renderChallenges();
+  renderInscriptions();
+
+  showNotification(`👋 Bienvenue ${currentUser.name}!`, 'success');
+
+  if (!autoSaveStarted) {
+    autoSaveStarted = true;
+    setInterval(() => { saveAllData(); }, 30000); // ✅ Auto-save toutes les 30s
+  }
+}
+
+async function selectProfile(id) {
   selectedProfileData = PARTICIPANTS.find(p => p.id === id);
   currentUser = selectedProfileData;
   document.getElementById('modalProfileSelect').style.display = 'none';
   
   // Si le profil est déjà complet, aller directement à Home
   if (currentUser.pseudo && currentUser.pseudo.trim() !== '') {
-    document.getElementById('appContent').style.display = 'block';
-    loadAllData();
-    renderPlanning();
-    renderFeed();
-    switchTab('home');
-    showNotification(`👋 Bienvenue ${currentUser.name}!`, 'success');
+    await enterMainApp();
   } else {
     // Sinon, afficher le modal de complétion
     document.getElementById('modalProfileComplete').style.display = 'flex';
@@ -1537,7 +1567,8 @@ function selectProfile(id) {
 
 function renderProfileCompletion() {
   const p = selectedProfileData;
-  document.getElementById('profileSelectAvatar').innerHTML = p.avatar ? `<img src="${p.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : p.name[0];
+  const avatar = (personalsData[p.id] && personalsData[p.id].avatar) || null; // ✅ avatar vit dans personalsData
+  document.getElementById('profileSelectAvatar').innerHTML = avatar ? `<img src="${avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : p.name[0];
   document.getElementById('profileSelectName').textContent = p.name;
   document.getElementById('completePseudoInput').value = p.pseudo || '';
   document.getElementById('completeBioInput').value = p.bio || '';
@@ -1549,14 +1580,18 @@ function handleCompleteAvatarUpload(event) {
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      selectedProfileData.avatar = e.target.result;
-      document.getElementById('profileSelectAvatar').innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+      // ✅ Compresser avant de sauvegarder (300x300 JPEG 70%, même logique que le profil)
+      compressImage(e.target.result, (compressedImage) => {
+        personalsData[selectedProfileData.id] = personalsData[selectedProfileData.id] || {};
+        personalsData[selectedProfileData.id].avatar = compressedImage;
+        document.getElementById('profileSelectAvatar').innerHTML = `<img src="${compressedImage}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+      });
     };
     reader.readAsDataURL(file);
   }
 }
 
-function finishProfileSetup() {
+async function finishProfileSetup() {
   selectedProfileData.pseudo = document.getElementById('completePseudoInput').value.trim();
   selectedProfileData.bio = document.getElementById('completeBioInput').value.trim();
   selectedProfileData.regimes = document.getElementById('completeRegimesInput').value.trim();
@@ -1570,14 +1605,9 @@ function finishProfileSetup() {
   saveAllData();
   
   document.getElementById('modalProfileComplete').style.display = 'none';
-  document.getElementById('appContent').style.display = 'block';
-  
-  loadAllData();
-  renderPlanning();
-  renderFeed();
-  showMyProfile();
-  
-  showNotification(`👋 Bienvenue ${currentUser.name}!`, 'success');
+
+  await enterMainApp();
+
   addNotification(`✅ ${currentUser.name} a rejoint l'app!`);
   requestNotificationPermission();
 }
@@ -1621,7 +1651,7 @@ function startApp() {
   renderInscriptions();
   syncData();
   
-  if ('serviceWorkerContainer' in navigator) {
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(() => addNotification('✅ App prête!'));
   }
 }
@@ -1747,10 +1777,10 @@ async function loadFromSupabaseCloud() {
     const profileData = await window.loadFromSupabase('user_profiles');
     if (profileData && profileData.length > 0) {
       profileData.forEach(profile => {
-        personalsData[profile.person_id] = {
-          bio: profile.bio || '',
-          avatar: profile.avatar || ''
-        };
+        // ✅ Fusionner au lieu d'écraser : garde les données locales si le cloud n'a rien de plus récent
+        personalsData[profile.person_id] = personalsData[profile.person_id] || {};
+        if (profile.bio) personalsData[profile.person_id].bio = profile.bio;
+        if (profile.avatar) personalsData[profile.person_id].avatar = profile.avatar;
       });
     }
     
@@ -1952,7 +1982,7 @@ function renderHome() {
     const timeago = getTimeAgo(item.timestamp);
     html += `
       <div style="padding: 10px; background: var(--bg-sunken); border-radius: 6px; border-left: 3px solid var(--accent-purple); font-size: 13px; line-height: 1.4;">
-        <strong>${item.personName}</strong> ${item.action}
+        <strong>${item.emoji || ''} ${item.user}</strong> ${item.message}
         <div style="color: var(--primary-light); font-size: 11px; margin-top: 3px;">${timeago}</div>
       </div>
     `;
@@ -2833,33 +2863,44 @@ function uploadGallery() {
   
   const reader = new FileReader();
   reader.onload = (e) => {
-    const item = {
-      id: Date.now(),
-      src: e.target.result,
-      type: input.files[0].type.startsWith('image') ? 'image' : 'video',
-      location: location,
-      description: desc,
-      creator: currentUser.name,
-      creatorId: currentUser.id,
-      timestamp: new Date(),
-      likes: [],
-      comments: [],
-      tags: tags
+    const isImage = input.files[0].type.startsWith('image');
+
+    const finishUpload = (src) => {
+      const item = {
+        id: Date.now(),
+        src: src,
+        type: isImage ? 'image' : 'video',
+        location: location,
+        description: desc,
+        creator: currentUser.name,
+        creatorId: currentUser.id,
+        timestamp: new Date(),
+        likes: [],
+        comments: [],
+        tags: tags
+      };
+      galleryItems.push(item);
+      saveAllData();
+      renderGallery();
+      renderFeed();  // ✅ Mettre à jour le feed aussi!
+      showUploadForm();
+      
+      // Réinitialiser le formulaire
+      document.getElementById('gallery-location').value = '';
+      document.getElementById('gallery-desc').value = '';
+      input.value = '';
+      document.getElementById('gallery-tags-checkboxes').innerHTML = '';
+      
+      addNotification('📸 Photo uploadée!', '📸', 'gallery');
+      addFeedEntry(`a partagé une photo: "${location}"`, '📸');
     };
-    galleryItems.push(item);
-    saveAllData();
-    renderGallery();
-    renderFeed();  // ✅ Mettre à jour le feed aussi!
-    showUploadForm();
-    
-    // Réinitialiser le formulaire
-    document.getElementById('gallery-location').value = '';
-    document.getElementById('gallery-desc').value = '';
-    input.value = '';
-    document.getElementById('gallery-tags-checkboxes').innerHTML = '';
-    
-    addNotification('📸 Photo uploadée!', '📸', 'gallery');
-    addFeedEntry(`a partagé une photo: "${location}"`, '📸');
+
+    if (isImage) {
+      // ✅ Compresser les images (600x600 JPEG 70%) pour éviter les erreurs Supabase sur les gros base64
+      compressImage(e.target.result, finishUpload, 600);
+    } else {
+      finishUpload(e.target.result); // Vidéos : pas de compression canvas possible
+    }
   };
   reader.readAsDataURL(input.files[0]);
 }
@@ -2917,12 +2958,22 @@ function toggleGalleryComments(itemId) {
       <input type="text" placeholder="Commenter..." id="gal-comment-${itemId}" style="flex: 1; margin-bottom: 0; font-size: 11px;">
       <button class="btn btn-small btn-primary" onclick="addGalleryComment(${itemId})">📤</button>
     </div>
-    <button class="btn btn-small" style="width: 100%; margin-top: 12px; background: var(--bg-sunken); color: var(--primary);" onclick="document.getElementById('gal-comments-${itemId}').remove()">Fermer</button>
+    <button class="btn btn-small" style="width: 100%; margin-top: 12px; background: var(--bg-sunken); color: var(--primary);" onclick="closeGalleryCommentsModal(${itemId})">Fermer</button>
   `;
   
   container.innerHTML = html;
   document.body.appendChild(container);
   document.getElementById(`gal-comment-${itemId}`).focus();
+}
+
+// ✅ Fermeture sécurisée du modal de commentaires (évite les blocages)
+function closeGalleryCommentsModal(itemId) {
+  try {
+    const el = document.getElementById(`gal-comments-${itemId}`);
+    if (el) el.remove();
+  } catch (err) {
+    console.error('Erreur fermeture modal commentaires:', err);
+  }
 }
 
 function addGalleryComment(itemId) {
@@ -2945,7 +2996,7 @@ function addGalleryComment(itemId) {
   addFeedEntry(`a commenté la photo de ${item.creator}: "${input.value.substring(0, 40)}"`, '💬');
   
   // Fermer et réouvrir pour voir le nouveau commentaire
-  document.getElementById(`gal-comments-${itemId}`).remove();
+  closeGalleryCommentsModal(itemId);
   toggleGalleryComments(itemId);
   renderGallery();
 }
@@ -3260,7 +3311,7 @@ function previewAvatar(event) {
 }
 
 // Compresser l'image (redimensionner + réduire qualité)
-function compressImage(imageSource, callback) {
+function compressImage(imageSource, callback, maxSize = 300) {
   const img = new Image();
   img.src = imageSource;
   
@@ -3268,10 +3319,9 @@ function compressImage(imageSource, callback) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
-    // Redimensionner à 300x300 max
+    // Redimensionner à maxSize max (300 pour avatars, 600 pour galerie)
     let width = img.width;
     let height = img.height;
-    const maxSize = 300;
     
     if (width > height) {
       if (width > maxSize) {
@@ -3424,11 +3474,14 @@ function addFeedEntry(message, emoji = '📌') {
 
 function renderFeed() {
   const content = document.getElementById('feed-content');
-  if (feed.length === 0) {
-    content.innerHTML = '<div style="padding: 40px 20px; text-align: center;"><p style="color: var(--primary-light); font-size: 14px;">📭 Aucune activité pour le moment</p></div>';
-    return;
-  }
-  content.innerHTML = feed.map(entry => {
+  if (!content) return; // ✅ Évite de planter si l'élément n'existe pas encore
+
+  try {
+    if (feed.length === 0) {
+      content.innerHTML = '<div style="padding: 40px 20px; text-align: center;"><p style="color: var(--primary-light); font-size: 14px;">📭 Aucune activité pour le moment</p></div>';
+      return;
+    }
+    content.innerHTML = feed.map(entry => {
     const date = new Date(entry.timestamp);
     const hours = String(date.getHours()).padStart(2, '0');
     const mins = String(date.getMinutes()).padStart(2, '0');
@@ -3457,6 +3510,9 @@ function renderFeed() {
       </div>
     `;
   }).join('');
+  } catch (err) {
+    console.error('Erreur renderFeed:', err);
+  }
 }
 
 function likeFeedEntry(entryId) {
