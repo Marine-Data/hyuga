@@ -33,7 +33,12 @@
       --shadow-hover: 0 10px 24px rgba(51, 131, 172, 0.2);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent; /* ✅ Supprime le flash gris au tap sur Android */
+    }
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -43,6 +48,7 @@
       -webkit-touch-callout: none;
       transition: background-color 0.3s ease;
       overflow-x: hidden; /* ✅ Empêche le scroll latéral involontaire */
+      overscroll-behavior-y: contain; /* ✅ Empêche le pull-to-refresh accidentel sur Android */
       overflow-wrap: break-word; /* ✅ Casse les mots/URLs trop longs */
       word-break: break-word;
     }
