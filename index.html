@@ -11,6 +11,8 @@
   <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22SARAILLON ULTIMATE%22,%22short_name%22:%22SARAILLON%22,%22start_url%22:%22./%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%232b3a55%22,%22scope%22:%22./%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27><rect fill=%27%232b3a55%27 width=%27192%27 height=%27192%27/><text x=%2750%%27 y=%2750%%27 font-size=%27100%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 fill=%27%23e3b94f%27>🏝️</text></svg>%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any maskable%22}]}">
   <title>🏝️ SARAILLON ULTIMATE</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SUPABASE CLIENT LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/+esm"></script>
   <style>
     :root {
       /* SARAILLON COLOR PALETTE - Inspired by Mediterranean summer */
@@ -796,6 +798,29 @@
 
     .offline-indicator.show { display: block; }
 
+    /* SAVE INDICATOR */
+    .save-indicator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--accent-cyan);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      z-index: 250;
+      display: none;
+      animation: saveFlash 0.6s ease-out;
+    }
+
+    .save-indicator.show { display: block; }
+
+    @keyframes saveFlash {
+      0% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 0.4; transform: scale(1); }
+    }
+
     /* BOTTOM TAB BAR - NAVIGATION */
     .bottom-tab-bar {
       position: fixed;
@@ -876,23 +901,12 @@
 </head>
 <body>
 
-<!-- CODE ACCESS MODAL -->
-<div id="modalAcces" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-  <div style="background: white; padding: 50px; border-radius: 15px; text-align: center; max-width: 500px;">
-    <h1 style="font-size: 48px; margin-bottom: 20px;">🏝️</h1>
-    <h2 style="margin-bottom: 20px;">SARAILLON</h2>
-    <p style="margin-bottom: 20px; color: var(--primary-light);">Code d'accès:</p>
-    <input type="password" id="codeInput" style="width: 100%; padding: 12px; font-size: 16px; margin-bottom: 20px; border: none; border-radius: 6px; box-shadow: inset 0 2px 6px rgba(51, 131, 172, 0.1); background: var(--bg-sunken);">
-    <button onclick="verifierCode()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(51, 131, 172, 0.25); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 8px 20px rgba(51, 131, 172, 0.4)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='0 4px 12px rgba(51, 131, 172, 0.25)'; this.style.transform='translateY(0)';">ACCEDER</button>
-  </div>
-</div>
-
+<!-- MODAL: SÉLECTION DE PROFIL -->
 <div id="modalProfileSelect" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
   <div style="background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;">
     <h1 style="font-size: 36px; margin-bottom: 10px;">👋 Qui es-tu ?</h1>
     <p style="margin-bottom: 30px; color: var(--primary-light);">Sélectionne ton profil</p>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; margin-bottom: 30px;" id="profileSelectGrid"></div>
-    <button onclick="goBackToCode()" style="width: 100%; padding: 10px; background: var(--bg-sunken); color: var(--primary); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(51, 131, 172, 0.08);">← Retour</button>
   </div>
 </div>
 
@@ -967,15 +981,9 @@
             🔔 <span class="notif-badge" id="notifBadge" style="display: none; position: absolute; top: 0; right: 0; background: var(--accent-pink); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: 700;">0</span>
           </button>
           
-          <!-- Séparateur visuel -->
-          <div style="width: 1px; height: 24px; background: var(--border); margin: 0 4px;"></div>
-          
           <!-- Actions secondaires (Undo/Redo) -->
           <button class="btn-header" onclick="toggleUndo()" id="undoBtn" title="Annuler" style="padding: 8px 8px; font-size: 13px;">↶</button>
           <button class="btn-header" onclick="toggleRedo()" id="redoBtn" title="Refaire" style="padding: 8px 8px; font-size: 13px;">↷</button>
-          
-          <!-- Séparateur visuel -->
-          <div style="width: 1px; height: 24px; background: var(--border); margin: 0 4px;"></div>
           
           <!-- Mode édition (Exclusive - un seul visible à la fois) -->
           <button id="editBtn" class="btn-header" onclick="toggleEditMode()" style="padding: 8px 10px; background: rgba(153, 51, 255, 0.1); color: var(--accent-purple);">✏️ Éditer</button>
@@ -1238,11 +1246,64 @@
 
   <!-- OFFLINE INDICATOR -->
   <div class="offline-indicator" id="offlineIndicator">📡 Mode hors ligne</div>
+
+  <!-- SAVE INDICATOR -->
+  <div class="save-indicator" id="saveIndicator">✅ Sauvegardé</div>
 </div>
 
 </div> <!-- Fermer appContent -->
 
+<script type="module">
+// ============== SUPABASE INITIALIZATION ==============
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/+esm';
+
+const SUPABASE_URL = 'https://iupghubmnibbdipingnj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SaQ7IOxIEnUhj0-VQ9TsVw_1UIAldOt';
+
+// Initialize Supabase - store globally
+window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.supabaseReady = true;
+
+// Helper functions for Supabase sync
+window.syncToSupabase = async (table, data) => {
+  try {
+    // Déterminer les colonnes de matching selon la table
+    let onConflict = 'id';
+    if (table === 'inscriptions') {
+      onConflict = 'person_id,day_idx,act_idx';
+    } else if (table === 'checklist_valise') {
+      onConflict = 'key';
+    } else if (table === 'user_profiles') {
+      onConflict = 'person_id';
+    }
+    
+    // Spécifier la colonne de matching pour le upsert
+    const { error } = await window.supabase.from(table).upsert(data, { onConflict });
+    if (error) console.error(`Supabase sync error (${table}):`, error);
+    return !error;
+  } catch (err) {
+    console.error(`Supabase sync error (${table}):`, err);
+    return false;
+  }
+};
+
+window.loadFromSupabase = async (table) => {
+  try {
+    const { data, error } = await window.supabase.from(table).select('*');
+    if (error) {
+      console.error(`Supabase load error (${table}):`, error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error(`Supabase load error (${table}):`, err);
+    return null;
+  }
+};
+</script>
+
 <script>
+
 // ============== SERVICE WORKER ==============
 if ('serviceWorker' in navigator) {
   const swCode = `
@@ -1437,16 +1498,9 @@ let isOnline = navigator.onLine;
 // ============== AUTHENTICATION ==============
 let selectedProfileData = null;
 
-function verifierCode() {
-  const code = document.getElementById('codeInput').value;
-  if (code === '2026') {
-    document.getElementById('modalAcces').style.display = 'none';
-    document.getElementById('modalProfileSelect').style.display = 'flex';
-    renderProfileSelectGrid();
-  } else {
-    alert('❌ Code incorrect!');
-    document.getElementById('codeInput').value = '';
-  }
+function startProfileSelection() {
+  document.getElementById('modalProfileSelect').style.display = 'flex';
+  renderProfileSelectGrid();
 }
 
 function renderProfileSelectGrid() {
@@ -1465,8 +1519,20 @@ function selectProfile(id) {
   selectedProfileData = PARTICIPANTS.find(p => p.id === id);
   currentUser = selectedProfileData;
   document.getElementById('modalProfileSelect').style.display = 'none';
-  document.getElementById('modalProfileComplete').style.display = 'flex';
-  renderProfileCompletion();
+  
+  // Si le profil est déjà complet, aller directement à Home
+  if (currentUser.pseudo && currentUser.pseudo.trim() !== '') {
+    document.getElementById('appContent').style.display = 'block';
+    loadAllData();
+    renderPlanning();
+    renderFeed();
+    switchTab('home');
+    showNotification(`👋 Bienvenue ${currentUser.name}!`, 'success');
+  } else {
+    // Sinon, afficher le modal de complétion
+    document.getElementById('modalProfileComplete').style.display = 'flex';
+    renderProfileCompletion();
+  }
 }
 
 function renderProfileCompletion() {
@@ -1504,7 +1570,6 @@ function finishProfileSetup() {
   saveAllData();
   
   document.getElementById('modalProfileComplete').style.display = 'none';
-  document.getElementById('modalAcces').style.display = 'none';
   document.getElementById('appContent').style.display = 'block';
   
   loadAllData();
@@ -1518,10 +1583,9 @@ function finishProfileSetup() {
 }
 
 function goBackToCode() {
-  document.getElementById('modalProfileSelect').style.display = 'none';
-  document.getElementById('modalAcces').style.display = 'flex';
-  document.getElementById('codeInput').value = '';
-  document.getElementById('codeInput').focus();
+  // Afficher à nouveau le modal de sélection de profil
+  document.getElementById('modalProfileSelect').style.display = 'flex';
+  renderProfileSelectGrid();
 }
 
 function goBackToProfileSelect() {
@@ -1534,6 +1598,19 @@ function startApp() {
   document.getElementById('homePage').style.display = 'none';
   document.getElementById('appContainer').style.display = 'block';
   loadAllData();
+  
+  // 🌐 Load from Supabase (async, en arrière-plan)
+  loadFromSupabaseCloud().then(() => {
+    renderShopping();
+    renderGallery();
+    renderFeed();
+  });
+  
+  // ✅ AUTO-SAVE toutes les 30 secondes
+  setInterval(() => {
+    saveAllData();
+  }, 30000);
+  
   renderPlanning();
   showMyProfile();
   renderShopping();
@@ -1580,6 +1657,109 @@ function loadAllData() {
   updateNotifBadge();
 }
 
+// 🌐 Load data from Supabase (async)
+async function loadFromSupabaseCloud() {
+  // Attendre que Supabase soit prêt
+  let retries = 0;
+  while ((!window.supabaseReady || !window.loadFromSupabase) && retries < 10) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    retries++;
+  }
+  
+  if (!window.supabaseReady || !window.loadFromSupabase) {
+    console.warn('⚠️ Supabase not ready after retries, using localStorage only');
+    return;
+  }
+  
+  console.log('🌐 Loading from Supabase...');
+  
+  try {
+    // Load shopping list
+    const shopData = await window.loadFromSupabase('shopping_list');
+    if (shopData && shopData.length > 0) {
+      console.log(`✅ Loaded ${shopData.length} shopping items from Supabase`);
+      shoppingList = shopData.map(item => ({
+        id: item.id,
+        item: item.item,
+        done: item.done || false
+      }));
+    }
+    
+    // Load inscriptions
+    const inscData = await window.loadFromSupabase('inscriptions');
+    if (inscData && inscData.length > 0) {
+      console.log(`✅ Loaded ${inscData.length} inscriptions from Supabase`);
+      inscriptions = {};
+      inscData.forEach(insc => {
+        inscriptions[`${insc.person_id}-${insc.day_idx}-${insc.act_idx}`] = true;
+      });
+    }
+    
+    // Load gallery
+    const galleryData = await window.loadFromSupabase('gallery_items');
+    if (galleryData && galleryData.length > 0) {
+      console.log(`✅ Loaded ${galleryData.length} gallery items from Supabase`);
+      galleryItems = galleryData.map(item => ({
+        id: item.id,
+        src: item.image_url,
+        type: item.type || 'image',
+        creator: item.creator,
+        location: item.location,
+        description: item.description || '',
+        timestamp: item.timestamp || new Date(),
+        tags: item.tags || [],
+        likes: item.likes || [],
+        comments: item.comments || []
+      }));
+    }
+    
+    // Load feed
+    const feedData = await window.loadFromSupabase('feed_entries');
+    if (feedData && feedData.length > 0) {
+      console.log(`✅ Loaded ${feedData.length} feed entries from Supabase`);
+      feed = feedData.map(entry => {
+        const parsedData = entry.data ? JSON.parse(entry.data) : { likes: [], comments: [] };
+        return {
+          id: entry.id,
+          personId: entry.person_id,
+          user: entry.user_name,
+          userId: entry.person_id,
+          message: entry.text,
+          emoji: entry.emoji,
+          timestamp: entry.timestamp,
+          likes: parsedData.likes || [],
+          comments: parsedData.comments || []
+        };
+      });
+    }
+    
+    // Load checklist valise
+    const valisData = await window.loadFromSupabase('checklist_valise');
+    if (valisData && valisData.length > 0) {
+      console.log(`✅ Loaded ${valisData.length} checklist items from Supabase`);
+      checklistValise = {};
+      valisData.forEach(item => {
+        checklistValise[item.key] = item.status;
+      });
+    }
+    
+    // Load user profiles
+    const profileData = await window.loadFromSupabase('user_profiles');
+    if (profileData && profileData.length > 0) {
+      profileData.forEach(profile => {
+        personalsData[profile.person_id] = {
+          bio: profile.bio || '',
+          avatar: profile.avatar || ''
+        };
+      });
+    }
+    
+    console.log('✅ Données chargées depuis Supabase!');
+  } catch (err) {
+    console.log('📱 Utilisation des données locales (Supabase non disponible)');
+  }
+}
+
 function saveAllData() {
   const data = {
     inscriptions, challenges, shopping: shoppingList, gallery: galleryItems, feed, notifications,
@@ -1587,6 +1767,82 @@ function saveAllData() {
   };
   localStorage.setItem('saraillon_all', JSON.stringify(data));
   saveHistory(data);
+  
+  // ✅ Afficher l'indicateur de sauvegarde
+  const saveInd = document.getElementById('saveIndicator');
+  if (saveInd) {
+    saveInd.classList.add('show');
+    setTimeout(() => saveInd.classList.remove('show'), 800);
+  }
+  
+  // 🌐 SYNC TO SUPABASE (en arrière-plan, sans attendre)
+  if (window.supabaseReady && window.syncToSupabase) {
+    // Sync shopping list
+    shoppingList.forEach(item => {
+      window.syncToSupabase('shopping_list', { id: item.id, item: item.item, done: item.done }).catch(() => {});
+    });
+    
+    // Sync inscriptions (clé composée: person_id, day_idx, act_idx)
+    Object.entries(inscriptions).forEach(([key, value]) => {
+      if (value === true) {
+        const [personId, dayIdx, actIdx] = key.split('-').map(Number);
+        window.syncToSupabase('inscriptions', { 
+          person_id: personId, 
+          day_idx: dayIdx, 
+          act_idx: actIdx 
+        }).catch(() => {});
+      }
+    });
+    
+    // Sync gallery items
+    galleryItems.forEach(item => {
+      window.syncToSupabase('gallery_items', {
+        id: item.id,
+        creator: item.creator,
+        location: item.location,
+        description: item.description || '',
+        type: item.type || 'image',
+        image_url: item.src || item.image || '',
+        tags: item.tags || [],
+        likes: item.likes || [],
+        comments: item.comments || []
+      }).catch(() => {});
+    });
+    
+    // Sync feed entries
+    // Sync feed (sérialiser en JSON)
+    feed.forEach(entry => {
+      window.syncToSupabase('feed_entries', {
+        id: entry.id,
+        person_id: entry.userId || 1,
+        user_name: entry.user,
+        text: entry.message,
+        emoji: entry.emoji,
+        data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [] }),
+        timestamp: entry.timestamp
+      }).catch(() => {});
+    });
+    
+    // Sync notifications (LOCAL ONLY - données volatiles et temporaires)
+    
+    // Sync checklist valise (LOCAL ONLY - données trop volatiles)
+    // Les données de valise restent en localStorage seulement
+    
+    
+    // Sync user profiles (avatars compressés maintenant)
+    PARTICIPANTS.forEach(p => {
+      const profile = personalsData[p.id];
+      if (profile) {
+        window.syncToSupabase('user_profiles', {
+          person_id: p.id,
+          pseudo: p.pseudo || '',
+          bio: profile.bio || '',
+          avatar: profile.avatar || '',
+          regimes: p.regimes || ''
+        }).catch(() => {});
+      }
+    });
+  }
 }
 
 function saveHistory(data) {
@@ -1811,11 +2067,12 @@ function showNotification(msg, type = 'success') {
   setTimeout(() => notif.remove(), 3000);
 }
 
-function addNotification(msg, emoji = '📌') {
+function addNotification(msg, emoji = '📌', type = 'general') {
   notifications.unshift({
     id: Date.now(),
     message: msg,
     emoji: emoji,
+    type: type,
     timestamp: new Date(),
     read: false
   });
@@ -1861,12 +2118,20 @@ function toggleNotifications() {
 }
 
 function renderNotifications() {
-  const html = notifications.slice(0, 30).map(n => `
-    <div class="notif-item ${!n.read ? 'unread' : ''}" onclick="markRead(${n.id})">
+  const html = notifications.slice(0, 30).map(n => {
+    let navAction = "switchTab('notifications');";
+    if (n.type === 'gallery') navAction = "switchTab('gallery');";
+    else if (n.type === 'feed') navAction = "switchTab('home');";
+    else if (n.type === 'challenge') navAction = "switchTab('home');";
+    else if (n.type === 'shopping') navAction = "switchTab('shopping');";
+    
+    return `
+    <div class="notif-item ${!n.read ? 'unread' : ''}" onclick="markRead(${n.id}); ${navAction}" style="cursor: pointer;">
       <div style="font-size: 12px; color: var(--primary);">${n.emoji} ${n.message}</div>
       <div class="notif-time">${new Date(n.timestamp).toLocaleTimeString('fr-FR')}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   document.getElementById('notif-content').innerHTML = html || '<div style="padding: 20px; text-align: center; color: var(--primary-light);">Aucune notification</div>';
 }
 
@@ -2517,15 +2782,12 @@ function renderGallery() {
         </div>
       </div>
       
-      <!-- Boutons likes/comments au hover -->
-      <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6), transparent); padding: 10px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s ease;" id="buttons-${item.id}">
-        <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'rgba(255,255,255,0.25)'}; color: white; flex: 1; font-weight: ${userLiked ? '700' : '500'}; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" onclick="likeGalleryItem(${item.id})">❤️ ${likesCount}</button>
-        <button class="btn btn-small" style="background: rgba(255,255,255,0.25); color: white; flex: 1; border: none; font-weight: 500; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" onclick="toggleGalleryComments(${item.id})">💬 ${commentsCount}</button>
-        <button class="btn btn-small" style="background: rgba(255,255,255,0.25); color: white; border: none; font-weight: 500; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" onclick="editGalleryItem(${item.id})">✏️</button>
+      <!-- Boutons likes/comments TOUJOURS VISIBLES -->
+      <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent); padding: 12px; display: flex; gap: 8px;" id="buttons-${item.id}">
+        <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'rgba(255,255,255,0.3)'}; color: white; flex: 1; font-weight: ${userLiked ? '700' : '600'}; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease;" onclick="likeGalleryItem(${item.id})" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';">❤️ ${likesCount}</button>
+        <button class="btn btn-small" style="background: rgba(255,255,255,0.3); color: white; flex: 1; border: none; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease;" onclick="toggleGalleryComments(${item.id})" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';">💬 ${commentsCount}</button>
+        <button class="btn btn-small" style="background: rgba(255,255,255,0.3); color: white; border: none; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; padding: 6px 12px; transition: all 0.3s ease;" onclick="editGalleryItem(${item.id})" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';">✏️</button>
       </div>
-      
-      <!-- Hover effect trigger -->
-      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 1;" onmouseenter="document.getElementById('overlay-${item.id}').style.opacity='1'; document.getElementById('buttons-${item.id}').style.opacity='1';" onmouseleave="document.getElementById('overlay-${item.id}').style.opacity='0'; document.getElementById('buttons-${item.id}').style.opacity='0';"></div>
     </div>
   `;
   }).join('');
@@ -2587,6 +2849,7 @@ function uploadGallery() {
     galleryItems.push(item);
     saveAllData();
     renderGallery();
+    renderFeed();  // ✅ Mettre à jour le feed aussi!
     showUploadForm();
     
     // Réinitialiser le formulaire
@@ -2595,7 +2858,7 @@ function uploadGallery() {
     input.value = '';
     document.getElementById('gallery-tags-checkboxes').innerHTML = '';
     
-    addNotification('📸 Photo uploadée!');
+    addNotification('📸 Photo uploadée!', '📸', 'gallery');
     addFeedEntry(`a partagé une photo: "${location}"`, '📸');
   };
   reader.readAsDataURL(input.files[0]);
@@ -2610,10 +2873,10 @@ function likeGalleryItem(itemId) {
   
   if (idx > -1) {
     item.likes.splice(idx, 1);
-    addNotification(`vous a retiré un ❤️`);
+    addNotification(`vous a retiré un ❤️`, '❌', 'gallery');
   } else {
     item.likes.push(currentUser.id);
-    addNotification(`❤️ ${currentUser.name} a aimé votre photo`);
+    addNotification(`❤️ ${currentUser.name} a aimé votre photo`, '❤️', 'gallery');
     addFeedEntry(`a aimé la photo de ${item.creator} (${item.location})`, '❤️');
   }
   
@@ -2678,7 +2941,7 @@ function addGalleryComment(itemId) {
   });
   
   saveAllData();
-  addNotification(`💬 ${currentUser.name} a commenté la photo`);
+  addNotification(`💬 ${currentUser.name} a commenté la photo`, '💬', 'gallery');
   addFeedEntry(`a commenté la photo de ${item.creator}: "${input.value.substring(0, 40)}"`, '💬');
   
   // Fermer et réouvrir pour voir le nouveau commentaire
@@ -2752,7 +3015,7 @@ function saveGalleryEdit(itemId) {
   saveAllData();
   document.querySelector('[style*="position: fixed"]').remove();
   renderGallery();
-  addNotification('📸 Photo modifiée!');
+  addNotification('📸 Photo modifiée!', '📸', 'gallery');
 }
 
 function filterGalleryByTag(tagName) {
@@ -2814,9 +3077,19 @@ function renderMyProfile() {
   const user = currentUser;
   const personalData = personalsData[user.id] || {};
   
+  // Déterminer comment afficher l'avatar
+  let avatarHTML = '';
+  if (personalData.avatar && personalData.avatar.startsWith('data:image')) {
+    // C'est une image compressée
+    avatarHTML = `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+  } else {
+    // C'est un emoji ou vide
+    avatarHTML = personalData.avatar || '👤';
+  }
+  
   const html = `
     <div class="card" style="text-align: center; padding: 24px;">
-      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #9933ff 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2);">${personalData.avatar || '👤'}</div>
+      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #9933ff 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2);">${avatarHTML}</div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
       <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
         "${personalData.bio || 'Aventurier(e) du groupe'}"
@@ -2853,9 +3126,16 @@ function showMyProfileTab(tab) {
   if (tab === 'infos') {
     content.innerHTML = `
       <div style="text-align: left;">
-        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📝 Bio</label>
-        <textarea id="bioInput" style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(51, 131, 172, 0.08); color: var(--primary);">${personalsData[currentUser.id]?.bio || ''}</textarea>
-        <button class="btn btn-primary" onclick="saveMyProfile()" style="width: 100%; margin-top: 14px; border: none; box-shadow: 0 4px 12px rgba(51, 131, 172, 0.15);">✏️ Éditer Profil</button>
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📸 Changer ta photo</label>
+        <input type="file" id="avatarInput" accept="image/*" style="width: 100%; padding: 8px; border: none; border-radius: 6px; background: white; cursor: pointer; margin-bottom: 16px;" onchange="previewAvatar(event)">
+        
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📝 Pseudo</label>
+        <input type="text" id="pseudoInput" placeholder="Ton pseudo..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(51, 131, 172, 0.08); color: var(--primary); margin-bottom: 16px;" value="${currentUser.pseudo || ''}">
+        
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">💬 Bio</label>
+        <textarea id="bioInput" style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(51, 131, 172, 0.08); color: var(--primary); margin-bottom: 16px;">${personalsData[currentUser.id]?.bio || ''}</textarea>
+        
+        <button class="btn btn-primary" onclick="saveMyProfile()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(51, 131, 172, 0.15); background: linear-gradient(135deg, var(--accent-cyan) 0%, #00d9d9 100%); color: white; font-weight: 700;">💾 Sauvegarder mon profil</button>
       </div>
     `;
   } else if (tab === 'valise') {
@@ -2929,12 +3209,95 @@ function toggleChecklistItem(itemIdx) {
 
 function saveMyProfile() {
   const newBio = document.getElementById('bioInput').value;
+  const newPseudo = document.getElementById('pseudoInput').value;
+  
+  // Sauvegarder les données personnelles
   personalsData[currentUser.id] = personalsData[currentUser.id] || {};
   personalsData[currentUser.id].bio = newBio;
+  
+  // Sauvegarder le pseudo dans currentUser
+  currentUser.pseudo = newPseudo;
+  
+  // Sauvegarder aussi dans PARTICIPANTS
+  const participant = PARTICIPANTS.find(p => p.id === currentUser.id);
+  if (participant) {
+    participant.pseudo = newPseudo;
+  }
+  
   saveAllData();
-  showNotification('✅ Bio mise à jour !', 'success');
+  showNotification('✅ Profil mis à jour !', 'success');
   addFeedEntry(`👤 ${currentUser.name} a mis à jour son profil`, '✨');
   renderMyProfile();
+}
+
+// Upload de photo de profil
+function previewAvatar(event) {
+  const file = event.target.files[0];
+  if (file) {
+    // Limiter la taille (max 2MB)
+    if (file.size > 2000000) {
+      showNotification('⚠️ Image trop grande (max 2MB)', 'error');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // Compresser l'image
+      compressImage(e.target.result, (compressedImage) => {
+        // Sauvegarder l'image compressée
+        personalsData[currentUser.id] = personalsData[currentUser.id] || {};
+        personalsData[currentUser.id].avatar = compressedImage;
+        
+        // Mettre à jour l'affichage du profil immédiatement
+        renderMyProfile();
+        
+        saveAllData();
+        showNotification('📸 Photo mise à jour !', 'success');
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Compresser l'image (redimensionner + réduire qualité)
+function compressImage(imageSource, callback) {
+  const img = new Image();
+  img.src = imageSource;
+  
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Redimensionner à 300x300 max
+    let width = img.width;
+    let height = img.height;
+    const maxSize = 300;
+    
+    if (width > height) {
+      if (width > maxSize) {
+        height = (height * maxSize) / width;
+        width = maxSize;
+      }
+    } else {
+      if (height > maxSize) {
+        width = (width * maxSize) / height;
+        height = maxSize;
+      }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    // Convertir en JPEG avec qualité réduite (0.7 = 70%)
+    const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
+    callback(compressedImage);
+  };
+  
+  img.onerror = () => {
+    showNotification('⚠️ Erreur lors du chargement de l\'image', 'error');
+    callback(imageSource); // Fallback
+  };
 }
 
 function renderAllProfiles() {
@@ -3378,12 +3741,8 @@ function revealSurprise() {
 
 // Enter key
 document.addEventListener('DOMContentLoaded', function() {
-  var input = document.getElementById('codeInput');
-  if (input) {
-    input.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') verifierCode();
-    });
-  }
+  // Afficher le modal de sélection de profil au démarrage
+  startProfileSelection();
 });
 
 // ============== INIT STARTUP ==============
