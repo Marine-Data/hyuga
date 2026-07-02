@@ -1173,7 +1173,7 @@
               <button class="btn btn-primary" onclick="uploadGallery()" style="width: 100%;">Uploader</button>
             </div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;" id="gallery-grid"></div>
+          <div style="display: flex; flex-direction: column; gap: 16px;" id="gallery-grid"></div>
         </div>
       </div>
 
@@ -1620,6 +1620,7 @@ async function enterMainApp() {
   renderGallery();
   renderFeed();
   renderHome(); // ✅ Rafraîchir le widget d'activité récente sur Home
+  checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
   renderDaySelector();
   renderChallenges();
   renderInscriptions();
@@ -2875,49 +2876,55 @@ function removeShop(id) {
 
 // ============== GALLERY ==============
 function renderGallery() {
-  const html = galleryItems.map((item, idx) => {
+  const html = galleryItems.slice().reverse().map((item) => {
     const userLiked = (item.likes || []).includes(currentUser.id);
     const likesCount = (item.likes || []).length;
     const commentsCount = (item.comments || []).length;
     const taggedUsers = item.tags ? item.tags.map(tid => PARTICIPANTS.find(p => p.id === tid)?.name).filter(Boolean) : [];
-    
+    const creatorAvatar = (personalsData[item.creatorId] && personalsData[item.creatorId].avatar) || null;
+    const timeago = getTimeAgo(item.timestamp);
+
     return `
-    <div style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: 0 4px 12px rgba(51, 131, 172, 0.1); transition: all 0.3s ease; transform: scale(1);" onmouseenter="this.style.boxShadow='0 8px 24px rgba(51, 131, 172, 0.2)'; this.style.transform='scale(1.02)';" onmouseleave="this.style.boxShadow='0 4px 12px rgba(51, 131, 172, 0.1)'; this.style.transform='scale(1)';">
-      ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;"></video>`}
-      
-      <!-- Location badge -->
-      <div style="position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.5) 100%); color: white; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">${item.location}</div>
-      
-      <!-- Overlay au hover -->
-      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9)); opacity: 0; transition: opacity 0.3s ease; display: flex; align-items: center; justify-content: center; padding: 14px; backdrop-filter: blur(2px);" id="overlay-${item.id}">
-        <div style="color: white; text-align: center; font-size: 12px; line-height: 1.6;">
-          <div style="margin-bottom: 10px; padding-bottom: 10px;">
-            <div style="font-weight: 700; margin-bottom: 4px; font-size: 13px;">📍 ${item.location}</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.9);">${item.description || '(pas de description)'}</div>
-          </div>
-          <div style="margin-bottom: 8px; padding: 8px 0;">
-            <div style="font-size: 11px; color: rgba(255,255,255,0.85);">Créée par <span style="cursor: pointer; font-weight: 600; text-decoration: underline;" onclick="event.stopPropagation(); showPublicProfileFromGallery('${item.creator}')">${item.creator}</span></div>
-            <div style="font-size: 10px; color: rgba(255,255,255,0.8);">${new Date(item.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
-          </div>
-          ${taggedUsers.length > 0 ? `
-            <div style="margin-top: 8px; padding-top: 8px;">
-              <div style="font-size: 10px; margin-bottom: 6px; font-weight: 600;">🏷️ Personnes:</div>
-              <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
-                ${taggedUsers.map(name => `<button onclick="filterGalleryByTag('${name}')" style="background: linear-gradient(135deg, var(--accent-cyan) 0%, #4a9b8e 100%); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 500; box-shadow: 0 2px 6px rgba(111, 184, 176, 0.3);">${name}</button>`).join('')}
-              </div>
-            </div>
-          ` : ''}
+    <div style="background: var(--bg-raised); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(51, 131, 172, 0.1);">
+      <!-- En-tête du post (façon Instagram) -->
+      <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer;" onclick="showPublicProfileFromGallery('${item.creator}')">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; overflow: hidden;">
+          ${creatorAvatar ? `<img src="${creatorAvatar}" style="width: 100%; height: 100%; object-fit: cover;">` : item.creator[0]}
         </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 13px; color: var(--primary);">${item.creator}</div>
+          <div style="font-size: 11px; color: var(--primary-light);">📍 ${item.location}</div>
+        </div>
+        <button onclick="event.stopPropagation(); editGalleryItem(${item.id})" style="background: none; border: none; font-size: 16px; color: var(--primary-light); cursor: pointer; padding: 6px;">✏️</button>
       </div>
-      
-      <!-- Boutons likes/comments TOUJOURS VISIBLES -->
-      <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent); padding: 12px; display: flex; gap: 8px;" id="buttons-${item.id}">
-        <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'rgba(255,255,255,0.3)'}; color: white; flex: 1; font-weight: ${userLiked ? '700' : '600'}; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease;" onclick="likeGalleryItem(${item.id})" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';">❤️ ${likesCount}</button>
-        <button class="btn btn-small" style="background: rgba(255,255,255,0.3); color: white; flex: 1; border: none; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease;" onclick="toggleGalleryComments(${item.id})" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';">💬 ${commentsCount}</button>
-        <button class="btn btn-small" style="background: rgba(255,255,255,0.3); color: white; border: none; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; padding: 6px 12px; transition: all 0.3s ease;" onclick="editGalleryItem(${item.id})" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';">✏️</button>
+
+      <!-- Photo/vidéo pleine largeur -->
+      <div style="width: 100%; aspect-ratio: 4/5; background: var(--bg-sunken);">
+        ${item.type === 'image'
+          ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
+          : `<video src="${item.src}" controls style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
+      </div>
+
+      <!-- Barre d'actions SOUS la photo, fond plein (pas de superposition) -->
+      <div style="display: flex; align-items: center; gap: 14px; padding: 10px 14px;">
+        <button onclick="likeGalleryItem(${item.id})" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 4px; transform: scale(${userLiked ? 1.1 : 1}); transition: transform 0.15s ease;">${userLiked ? '❤️' : '🤍'}</button>
+        <button onclick="toggleGalleryComments(${item.id})" style="background: none; border: none; font-size: 21px; cursor: pointer; padding: 4px;">💬</button>
+      </div>
+
+      <!-- Likes, légende, commentaires (façon Instagram) -->
+      <div style="padding: 0 14px 14px;">
+        ${likesCount > 0 ? `<div style="font-weight: 700; font-size: 12px; color: var(--primary); margin-bottom: 4px;">${likesCount} mention${likesCount > 1 ? 's' : ''} J'aime</div>` : ''}
+        ${item.description ? `<div style="font-size: 12px; color: var(--primary); margin-bottom: 4px;"><strong>${item.creator}</strong> ${item.description}</div>` : ''}
+        ${taggedUsers.length > 0 ? `
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+            ${taggedUsers.map(name => `<button onclick="filterGalleryByTag('${name}')" style="background: var(--bg-sunken); color: var(--accent-cyan); border: none; padding: 3px 8px; border-radius: 10px; font-size: 10px; cursor: pointer; font-weight: 600;">🏷️ ${name}</button>`).join('')}
+          </div>
+        ` : ''}
+        ${commentsCount > 0 ? `<div onclick="toggleGalleryComments(${item.id})" style="font-size: 12px; color: var(--primary-light); cursor: pointer; margin-bottom: 4px;">Voir ${commentsCount > 1 ? `les ${commentsCount} commentaires` : 'le commentaire'}</div>` : ''}
+        <div style="font-size: 10px; color: var(--primary-light); text-transform: uppercase;">${timeago}</div>
       </div>
     </div>
-  `;
+    `;
   }).join('');
   
   document.getElementById('gallery-grid').innerHTML = html || '<p style="text-align: center; color: var(--primary-light); padding: 60px 20px;">Galerie vide - Ajoute des photos!</p>';
@@ -3064,7 +3071,7 @@ function toggleGalleryComments(itemId) {
   item.comments.forEach(c => {
     html += `
       <div style="font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
-        <strong>${c.user}:</strong> ${c.text}
+        <strong>${c.user}:</strong> ${highlightMentions(c.text)}
         <div style="font-size: 10px; color: var(--primary-light);">${new Date(c.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
       </div>
     `;
@@ -3073,7 +3080,7 @@ function toggleGalleryComments(itemId) {
   
   html += `
     <div style="display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
-      <input type="text" placeholder="Ajouter un commentaire..." id="gal-comment-${itemId}" style="flex: 1; margin-bottom: 0; font-size: 13px;">
+      <input type="text" placeholder="Commenter... @pseudo pour mentionner" id="gal-comment-${itemId}" style="flex: 1; margin-bottom: 0; font-size: 13px;">
       <button class="btn btn-small btn-primary" onclick="addGalleryComment(${itemId})">📤</button>
     </div>
   `;
@@ -3104,11 +3111,14 @@ function addGalleryComment(itemId) {
   if (!input || !input.value.trim()) return;
   
   if (!item.comments) item.comments = [];
+  const mentions = parseMentions(input.value); // ✅ Détecte les @pseudo dans le commentaire
   item.comments.push({
+    id: Date.now(),
     user: currentUser.name,
     userId: currentUser.id,
     text: input.value,
-    timestamp: new Date()
+    timestamp: new Date(),
+    mentions: mentions
   });
   
   saveAllData();
@@ -3119,6 +3129,48 @@ function addGalleryComment(itemId) {
   closeGalleryCommentsModal(itemId);
   toggleGalleryComments(itemId);
   renderGallery();
+}
+
+// ✅ Détecte les @pseudo mentionnés dans un texte et retourne les IDs des participants correspondants
+function parseMentions(text) {
+  const matches = text.match(/@([a-zA-Z0-9_À-ÿ]+)/g) || [];
+  const mentioned = [];
+  matches.forEach(m => {
+    const handle = m.slice(1).toLowerCase();
+    const p = PARTICIPANTS.find(pp => (pp.pseudo || '').toLowerCase() === handle || pp.name.toLowerCase() === handle);
+    if (p && !mentioned.includes(p.id)) mentioned.push(p.id);
+  });
+  return mentioned;
+}
+
+// ✅ Met en surbrillance les @pseudo dans le texte affiché (façon Instagram)
+function highlightMentions(text) {
+  return text.replace(/@([a-zA-Z0-9_À-ÿ]+)/g, '<span style="color: var(--accent-cyan); font-weight: 600;">@$1</span>');
+}
+
+// ✅ Vérifie si l'utilisateur courant a été mentionné dans un nouveau commentaire, et notifie localement
+function checkGalleryMentions() {
+  if (!currentUser) return;
+  const notifiedKey = 'notifiedMentionIds';
+  let notifiedIds = [];
+  try { notifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]'); } catch (e) { notifiedIds = []; }
+  const newlyNotified = [];
+  
+  galleryItems.forEach(item => {
+    (item.comments || []).forEach(c => {
+      if (c.mentions && c.mentions.includes(currentUser.id) && c.userId !== currentUser.id) {
+        const cId = String(c.id || `${item.id}-${c.timestamp}`);
+        if (!notifiedIds.includes(cId)) {
+          addNotification(`${c.user} vous a mentionné(e) dans un commentaire: "${c.text.substring(0, 40)}"`, '🔔', 'gallery');
+          newlyNotified.push(cId);
+        }
+      }
+    });
+  });
+  
+  if (newlyNotified.length > 0) {
+    localStorage.setItem(notifiedKey, JSON.stringify([...notifiedIds, ...newlyNotified]));
+  }
 }
 
 function editGalleryItem(itemId) {
