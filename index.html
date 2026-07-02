@@ -151,6 +151,7 @@
     .main-content {
       flex: 1;
       padding-bottom: 100px;
+      min-width: 0; /* ✅ Empêche le piège flexbox qui forçait toute l'app à déborder horizontalement */
     }
 
     .app-header {
@@ -173,12 +174,16 @@
       color: white;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
       margin: 0;
+      overflow-wrap: break-word; /* ✅ Permet au titre de casser si besoin plutôt que déborder */
     }
 
     .header-actions {
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap; /* ✅ Les boutons passent à la ligne plutôt que déborder */
+      justify-content: flex-end;
+      min-width: 0; /* ✅ Empêche le piège flexbox (min-width:auto par défaut) qui forçait le débordement horizontal */
     }
 
     .btn-header {
@@ -925,6 +930,19 @@
       .tab-label {
         font-size: 11px;
       }
+
+      /* ✅ En-tête plus compact sur mobile pour éviter le débordement horizontal */
+      .header-logo h1 {
+        font-size: 11px;
+      }
+      .btn-header {
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+      .app-header {
+        padding: 10px 12px;
+        gap: 6px;
+      }
     }
 
     /* ✅ Barre d'onglets : respecte la zone du home indicator (iPhone X+) */
@@ -1020,7 +1038,7 @@
         <button class="btn-header" onclick="goHome()" id="backBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 12px;">← Home</button>
         
         <!-- LOGO (Centre) -->
-        <div class="header-logo" style="flex: 1; text-align: center;">
+        <div class="header-logo" style="flex: 1; text-align: center; min-width: 0;">
           <h1>🏝️ SARAILLON</h1>
         </div>
         
@@ -1587,6 +1605,8 @@ let autoSaveStarted = false; // ✅ Empêche de démarrer plusieurs intervals d'
 // puis démarre l'auto-save. Utilisé par selectProfile() ET finishProfileSetup().
 async function enterMainApp() {
   document.getElementById('appContent').style.display = 'block';
+  document.getElementById('homePage').style.display = 'none'; // ✅ Cache l'ancien écran d'accueil intermédiaire
+  document.getElementById('appContainer').style.display = 'block'; // ✅ Affiche le vrai conteneur de l'app (header, onglets...)
   loadAllData();
   switchTab('home');
   showNotification('⏳ Synchronisation des données...', 'success'); // attente visible
