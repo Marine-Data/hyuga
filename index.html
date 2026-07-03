@@ -15,22 +15,24 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/+esm"></script>
   <style>
     :root {
-      /* SARAILLON COLOR PALETTE - Inspired by Mediterranean summer */
-      --primary: #3383ac;           /* Ocean blue - main brand */
-      --primary-soft: #5a9bc2;      /* Lighter ocean blue */
-      --primary-light: #8ab8d9;     /* Very light ocean */
-      --bg: #f5f7fa;                /* Soft light background */
+      /* SARAILLON COLOR PALETTE - Inspired by classic monster-taming RPGs */
+      --primary: #2255a4;           /* Trainer blue - main brand */
+      --primary-soft: #3f7fd4;      /* Lighter blue */
+      --primary-light: #7fa8e0;     /* Very light blue */
+      --bg: #fef8ec;                /* Warm cream, like old menu screens */
       --bg-raised: #ffffff;         /* White cards */
-      --bg-sunken: #e8f0f7;         /* Very light blue-white */
-      --border: #b8d4e8;            /* Light blue border */
-      --accent-gold: #ffc700;       /* Golden sun - primary accent */
-      --accent-purple: #9933ff;     /* Purple - special effects */
-      --accent-pink: #e07a96;       /* Pink - engagement */
-      --accent-cyan: #6fb8b0;       /* Teal - secondary */
-      /* Shadows with ocean blue undertone */
-      --shadow: 0 2px 8px rgba(51, 131, 172, 0.1);
-      --shadow-lg: 0 8px 16px rgba(51, 131, 172, 0.15);
-      --shadow-hover: 0 10px 24px rgba(51, 131, 172, 0.2);
+      --bg-sunken: #fff3d6;         /* Soft cream-yellow */
+      --border: #1a1a1a;            /* Bold black outline, RPG-menu style */
+      --accent-gold: #ffcb05;       /* Iconic yellow */
+      --accent-purple: #a040a0;     /* Psychic purple */
+      --accent-pink: #ff6b81;       /* Fairy pink */
+      --accent-cyan: #38a9a4;       /* Water teal */
+      --accent-red: #dc2626;        /* Fire red - Pokéball red */
+      --accent-green: #4caf6e;      /* Grass green */
+      /* Shadows with bold black-outline RPG undertone */
+      --shadow: 0 2px 0 rgba(26, 26, 26, 0.15);
+      --shadow-lg: 0 4px 0 rgba(26, 26, 26, 0.2);
+      --shadow-hover: 0 6px 0 rgba(26, 26, 26, 0.25);
     }
 
     * {
@@ -72,7 +74,7 @@
     /* HOME PAGE */
     .home-page {
       min-height: 100vh;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--accent-purple) 55%, var(--accent-pink) 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, #1a3a7a 55%, var(--accent-red) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -98,9 +100,12 @@
 
     .home-content h1 {
       font-family: 'Press Start 2P', cursive;
-      font-size: 36px;
+      font-size: 32px;
       margin-bottom: 20px;
-      text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+      color: var(--accent-gold);
+      -webkit-text-stroke: 2px #1a1a1a;
+      text-shadow: 3px 3px 0 #1a1a1a, 3px 3px 0 var(--primary), 6px 6px 0 rgba(0,0,0,0.25);
+      letter-spacing: 1px;
     }
 
     .home-content p {
@@ -282,18 +287,18 @@
 
     .card {
       background: var(--bg-raised);
-      border: none;
-      border-radius: 12px;
+      border: 3px solid var(--border);
+      border-radius: 14px;
       padding: 16px;
       margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(51, 131, 172, 0.08);
-      transition: all 0.3s ease;
+      box-shadow: 0 4px 0 var(--border);
+      transition: all 0.15s ease;
       cursor: pointer;
     }
     
     .card:hover {
-      box-shadow: 0 12px 32px rgba(51, 131, 172, 0.15);
-      transform: translateY(-4px);
+      box-shadow: 0 6px 0 var(--border);
+      transform: translateY(-2px);
       background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%);
     }
 
@@ -450,15 +455,20 @@
 
     .btn {
       padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
+      border: 3px solid var(--border);
+      border-radius: 10px;
       font-weight: 800;
       cursor: pointer;
       font-family: inherit;
       font-size: 12px;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.12s ease;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 4px 0 var(--border);
+    }
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 var(--border);
     }
     
     .btn:active {
@@ -468,12 +478,11 @@
     .btn-primary {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%);
       color: white;
-      box-shadow: 0 4px 12px rgba(51, 131, 172, 0.25);
     }
 
     .btn-primary:hover {
-      box-shadow: 0 8px 20px rgba(51, 131, 172, 0.4);
       transform: translateY(-2px);
+      box-shadow: 0 6px 0 var(--border);
     }
 
     .btn-success {
@@ -844,18 +853,16 @@
       max-width: 420px;
       margin: 0 auto;
       height: 64px;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      border-radius: 22px;
+      background: var(--bg-raised);
+      border: 3px solid var(--border);
+      border-radius: 16px;
       display: flex;
       justify-content: space-around;
       align-items: center;
       gap: 6px;
       padding: 6px;
       z-index: 100;
-      box-shadow: 0 12px 32px rgba(30, 60, 90, 0.18), 0 2px 8px rgba(30, 60, 90, 0.08);
+      box-shadow: 0 5px 0 var(--border);
     }
     
     .tab-item {
@@ -885,9 +892,10 @@
     
     .tab-item.active {
       color: white;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%);
-      box-shadow: 0 6px 16px rgba(51, 131, 172, 0.35);
-      transform: translateY(-2px);
+      background: var(--accent-red);
+      border: 2px solid var(--border);
+      box-shadow: 0 3px 0 var(--border);
+      transform: translateY(-1px);
     }
     
     .tab-item.active .tab-icon {
@@ -1035,53 +1043,29 @@
       font-size: 10.5px; cursor: pointer; font-weight: 600;
     }
 
-    @keyframes glowPulse {
-      0%, 100% { box-shadow: 0 0 10px 1px var(--glow-color), 0 10px 0 var(--shadow-color), 0 14px 24px rgba(0,0,0,0.35); }
-      50% { box-shadow: 0 0 22px 4px var(--glow-color), 0 10px 0 var(--shadow-color), 0 14px 24px rgba(0,0,0,0.35); }
-    }
     .profile-select-card {
-      animation: glowPulse 2.4s ease-in-out infinite;
       position: relative;
     }
-    .profile-select-card::before {
-      content: 'SELECT';
-      position: absolute;
-      top: 6px;
-      right: -26px;
-      background: var(--card-color);
-      color: #0a0e16;
-      font-family: 'Space Mono', monospace;
-      font-size: 8px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      padding: 2px 26px;
-      transform: rotate(40deg);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      pointer-events: none;
-    }
-    .profile-select-card:hover::before {
-      opacity: 1;
-    }
     .profile-select-card:hover {
-      transform: rotate(0deg) translateY(-8px) scale(1.06) !important;
-      z-index: 5;
+      transform: translateY(-3px) !important;
+      box-shadow: 0 6px 0 var(--border) !important;
     }
     .profile-select-card:active {
-      transform: rotate(0deg) scale(0.95) !important;
+      transform: translateY(3px) !important;
+      box-shadow: 0 1px 0 var(--border) !important;
     }
   </style>
 </head>
 <body>
 
 <!-- MODAL: SÉLECTION DE PROFIL -->
-<div id="modalProfileSelect" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 20%, rgba(51,131,172,0.35) 0%, rgba(10,14,22,0.95) 70%); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
-  <div style="background: linear-gradient(160deg, #0e1420 0%, #1a1030 100%); padding: 40px 32px; border-radius: 12px; text-align: center; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 40px rgba(153,51,255,0.25), 0 20px 60px rgba(0,0,0,0.6);">
-    <div style="font-size: 40px; margin-bottom: 4px;">👋</div>
-    <h1 style="font-family: 'Press Start 2P', cursive; font-size: 18px; color: #fff; margin-bottom: 10px; line-height: 1.5; text-shadow: 0 0 12px var(--accent-purple), 3px 3px 0 rgba(0,0,0,0.5);">Qui es-tu ?</h1>
-    <p style="margin-bottom: 4px; color: var(--accent-gold); font-size: 12px; font-weight: 600; font-style: italic;">누구세요? (Nuguseyo?)</p>
-    <p style="margin-bottom: 8px; color: rgba(255,255,255,0.6); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px;">SELECT YOUR PLAYER</p>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 22px 16px; margin-top: 24px; margin-bottom: 10px;" id="profileSelectGrid"></div>
+<div id="modalProfileSelect" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 20%, rgba(34,85,164,0.35) 0%, rgba(10,14,22,0.92) 70%); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+  <div style="background: var(--bg-raised); border: 4px solid var(--border); padding: 36px 28px; border-radius: 16px; text-align: center; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 0 var(--border), 0 20px 50px rgba(0,0,0,0.4);">
+    <div style="font-size: 40px; margin-bottom: 4px;">🎒</div>
+    <h1 style="font-family: 'Press Start 2P', cursive; font-size: 17px; color: var(--primary); margin-bottom: 10px; line-height: 1.5;">Qui es-tu ?</h1>
+    <p style="margin-bottom: 4px; color: var(--accent-purple); font-size: 12px; font-weight: 600; font-style: italic;">누구세요? (Nuguseyo?)</p>
+    <p style="margin-bottom: 8px; color: var(--primary-light); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px;">CHOISIS TON PERSONNAGE</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 18px 14px; margin-top: 24px; margin-bottom: 10px;" id="profileSelectGrid"></div>
   </div>
 </div>
 
@@ -1175,6 +1159,12 @@
             <h2 style="font-family: 'Press Start 2P', cursive; font-size: 22px; margin-bottom: 8px;">🏝️ SARAILLON</h2>
             <p id="home-greeting" style="font-size: 14px; color: var(--primary-light); margin: 0;">Bienvenue!</p>
           </div>
+
+          <!-- SOUVENIR DU JOUR -->
+          <div id="home-memory" style="margin-bottom: 20px;"></div>
+
+          <!-- JAUGE DE VALISE -->
+          <div id="home-packing" style="margin-bottom: 24px;"></div>
 
           <!-- FIL D'ACTIVITÉ -->
           <div class="card" style="margin-bottom: 24px;">
@@ -1697,21 +1687,42 @@ function startProfileSelection() {
 
 function renderProfileSelectGrid() {
   const grid = document.getElementById('profileSelectGrid');
-  // ✅ Chaque joueur a sa couleur signature (halo néon + plaque de nom)
-  const palette = [
-    '#ffc700', '#9933ff', '#e07a96', '#6fb8b0', '#3383ac', '#ff6b9d',
-  ];
+  const types = {
+    FEU: { c: 'var(--accent-red)', text: '#fff' },
+    EAU: { c: 'var(--primary)', text: '#fff' },
+    PLANTE: { c: 'var(--accent-green)', text: '#fff' },
+    ELECTRIK: { c: 'var(--accent-gold)', text: '#1a1a1a', label: 'ÉLECTRIK' },
+    PSY: { c: 'var(--accent-purple)', text: '#fff' },
+    FEE: { c: 'var(--accent-pink)', text: '#fff', label: 'FÉE' },
+  };
+  // ✅ Type élémentaire choisi par participant (plutôt qu'un cycle automatique)
+  const typeById = {
+    1: 'FEU',      // Delphine
+    2: 'EAU',      // Chunfei
+    3: 'PLANTE',   // Mathilde
+    4: 'ELECTRIK', // Nawaelle
+    5: 'PSY',      // Sonia
+    6: 'FEE',      // Inès
+    7: 'EAU',      // Mathieu
+    8: 'EAU',      // Marine
+    9: 'PLANTE',   // Audrey
+  };
+  const cycleOrder = Object.keys(types);
   grid.innerHTML = PARTICIPANTS.map((p, i) => {
     const avatar = (personalsData[p.id] && personalsData[p.id].avatar) || null; // ✅ avatar vit dans personalsData
-    const c = palette[i % palette.length];
-    const tag = 'P' + String(i + 1).padStart(2, '0');
+    const typeKey = typeById[p.id] || cycleOrder[i % cycleOrder.length];
+    const { c, text, label } = types[typeKey];
+    const displayLabel = label || typeKey;
     return `
-    <div onclick="selectProfile(${p.id})" class="profile-select-card" style="--glow-color: ${c}66; --shadow-color: ${c}; --card-color: ${c}; cursor: pointer; padding: 0; border-radius: 10px; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; background: linear-gradient(160deg, #1c2333 0%, #10141f 100%); border: 2px solid ${c}; clip-path: polygon(0 0, 100% 0, 100% 88%, 88% 100%, 0 100%); overflow: hidden;">
-      <div style="font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: ${c}; letter-spacing: 1px; padding: 6px 0 4px;">${tag}</div>
-      <div style="width: 78px; height: 78px; margin: 0 auto 8px; border-radius: 50%; overflow: hidden; border: 2px solid ${c}; box-shadow: 0 0 10px ${c}88; background: #0a0e16; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: ${c};">
+    <div onclick="selectProfile(${p.id})" class="profile-select-card" style="cursor: pointer; padding: 14px 8px 12px; border-radius: 14px; transition: all 0.15s ease; text-align: center; background: var(--bg-raised); border: 3px solid var(--border); box-shadow: 0 4px 0 var(--border);">
+      <div style="width: 74px; height: 74px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden; border: 3px solid var(--border); position: relative; background: var(--bg-sunken); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: var(--primary);">
         ${avatar ? `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover;">` : p.name[0]}
+        <div style="position: absolute; bottom: -3px; right: -3px; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(to bottom, var(--accent-red) 0%, var(--accent-red) 46%, #1a1a1a 46%, #1a1a1a 54%, #fff 54%, #fff 100%); border: 2px solid #1a1a1a;">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 2px solid #1a1a1a;"></div>
+        </div>
       </div>
-      <div style="background: ${c}; color: #0a0e16; font-family: 'Press Start 2P', cursive; font-size: 8.5px; padding: 8px 4px 10px; line-height: 1.6; word-break: break-word;">${p.name.toUpperCase()}</div>
+      <div style="display: inline-block; background: ${c}; color: ${text}; border: 2px solid var(--border); border-radius: 6px; padding: 2px 8px; font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 7px;">${displayLabel}</div>
+      <div style="font-family: 'Press Start 2P', cursive; font-size: 8px; color: var(--primary); line-height: 1.5; word-break: break-word;">${p.name.toUpperCase()}</div>
     </div>
   `;
   }).join('');
@@ -2298,6 +2309,9 @@ function renderHome() {
     greeting.textContent = `Bienvenue, ${user.name}! 👋`;
   }
 
+  renderHomeMemoryOfDay();
+  renderHomePackingProgress();
+
   // Render feed
   const feedContainer = document.getElementById('home-feed');
   if (!feedContainer) return;
@@ -2322,6 +2336,84 @@ function renderHome() {
   });
   
   feedContainer.innerHTML = html;
+}
+
+// ✅ SOUVENIR DU JOUR — une photo de la galerie tirée au sort, mais fixe pour la journée
+// et identique pour tout le monde (pas un tirage aléatoire à chaque ouverture) :
+// c'est une surprise ponctuelle et partagée, pas un mécanisme pour faire revenir sans cesse.
+function renderHomeMemoryOfDay() {
+  const container = document.getElementById('home-memory');
+  if (!container) return;
+
+  if (!galleryItems || galleryItems.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // Seed déterministe basé sur la date du jour (YYYY-MM-DD) : même photo pour tout le monde,
+  // change automatiquement le lendemain
+  const todayKey = new Date().toISOString().slice(0, 10);
+  let seed = 0;
+  for (let i = 0; i < todayKey.length; i++) seed = (seed * 31 + todayKey.charCodeAt(i)) % 100000;
+  const photo = galleryItems[seed % galleryItems.length];
+  const imgSrc = photo.src || photo.image_url;
+  if (!imgSrc) { container.innerHTML = ''; return; }
+
+  container.innerHTML = `
+    <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="switchTab('gallery')">
+      <div style="position: relative;">
+        <img src="${imgSrc}" style="width: 100%; height: 180px; object-fit: cover; display: block;">
+        <div style="position: absolute; top: 10px; left: 10px; background: rgba(10,14,22,0.6); backdrop-filter: blur(4px); color: white; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px; letter-spacing: 0.3px;">✨ Souvenir du jour</div>
+      </div>
+      <div style="padding: 12px 14px; font-size: 12px; color: var(--primary-light);">
+        Par ${photo.creator || 'quelqu\'un du groupe'} — <span style="color: var(--accent-purple); font-weight: 600;">voir la galerie →</span>
+      </div>
+    </div>
+  `;
+}
+
+// ✅ JAUGE DE VALISE — progression réelle et utile de la checklist personnelle,
+// privée (visible seulement par soi), pas de classement entre participants.
+function renderHomePackingProgress() {
+  const container = document.getElementById('home-packing');
+  if (!container) return;
+
+  let total = 0;
+  let checked = 0;
+  planningData.forEach((day, dayIdx) => {
+    day.activities.forEach((activity, actIdx) => {
+      const activityData = apporterData[activity.nom];
+      if (!activityData) return;
+      Object.entries(activityData).forEach(([category, items]) => {
+        items.forEach((item, itemIdx) => {
+          total++;
+          const key = dayIdx + '-' + actIdx + '-' + category + '-' + itemIdx;
+          if (checklistValise[key]) checked++;
+        });
+      });
+    });
+  });
+
+  if (total === 0) { container.innerHTML = ''; return; }
+
+  const pct = Math.round((checked / total) * 100);
+  let label = `${checked}/${total} affaires prêtes`;
+  let emoji = '🧳';
+  if (pct === 100) { label = 'Valise prête ! 🎉'; emoji = '✅'; }
+  else if (pct >= 60) { emoji = '🧳'; }
+  else if (pct === 0) { label = 'Ta valise t\'attend'; emoji = '🧳'; }
+
+  container.innerHTML = `
+    <div class="card" style="cursor: pointer;" onclick="switchTab('profile'); showMyProfile();">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="font-weight: 700; color: var(--primary); font-size: 13px;">${emoji} ${label}</div>
+        <div style="font-weight: 800; color: var(--accent-cyan); font-size: 13px;">${pct}%</div>
+      </div>
+      <div style="height: 8px; background: var(--bg-sunken); border-radius: 999px; overflow: hidden;">
+        <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--accent-cyan) 0%, var(--primary) 100%); border-radius: 999px; transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+  `;
 }
 
 function getTimeAgo(timestamp) {
@@ -2507,11 +2599,15 @@ function toggleNotifications() {
 
 function renderNotifications() {
   const html = notifications.slice(0, 30).map(n => {
-    let navAction = "switchTab('notifications');";
+    let navAction = "switchTab('home');";
     if (n.type === 'gallery') navAction = "switchTab('gallery');";
-    else if (n.type === 'feed') navAction = "switchTab('home');";
-    else if (n.type === 'challenge') navAction = "switchTab('home');";
+    else if (n.type === 'feed') navAction = "switchTab('feed');";
+    else if (n.type === 'challenge') navAction = "switchTab('challenges');";
     else if (n.type === 'shopping') navAction = "switchTab('shopping');";
+    else if (n.type === 'planning') navAction = "switchTab('planning');";
+    else if (n.type === 'corvees') navAction = "switchTab('corvees');";
+    else if (n.type === 'inscriptions') navAction = "switchTab('inscriptions');";
+    else if (n.type === 'surprises') navAction = "switchTab('surprises');";
     
     return `
     <div class="notif-item ${!n.read ? 'unread' : ''}" onclick="markRead(${n.id}); ${navAction}" style="cursor: pointer;">
@@ -2678,7 +2774,7 @@ function saveActivityEdit() {
   closeModal('editActivityModal');
   saveAllData();
   renderPlanning();
-  addNotification('✅ Activité mise à jour');
+  addNotification('✅ Activité mise à jour', '✅', 'planning');
 }
 
 function cycleItemStatus(key) {
@@ -2712,7 +2808,7 @@ function exportPlanning() {
   link.href = URL.createObjectURL(blob);
   link.download = 'saraillon-planning.csv';
   link.click();
-  addNotification('✅ Planning exporté');
+  addNotification('✅ Planning exporté', '✅', 'planning');
 }
 
 // ============== CORVEES ==============
@@ -2804,7 +2900,7 @@ function spinRoulette() {
     html += '</div>';
 
     document.getElementById('chores-display').innerHTML = html;
-    addNotification('⚡ Corvées assignées!');
+    addNotification('⚡ Corvées assignées!', '⚡', 'corvees');
     btn.disabled = false;
   }, 3000);
 }
@@ -2886,7 +2982,7 @@ function duplicateChallenge(id) {
   challenges.unshift(copy);
   saveAllData();
   renderChallenges();
-  addNotification(`📋 Challenge de ${ch.creator} dupliqué`);
+  addNotification(`📋 Challenge de ${ch.creator} dupliqué`, '📋', 'challenge');
   showNotification('📋 Challenge dupliqué !', 'success');
 }
 
@@ -2913,7 +3009,7 @@ function createChallenge() {
         ch.creator = creator.toUpperCase();
         ch.description = desc;
         if (media) ch.media = media;
-        addNotification(`✏️ Challenge de ${ch.creator} modifié`);
+        addNotification(`✏️ Challenge de ${ch.creator} modifié`, '✏️', 'challenge');
       }
       currentEditChallenge = null;
     } else {
@@ -2927,7 +3023,7 @@ function createChallenge() {
         comments: [],
         timestamp: new Date()
       });
-      addNotification(`🎯 ${creator.toUpperCase()} a créé un nouveau challenge !`);
+      addNotification(`🎯 ${creator.toUpperCase()} a créé un nouveau challenge !`, '🎯', 'challenge');
       addFeedEntry(`a créé un nouveau challenge: "${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}"`, '🎯');
     }
 
@@ -2963,7 +3059,7 @@ function likeCh(id) {
       ch.likes.splice(idx, 1);
     } else {
       ch.likes.push(currentUser.id);
-      addNotification(`❤️ ${currentUser.name} a aimé le challenge de ${ch.creator}`);
+      addNotification(`❤️ ${currentUser.name} a aimé le challenge de ${ch.creator}`, '❤️', 'challenge');
       addFeedEntry(`a aimé le challenge de ${ch.creator}`, '❤️');
     }
     saveAllData();
@@ -2986,7 +3082,7 @@ function addChallengeComment(id) {
       saveAllData();
       input.value = '';
       renderChallenges();
-      addNotification(`💬 ${currentUser.name} a commenté le challenge de ${ch.creator}`);
+      addNotification(`💬 ${currentUser.name} a commenté le challenge de ${ch.creator}`, '💬', 'challenge');
       addFeedEntry(`a commenté le challenge de ${ch.creator}: "${commentText.substring(0, 40)}"`, '💬');
     }
   }
@@ -3056,12 +3152,12 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
   if (inscriptions[key] === true) {
     // Désinscrire
     delete inscriptions[key];
-    addNotification(`❌ ${person.name} désincrite de ${activity.nom}`);
+    addNotification(`❌ ${person.name} désincrite de ${activity.nom}`, '❌', 'inscriptions');
     addFeedEntry(`s'est désinscrite de ${activity.nom}`, '❌');
   } else {
     // Inscrire
     inscriptions[key] = true;
-    addNotification(`✍️ ${person.name} inscrite à ${activity.nom}`);
+    addNotification(`✍️ ${person.name} inscrite à ${activity.nom}`, '✍️', 'inscriptions');
     addFeedEntry(`s'est inscrite à ${activity.nom}`, '✍️');
   }
   
@@ -3980,7 +4076,7 @@ function likeFeedEntry(entryId) {
       entry.likes.splice(idx, 1);
     } else {
       entry.likes.push(currentUser.id);
-      addNotification(`❤️ ${currentUser.name} a aimé`);
+      addNotification(`❤️ ${currentUser.name} a aimé`, '❤️', 'feed');
     }
     saveAllData();
     renderFeed();
@@ -4001,7 +4097,7 @@ function commentFeedEntry(entryId) {
       });
       saveAllData();
       renderFeed();
-      addNotification(`💬 ${currentUser.name} a commenté`);
+      addNotification(`💬 ${currentUser.name} a commenté`, '💬', 'feed');
     }
   }
 }
@@ -4090,7 +4186,7 @@ function restoreData() {
           renderChallenges();
           addNotification('✅ Données restaurées!');
         } catch (err) {
-          addNotification('❌ Erreur lors de la restauration', 'error');
+          addNotification('Erreur lors de la restauration', '❌');
         }
       };
       reader.readAsText(file);
@@ -4243,7 +4339,7 @@ function revealSurprise() {
       </div>
     `;
     showNotification('🎉 Surprise débloquée !', 'success');
-    addNotification(`💎 ${currentUser.name} a découvert la surprise !`);
+    addNotification(`💎 ${currentUser.name} a découvert la surprise !`, '💎', 'surprises');
     input.value = '';
     input.disabled = true;
   } else {
