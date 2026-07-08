@@ -653,6 +653,10 @@
       0% { left: -60%; }
       100% { left: 120%; }
     }
+    @keyframes bowGreeting {
+      0%, 100% { transform: rotate(0deg); }
+      30%, 55% { transform: rotate(35deg); }
+    }
     @keyframes spin { 
       0% { transform: rotate(0deg); } 
       100% { transform: rotate(360deg); } 
@@ -892,9 +896,9 @@
     }
     
     .tab-item.active {
-      color: white;
-      background: var(--accent-red);
-      box-shadow: 0 3px 0 var(--border), 0 6px 14px rgba(0,0,0,0.15);
+      color: var(--primary);
+      background: linear-gradient(135deg, var(--accent-gold) 0%, #d4a017 100%);
+      box-shadow: 0 3px 0 #a8790a, 0 6px 14px rgba(227, 185, 79, 0.35);
       transform: translateY(-1px);
     }
     
@@ -1160,11 +1164,6 @@
           <!-- Actions secondaires (Undo/Redo) -->
           <button class="btn-header" onclick="toggleUndo()" id="undoBtn" title="Annuler" style="padding: 8px 8px; font-size: 13px;">↶</button>
           <button class="btn-header" onclick="toggleRedo()" id="redoBtn" title="Refaire" style="padding: 8px 8px; font-size: 13px;">↷</button>
-          
-          <!-- Mode édition (Exclusive - un seul visible à la fois) -->
-          <button id="editBtn" class="btn-header" onclick="toggleEditMode()" style="padding: 8px 10px; background: rgba(153, 51, 255, 0.1); color: var(--accent-purple);">✏️ Éditer</button>
-          <button id="saveBtn" class="btn-header" onclick="saveChanges()" style="display: none; padding: 8px 12px; background: var(--accent-cyan); color: white; font-weight: 600;">💾 Sauver</button>
-          <button id="cancelBtn" class="btn-header" onclick="cancelEdit()" style="display: none; padding: 8px 10px; background: var(--accent-pink); color: white; font-weight: 600;">❌ Annuler</button>
         </div>
       </div>
 
@@ -1184,7 +1183,9 @@
 
           <!-- BIENVENUE -->
           <div style="text-align: center; margin-bottom: 32px;">
-            <h2 style="font-family: 'Press Start 2P', cursive; font-size: 22px; margin-bottom: 8px;">🏝️ SARAILLON</h2>
+            <div id="bow-character" style="font-size: 44px; margin-bottom: 4px; display: inline-block; transform-origin: 70% 90%; animation: bowGreeting 2.5s ease-in-out 1;">🙇</div>
+            <h2 style="font-family: 'Press Start 2P', cursive; font-size: 22px; margin-bottom: 6px;">🏝️ SARAILLON</h2>
+            <p style="font-size: 13px; color: var(--accent-gold); font-weight: 700; margin: 0 0 4px; letter-spacing: 0.5px;">안녕하세요 👋</p>
             <p id="home-greeting" style="font-size: 14px; color: var(--primary-light); margin: 0;">Bienvenue!</p>
           </div>
 
@@ -1413,42 +1414,7 @@
 
   <!-- MODALS -->
   <!-- Edit Planning Activity Modal -->
-  <div class="modal" id="editActivityModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Éditer l'activité</h2>
-        <button class="modal-close" onclick="closeModal('editActivityModal')">✕</button>
-      </div>
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.5px; margin-bottom: 6px;">🏷️ NOM DE L'ACTIVITÉ</label>
-        <input type="text" id="activity-name" placeholder="Ex: Plongée, Bateau...">
-      </div>
-      <div style="display: flex; gap: 10px; margin-bottom: 14px;">
-        <div style="flex: 1;">
-          <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.5px; margin-bottom: 6px;">⏰ HORAIRES</label>
-          <input type="text" id="activity-time" placeholder="Ex: 9h - 12h">
-        </div>
-        <div style="flex: 1;">
-          <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.5px; margin-bottom: 6px;">📍 LIEU</label>
-          <input type="text" id="activity-location" placeholder="Ex: Plage, Port...">
-        </div>
-      </div>
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.5px; margin-bottom: 6px;">🍽️ REPAS</label>
-        <textarea id="activity-meals" placeholder="Ex: Déjeuner sur place" style="min-height: 50px;"></textarea>
-      </div>
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.5px; margin-bottom: 6px;">🎒 À APPORTER</label>
-        <textarea id="activity-apporter" placeholder="Ex: maillot, serviette, crème solaire..." style="min-height: 50px;"></textarea>
-      </div>
-      <div style="margin-bottom: 18px;">
-        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); letter-spacing: 0.5px; margin-bottom: 6px;">📝 NOTES / REMARQUES</label>
-        <textarea id="activity-notes" placeholder="Précisions, consignes..." style="min-height: 50px;"></textarea>
-      </div>
-      <button class="btn btn-success" onclick="confirmActivityEdit()" style="width: 100%; margin-bottom: 10px;">Sauvegarder</button>
-      <button class="btn btn-danger" onclick="closeModal('editActivityModal')" style="width: 100%;">Annuler</button>
-    </div>
-  </div>
+
 
   <!-- Create Challenge Modal -->
   <div class="modal" id="createChallengeModal">
@@ -1633,16 +1599,52 @@ const CHORES = [
 ];
 
 const planningData = [
-  { jour: "Vendredi", activities: [{ nom: "Apéro au Mourillon", emoji: "🍷", horaires: "22h00", lieu: "Mourillon", inscription: false, repas: "Dîner", apporter: "", comments: [], notes: "À l'Oasis ou à la Source ?" }] },
-  { jour: "Samedi", activities: [{ nom: "Calanques + Friche", emoji: "🌊", horaires: "09h30", lieu: "Marseille", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "Journée dans les calanques, soirée à la Friche la Belle de Mai. Soirée Constellations — Yaguara dj set, afro house, tropical bass, township funk + guest & performances dansées. ⚠️ L'ascenseur est en panne." }] },
-  { jour: "Dimanche", activities: [{ nom: "Surprises", emoji: "💎", horaires: "10h30", lieu: "Secret", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "Vous n'êtes pas prêtes !" }] },
-  { jour: "Lundi", activities: [{ nom: "Plongée", emoji: "🤿", horaires: "À définir", lieu: "Mer", inscription: true, link: "https://forms.gle/PMACZkefBwXW4EYf6", repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
-  { jour: "Mardi", activities: [{ nom: "Balade en bateau", emoji: "⛵", horaires: "Matin", lieu: "Mer", inscription: true, link: "https://forms.gle/7F35tvEUbPNTLvh5A", repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
-  { jour: "Mercredi", activities: [{ nom: "Stand-up paddle", emoji: "🏄", horaires: "Journée", lieu: "Anse Méjean", inscription: false, repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
-  { jour: "Jeudi", activities: [{ nom: "Via Ferrata", emoji: "🧗", horaires: "Matin", lieu: "Montagne", inscription: true, link: "https://forms.gle/TjtfUzamMA5pKdfv9", repas: "Déjeuner", apporter: "", comments: [], notes: "" }] },
-  { jour: "Vendredi (J8)", activities: [{ nom: "Ateliers des invités", emoji: "🥂", horaires: "10h30 - 18h00", lieu: "Saraillon", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "Réveillon à 21h00 — lettres et cadeaux." }] },
-  { jour: "Samedi (J9)", activities: [{ nom: "Piscine + Clôture", emoji: "🏊", horaires: "Journée", lieu: "Piscine", inscription: false, repas: "Déjeuner + Dîner", apporter: "", comments: [], notes: "Soirée de clôture !" }] },
-  { jour: "Dimanche (J10)", activities: [{ nom: "Départ", emoji: "✈️", horaires: "Matin", lieu: "Aéroport", inscription: false, repas: "Petit-déj", apporter: "", comments: [], notes: "" }] }
+  { jour: "Vendredi", date: "21 août 2026", activities: [
+    { nom: "Gare de Toulon", emoji: "🚉", horaires: "22h00", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: ["Tenue de soirée (pour le Mourillon)"], comments: [], notes: "" },
+    { nom: "L'Oasis ou la Source", emoji: "🍹", horaires: "22h15", lieu: "Le Mourillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Le grand débat existentiel : l'Oasis ou la Source ? 😄" },
+    { nom: "Retour à Saraillon", emoji: "🏠", horaires: "00h00", lieu: "Saraillon (la maison)", inscription: false, repas: "", apporter: [], comments: [], notes: "" }
+  ]},
+  { jour: "Samedi", date: "22 août 2026", activities: [
+    { nom: "Aéroport de Marseille", emoji: "✈️", horaires: "", lieu: "Aéroport Marseille-Provence", inscription: false, repas: "", apporter: [], comments: [], notes: "Horaire à confirmer" },
+    { nom: "Calanques", emoji: "🌊", horaires: "", lieu: "Calanques de Marseille", inscription: false, repas: "Déjeuner", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau", "Chaussures de marche"], comments: [], notes: "Horaire à confirmer" },
+    { nom: "Soirée à la Friche", emoji: "🎉", horaires: "21h00", lieu: "La Friche la Belle de Mai", inscription: false, repas: "Dîner", apporter: ["Sac de soirée", "Tenue de soirée", "Maquillage", "Crèmes", "Brosse à cheveux"], comments: [], notes: "Soirée Constellations — Yaguara dj set, afro house, tropical bass, township funk + guest & performances dansées. ⚠️ L'ascenseur est en panne." }
+  ]},
+  { jour: "Dimanche", date: "23 août 2026", activities: [
+    { nom: "Surprises", emoji: "💎", horaires: "10h30", lieu: "Saraillon", inscription: false, repas: "Déjeuner + Dîner", apporter: ["Son âme d'enfant 🧒"], comments: [], notes: "Vous n'êtes pas prêtes !" }
+  ]},
+  { jour: "Lundi", date: "24 août 2026", activities: [
+    { nom: "Plongée", emoji: "🤿", horaires: "À définir", lieu: "Mer", inscription: true, link: "https://forms.gle/PMACZkefBwXW4EYf6", repas: "Déjeuner", apporter: ["Serviette", "Tenue de rechange"], comments: [], notes: "Masque, tuba et palmes fournis — pas besoin des tiens !" }
+  ]},
+  { jour: "Mardi", date: "25 août 2026", activities: [
+    { nom: "Balade en bateau", emoji: "⛵", horaires: "Matin", lieu: "Mer", inscription: true, link: "https://forms.gle/7F35tvEUbPNTLvh5A", repas: "Pique-nique partagé", apporter: ["Masque, tuba et palmes", "Crudités pour le pique-nique", "Une bouteille de champagne 🍾"], comments: [], notes: "Pique-nique à partager entre tous à bord !" }
+  ]},
+  { jour: "Mercredi", date: "26 août 2026", activities: [
+    { nom: "Stand-up paddle", emoji: "🏄", horaires: "Journée", lieu: "Anse Méjean", inscription: false, repas: "Déjeuner", apporter: ["Sac de plage", "Masque, tuba et palmes"], comments: [], notes: "" }
+  ]},
+  { jour: "Jeudi", date: "27 août 2026", activities: [
+    { nom: "Via Ferrata", emoji: "🧗", horaires: "Matin", lieu: "Mont Faron", inscription: true, link: "https://forms.gle/TjtfUzamMA5pKdfv9", repas: "Déjeuner", apporter: [], comments: [], notes: "" }
+  ]},
+  { jour: "Vendredi (J8)", date: "28 août 2026", activities: [
+    { nom: "Show Your Talent — Répétitions", emoji: "🎤", horaires: "Journée", lieu: "Saraillon", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "" },
+    { nom: "Show Your Talent — Soirée", emoji: "🌟", horaires: "21h00", lieu: "Saraillon", inscription: false, repas: "Dîner", apporter: ["Tenue de soirée", "Micro", "Caméra", "Appareil photo", "Spot de lumière", "Enceinte", "Décorations"], comments: [], notes: "" }
+  ]},
+  { jour: "Samedi (J9)", date: "29 août 2026", activities: [
+    { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
+    { nom: "Déjeuner à la maison", emoji: "🍽️", horaires: "Midi", lieu: "Saraillon", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "" },
+    { nom: "Après-midi plage", emoji: "🏖️", horaires: "Après-midi", lieu: "Anse Magaut", inscription: false, repas: "", apporter: ["Sac de plage"], comments: [], notes: "" }
+  ]},
+  { jour: "Dimanche (J10)", date: "30 août 2026", activities: [
+    { nom: "Laver les draps et les étendre", emoji: "🧺", horaires: "09h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
+    { nom: "Petit-déjeuner", emoji: "☕", horaires: "09h15", lieu: "Saraillon", inscription: false, repas: "Petit-déj", apporter: [], comments: [], notes: "" },
+    { nom: "Ranger et laver la cuisine", emoji: "🧽", horaires: "09h45", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
+    { nom: "Valise + ménage chambre & parties communes", emoji: "🧹", horaires: "10h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Salle de bain, toilettes, salle à manger, salon" },
+    { nom: "Ranger les draps", emoji: "🛏️", horaires: "12h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
+    { nom: "Ranger l'extérieur", emoji: "🪑", horaires: "12h15", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Tables, chaises, stores, coup de balai, aspirateur dans la voiture" },
+    { nom: "Fermeture de la maison", emoji: "🔒", horaires: "12h45", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Fermer tous les volets, vérifier que rien n'est oublié, débrancher les prises" },
+    { nom: "Dernière douche", emoji: "🚿", horaires: "13h00", lieu: "Piscine", inscription: false, repas: "", apporter: ["Vêtements pour le départ"], comments: [], notes: "" },
+    { nom: "Départ en taxi", emoji: "🚕", horaires: "13h30", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
+    { nom: "Déjeuner + départ du train", emoji: "🚆", horaires: "14h00", lieu: "Restaurant devant la gare", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "Train à 15h00" }
+  ]}
 ];
 
 let currentUser = PARTICIPANTS[0];
@@ -1672,74 +1674,6 @@ let personalsData = {
 };
 
 // Structure "à apporter" par activité avec checkboxes
-let apporterData = {
-  "Plongée": {
-    materiel: [
-      { nom: "Masque, tuba, palmes", checked: [false, false, false] },
-      { nom: "Serviette", checked: [false, false, false] },
-      { nom: "Tenue de rechange", checked: [false, false, false] }
-    ],
-    eau: [
-      { nom: "Gourde", checked: [false, false, false] },
-      { nom: "Fruits secs/encas", checked: [false, false, false] }
-    ],
-    hygiene: [
-      { nom: "Crème solaire waterproof", checked: [false, false, false] },
-      { nom: "Chapeau", checked: [false, false, false] },
-      { nom: "Pastilles contre mal de mer", checked: [false, false, false] },
-      { nom: "Pansements", checked: [false, false, false] }
-    ]
-  },
-  "Bateau": {
-    materiel: [
-      { nom: "Maillot de bain", checked: [false, false, false] },
-      { nom: "Serviette", checked: [false, false, false] }
-    ],
-    eau: [
-      { nom: "Gourde", checked: [false, false, false] },
-      { nom: "Encas/fruits", checked: [false, false, false] }
-    ],
-    hygiene: [
-      { nom: "Crème solaire waterproof", checked: [false, false, false] },
-      { nom: "Chapeau/casquette", checked: [false, false, false] },
-      { nom: "Lunettes de soleil", checked: [false, false, false] },
-      { nom: "Pastilles mal de mer", checked: [false, false, false] },
-      { nom: "Pansements", checked: [false, false, false] }
-    ]
-  },
-  "Via Ferrata": {
-    materiel: [
-      { nom: "Chaussures fermées", checked: [false, false, false] }
-    ],
-    eau: [
-      { nom: "Gourde", checked: [false, false, false] },
-      { nom: "Barre céréale/encas", checked: [false, false, false] }
-    ],
-    hygiene: [
-      { nom: "Crème solaire", checked: [false, false, false] },
-      { nom: "Chapeau/casquette", checked: [false, false, false] },
-      { nom: "Pansements", checked: [false, false, false] }
-    ]
-  },
-  "Piscine": {
-    materiel: [
-      { nom: "Maillot de bain", checked: [false, false, false] },
-      { nom: "Serviette", checked: [false, false, false] },
-      { nom: "Chaussons d'eau (optionnel)", checked: [false, false, false] }
-    ],
-    eau: [
-      { nom: "Gourde", checked: [false, false, false] },
-      { nom: "Fruits secs", checked: [false, false, false] }
-    ],
-    hygiene: [
-      { nom: "Crème solaire", checked: [false, false, false] },
-      { nom: "Chapeau", checked: [false, false, false] },
-      { nom: "Lunettes de soleil", checked: [false, false, false] },
-      { nom: "Pansements", checked: [false, false, false] }
-    ]
-  }
-};
-
 let challenges = [
   {
     id: 1,
@@ -1802,8 +1736,6 @@ let notifications = [];
 let selectedDay = 0;
 let galleryFilterDay = "";
 let galleryFilterCreatorId = "";
-let editMode = false;
-let currentEditActivity = null;
 let history = [];
 let historyIndex = -1;
 let isOnline = navigator.onLine;
@@ -2557,7 +2489,7 @@ function renderHome() {
   const user = currentUser;
   const greeting = document.getElementById('home-greeting');
   if (greeting) {
-    greeting.textContent = `Bienvenue, ${user.name}! 👋`;
+    greeting.textContent = user.pseudo ? `Bienvenue, ${user.name} (${user.pseudo})! 👋` : `Bienvenue, ${user.name}! 👋`;
   }
 
   updateTodayPlaneBanner();
@@ -2635,14 +2567,11 @@ function renderHomePackingProgress() {
   let checked = 0;
   planningData.forEach((day, dayIdx) => {
     day.activities.forEach((activity, actIdx) => {
-      const activityData = apporterData[activity.nom];
-      if (!activityData) return;
-      Object.entries(activityData).forEach(([category, items]) => {
-        items.forEach((item, itemIdx) => {
-          total++;
-          const key = dayIdx + '-' + actIdx + '-' + category + '-' + itemIdx;
-          if (checklistValise[key]) checked++;
-        });
+      const list = Array.isArray(activity.apporter) ? activity.apporter : [];
+      list.forEach((item, itemIdx) => {
+        total++;
+        const key = `${dayIdx}-${actIdx}-${itemIdx}`;
+        if (checklistValise[key]) checked++;
       });
     });
   });
@@ -2881,160 +2810,150 @@ function markRead(id) {
 }
 
 // ============== PLANNING ==============
+let selectedPlanningDay = null;
+
 function renderPlanning() {
-  const html = planningData.map((day, dayIdx) => `
-    <div class="card">
-      <div style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); padding: 12px 16px; border-radius: 8px; margin: -16px -16px 16px -16px; color: white; display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 24px;">📅</div>
-        <div style="flex: 1;">
-          <div class="card-title" style="color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); margin: 0;">${day.jour}</div>
+  if (selectedPlanningDay !== null && planningData[selectedPlanningDay]) {
+    renderPlanningDayDetail(selectedPlanningDay);
+  } else {
+    renderPlanningOverview();
+  }
+}
+
+function renderPlanningOverview() {
+  const html = planningData.map((day, dayIdx) => {
+    const activityNames = day.activities.map(a => a.nom).join(' · ');
+    const totalItems = day.activities.reduce((sum, a) => sum + (Array.isArray(a.apporter) ? a.apporter.length : 0), 0);
+    return `
+      <div class="card" onclick="openPlanningDay(${dayIdx})" style="cursor: pointer; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; flex-shrink: 0; box-shadow: 0 4px 10px rgba(51, 131, 172, 0.25);">${day.activities[0]?.emoji || '📅'}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 800; font-size: 15px;">${day.jour}</div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-bottom: 4px;">${day.date || ''}</div>
+          <div style="font-size: 12px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${activityNames}${totalItems > 0 ? ` · 🎒 ${totalItems}` : ''}</div>
         </div>
+        <div style="font-size: 20px; color: var(--primary-light);">›</div>
       </div>
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        ${day.activities.map((activity, actIdx) => `
-          <div style="padding: 12px; background: var(--bg-sunken); border-radius: 8px; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.boxShadow='0 4px 12px rgba(51, 131, 172, 0.12)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow=''; this.style.transform='translateY(0)';">
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; justify-content: space-between;">
-              <div style="flex: 1; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">${activity.emoji} <span>${activity.nom}</span></div>
-              <button class="btn" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #9933ff 100%); color: white; border: none; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(153, 51, 255, 0.2); transition: all 0.3s ease;" onclick="openEditActivity(${dayIdx}, ${actIdx})" onmouseover="this.style.boxShadow='0 4px 16px rgba(153, 51, 255, 0.35)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='0 2px 8px rgba(153, 51, 255, 0.2)'; this.style.transform='translateY(0)';">✏️ Éditer</button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; font-size: 12px; margin-bottom: 12px;">
-              <div style="background: white; padding: 10px; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);"><strong>⏰</strong> ${activity.horaires}</div>
-              <div style="background: white; padding: 10px; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);"><strong>📍</strong> ${activity.lieu}</div>
-            </div>
-            ${(() => {
-              const activityData = apporterData[activity.nom];
-              if (!activityData && !activity.apporter) {
-                return '<div style="margin-bottom: 10px; font-size: 12px; color: var(--primary-light); padding: 10px; background: white; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);">🎒 <strong>À apporter:</strong> (à définir)</div>';
-              }
-              
-              return `
-              <div style="margin-bottom: 10px; padding: 12px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.08) 0%, rgba(111, 184, 176, 0.02) 100%); border-radius: 6px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 3px 10px rgba(111, 184, 176, 0.1);">
-                <div style="font-weight: 700; font-size: 12px; color: var(--accent-cyan); margin-bottom: 10px;">🎒 À apporter</div>
-                ${activityData ? `
-                  <div style="display: flex; flex-direction: column; gap: 12px;">
-                    ${Object.entries(activityData).map(([category, items]) => {
-                      const categoryEmojis = { materiel: '📦', eau: '💧', hygiene: '🧴' };
-                      const emoji = categoryEmojis[category] || '📌';
-                      const categoryNames = { materiel: 'Matériel', eau: 'Eau/Encas', hygiene: 'Hygiène/Protection' };
-                      const categoryName = categoryNames[category] || category;
-                      
-                      return `
-                        <div>
-                          <div style="font-size: 11px; font-weight: 600; color: var(--primary-light); margin-bottom: 6px; text-transform: uppercase;">${emoji} ${categoryName}</div>
-                          <div style="display: flex; flex-direction: column; gap: 6px;">
-                            ${items.map((item, itemIdx) => {
-                              const key = dayIdx + '-' + actIdx + '-' + category + '-' + itemIdx;
-                              const isChecked = checklistValise[key] || false;
-                              return `
-                                <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: white; border-radius: 4px; cursor: pointer;" onclick="toggleApporterItem('${key}')">
-                                  <input type="checkbox" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-cyan);" onclick="event.stopPropagation();">
-                                  <span style="font-size: 12px; color: var(--primary); flex: 1;">${item.nom}</span>
-                                </div>
-                              `;
-                            }).join('')}
-                          </div>
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                ` : `
-                  <div style="font-size: 12px; color: var(--primary);">
-                    ${activity.apporter.split(',').map(i => i.trim()).filter(i => i).join(', ')}
-                  </div>
-                `}
-              </div>
-              `;
-            })()}
-            ${activity.notes ? `<div style="margin-bottom: 10px; font-size: 12px; color: var(--primary); padding: 10px; background: white; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);">📝 ${activity.notes}</div>` : ''}
-            ${activity.comments.length > 0 ? `
-              <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
-                ${activity.comments.map(c => `<div style="padding: 8px 10px; background: white; border-radius: 6px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);">💬 <strong>${c.author}:</strong> ${c.text}</div>`).join('')}
-              </div>
-            ` : ''}
-            ${activity.inscription ? `
-              <div style="padding: 12px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.1) 0%, rgba(111, 184, 176, 0.05) 100%); border-radius: 6px; margin-bottom: 10px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 3px 10px rgba(111, 184, 176, 0.1);">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                  <div style="font-size: 11px; font-weight: 600; color: var(--accent-cyan);">📋 INSCRIPTIONS</div>
-                  ${(() => {
-                    const inscrits = PARTICIPANTS.filter(p => {
-                      const key = `${p.id}-${dayIdx}-${actIdx}`;
-                      return inscriptions[key] === true;
-                    });
-                    return `<div style="font-size: 11px; background: var(--accent-cyan); color: white; padding: 3px 8px; border-radius: 3px; font-weight: 600;">${inscrits.length}/${PARTICIPANTS.filter(p => p.chores).length}</div>`;
-                  })()}
-                </div>
-                ${(() => {
-                  const inscrits = PARTICIPANTS.filter(p => {
-                    const key = `${p.id}-${dayIdx}-${actIdx}`;
-                    return inscriptions[key] === true;
-                  });
-                  if (inscrits.length === 0) {
-                    return '<div style="font-size: 12px; color: var(--primary-light); font-style: italic;">Pas encore d\'inscrits</div>';
-                  }
-                  return '<div style="display: flex; flex-wrap: wrap; gap: 6px;">' + inscrits.map(p => `<span style="font-size: 11px; background: white; color: var(--accent-cyan); padding: 4px 10px; border-radius: 4px; font-weight: 500; box-shadow: 0 2px 4px rgba(111, 184, 176, 0.1);">${p.name}</span>`).join('') + '</div>';
-                })()}
-              </div>
-            ` : ''}
-            ${!editMode && activity.inscription ? `
-              <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.05) 0%, rgba(111, 184, 176, 0.02) 100%); border-radius: 6px;">
-                <input type="checkbox" ${(() => {
-                  const key = `${currentUser.id}-${dayIdx}-${actIdx}`;
-                  return inscriptions[key] === true ? 'checked' : '';
-                })()} onchange="toggleInscription(${dayIdx}, ${actIdx})" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan);">
-                <label style="flex: 1; cursor: pointer; font-size: 13px; color: var(--primary); font-weight: 600;">Je m'inscris</label>
-              </div>
-            ` : ''}
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-  
+    `;
+  }).join('');
   document.getElementById('planning-content').innerHTML = html;
 }
 
-function openEditActivity(dayIdx, actIdx) {
-  currentEditActivity = { dayIdx, actIdx };
-  const activity = planningData[dayIdx].activities[actIdx];
-  
-  document.getElementById('activity-name').value = activity.nom;
-  document.getElementById('activity-time').value = activity.horaires;
-  document.getElementById('activity-location').value = activity.lieu;
-  document.getElementById('activity-meals').value = activity.repas;
-  document.getElementById('activity-apporter').value = activity.apporter || '';
-  document.getElementById('activity-notes').value = activity.notes || '';
-  
-  openModal('editActivityModal');
+function openPlanningDay(dayIdx) {
+  selectedPlanningDay = dayIdx;
+  renderPlanningDayDetail(dayIdx);
 }
 
-function confirmActivityEdit() {
-  showConfirmation('Êtes-vous sûr de vouloir modifier cette activité?', saveActivityEdit);
+function closePlanningDay() {
+  selectedPlanningDay = null;
+  renderPlanningOverview();
 }
 
-function saveActivityEdit() {
-  if (!currentEditActivity) return;
-  
-  const { dayIdx, actIdx } = currentEditActivity;
-  const activity = planningData[dayIdx].activities[actIdx];
-  
-  activity.nom = document.getElementById('activity-name').value;
-  activity.horaires = document.getElementById('activity-time').value;
-  activity.lieu = document.getElementById('activity-location').value;
-  activity.repas = document.getElementById('activity-meals').value;
-  activity.apporter = document.getElementById('activity-apporter').value;
-  activity.notes = document.getElementById('activity-notes').value;
-  
-  closeModal('editActivityModal');
+function renderPlanningDayDetail(dayIdx) {
+  const day = planningData[dayIdx];
+  let html = `
+    <button class="btn btn-small" onclick="closePlanningDay()" style="margin-bottom: 16px; background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(51, 131, 172, 0.1);">← Tous les jours</button>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <div style="font-weight: 800; font-size: 20px;">${day.jour}</div>
+      <div style="font-size: 13px; color: var(--primary-light);">${day.date || ''}</div>
+    </div>
+  `;
+  html += day.activities.map((activity, actIdx) => renderActivityDetailCard(dayIdx, activity, actIdx)).join('');
+  document.getElementById('planning-content').innerHTML = html;
+}
+
+function renderActivityDetailCard(dayIdx, activity, actIdx) {
+  const apporterList = Array.isArray(activity.apporter) ? activity.apporter : (activity.apporter ? String(activity.apporter).split(',').map(s => s.trim()).filter(Boolean) : []);
+  const inscrits = activity.inscription ? PARTICIPANTS.filter(p => inscriptions[`${p.id}-${dayIdx}-${actIdx}`] === true) : [];
+
+  return `
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <span style="font-size: 26px;">${activity.emoji || '📌'}</span>
+        <input type="text" value="${activity.nom}" placeholder="Nom de l'activité" onblur="updateActivityField(${dayIdx},${actIdx},'nom',this.value)" style="flex: 1; font-weight: 800; font-size: 15px; background: var(--bg-sunken); border-radius: 6px; padding: 8px 10px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <div style="flex: 1;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">⏰ HORAIRES</label>
+          <input type="text" value="${activity.horaires || ''}" placeholder="À définir" onblur="updateActivityField(${dayIdx},${actIdx},'horaires',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05); font-size: 13px;">
+        </div>
+        <div style="flex: 1;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">📍 LIEU</label>
+          <input type="text" value="${activity.lieu || ''}" placeholder="Lieu" onblur="updateActivityField(${dayIdx},${actIdx},'lieu',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05); font-size: 13px;">
+        </div>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">🍽️ REPAS</label>
+        <input type="text" value="${activity.repas || ''}" placeholder="Ex: Déjeuner sur place" onblur="updateActivityField(${dayIdx},${actIdx},'repas',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05); font-size: 13px;">
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">📝 NOTES</label>
+        <textarea placeholder="Précisions, consignes..." onblur="updateActivityField(${dayIdx},${actIdx},'notes',this.value)" style="width: 100%; min-height: 50px; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05); font-size: 13px;">${activity.notes || ''}</textarea>
+      </div>
+      <div style="padding: 12px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.08) 0%, rgba(111, 184, 176, 0.02) 100%); border-radius: 8px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 3px 10px rgba(111, 184, 176, 0.1); margin-bottom: 10px;">
+        <div style="font-weight: 700; font-size: 12px; color: var(--accent-cyan); margin-bottom: 10px;">🎒 À METTRE DANS LA VALISE</div>
+        ${apporterList.map((item, itemIdx) => {
+          const key = `${dayIdx}-${actIdx}-${itemIdx}`;
+          const packed = checklistValise[key] || false;
+          return `
+            <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
+              <input type="checkbox" ${packed ? 'checked' : ''} onchange="toggleApporterItem('${key}')" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-cyan); flex-shrink: 0;">
+              <input type="text" value="${item}" onblur="updateApporterItemText(${dayIdx},${actIdx},${itemIdx},this.value)" style="flex: 1; background: white; border-radius: 4px; padding: 6px 8px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05); text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">
+              <button onclick="removeApporterItem(${dayIdx},${actIdx},${itemIdx})" style="background: none; border: none; cursor: pointer; color: var(--accent-pink); font-size: 14px; padding: 4px; flex-shrink: 0;">🗑️</button>
+            </div>
+          `;
+        }).join('')}
+        <button class="btn btn-small" onclick="addApporterItem(${dayIdx},${actIdx})" style="margin-top: 8px; background: white; border: none; width: 100%; box-shadow: 0 2px 6px rgba(111, 184, 176, 0.1);">+ Ajouter un objet</button>
+      </div>
+      ${activity.comments && activity.comments.length > 0 ? `
+        <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
+          ${activity.comments.map(c => `<div style="padding: 8px 10px; background: var(--bg-sunken); border-radius: 6px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(51, 131, 172, 0.05);">💬 <strong>${c.author}:</strong> ${c.text}</div>`).join('')}
+        </div>
+      ` : ''}
+      ${activity.inscription ? `
+        <div style="padding: 12px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.1) 0%, rgba(111, 184, 176, 0.05) 100%); border-radius: 6px; box-shadow: inset 4px 0 0 var(--accent-cyan);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent-cyan);">📋 INSCRIPTIONS</div>
+            <div style="font-size: 11px; background: var(--accent-cyan); color: white; padding: 3px 8px; border-radius: 3px; font-weight: 600;">${inscrits.length}/${PARTICIPANTS.filter(p => p.chores).length}</div>
+          </div>
+          ${inscrits.length === 0
+            ? '<div style="font-size: 12px; color: var(--primary-light); font-style: italic; margin-bottom: 8px;">Pas encore d\'inscrits</div>'
+            : `<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">${inscrits.map(p => `<span style="font-size: 11px; background: white; color: var(--accent-cyan); padding: 4px 10px; border-radius: 4px; font-weight: 500; box-shadow: 0 2px 4px rgba(111, 184, 176, 0.1);">${p.name}</span>`).join('')}</div>`
+          }
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" ${inscriptions[`${currentUser.id}-${dayIdx}-${actIdx}`] === true ? 'checked' : ''} onchange="toggleInscription(${dayIdx}, ${actIdx})" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan);">
+            <label style="flex: 1; cursor: pointer; font-size: 13px; color: var(--primary); font-weight: 600;">Je m'inscris</label>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function updateActivityField(dayIdx, actIdx, field, value) {
+  planningData[dayIdx].activities[actIdx][field] = value;
   saveAllData();
-  renderPlanning();
-  addNotification('✅ Activité mise à jour', '✅', 'planning');
 }
 
-function cycleItemStatus(key) {
-  const currentStatus = checklistValise[key] || 0;
-  checklistValise[key] = (currentStatus + 1) % 3;
+function updateApporterItemText(dayIdx, actIdx, itemIdx, value) {
+  const activity = planningData[dayIdx].activities[actIdx];
+  if (Array.isArray(activity.apporter)) activity.apporter[itemIdx] = value;
   saveAllData();
-  renderPlanning();
+}
+
+function addApporterItem(dayIdx, actIdx) {
+  const activity = planningData[dayIdx].activities[actIdx];
+  if (!Array.isArray(activity.apporter)) activity.apporter = [];
+  activity.apporter.push('Nouvel objet');
+  saveAllData();
+  renderPlanningDayDetail(dayIdx);
+}
+
+function removeApporterItem(dayIdx, actIdx, itemIdx) {
+  const activity = planningData[dayIdx].activities[actIdx];
+  if (Array.isArray(activity.apporter)) activity.apporter.splice(itemIdx, 1);
+  saveAllData();
+  renderPlanningDayDetail(dayIdx);
 }
 
 function toggleApporterItem(key) {
@@ -3046,13 +2965,15 @@ function toggleApporterItem(key) {
 function toggleInscription(dayIdx, actIdx) {
   // Utiliser le nouveau système toggleInscriptionTab avec currentUser
   toggleInscriptionTab(currentUser.id, dayIdx, actIdx);
+  renderPlanningDayDetail(dayIdx);
 }
 
 function exportPlanning() {
-  let csv = 'Jour,Activité,Horaires,Lieu,Repas,Notes\n';
+  let csv = 'Jour,Date,Activité,Horaires,Lieu,Repas,À apporter,Notes\n';
   planningData.forEach(day => {
     day.activities.forEach(activity => {
-      csv += `"${day.jour}","${activity.nom}","${activity.horaires}","${activity.lieu}","${activity.repas}","${activity.notes || ''}"\n`;
+      const apporterStr = Array.isArray(activity.apporter) ? activity.apporter.join('; ') : (activity.apporter || '');
+      csv += `"${day.jour}","${day.date || ''}","${activity.nom}","${activity.horaires}","${activity.lieu}","${activity.repas}","${apporterStr}","${activity.notes || ''}"\n`;
     });
   });
   
@@ -4371,66 +4292,53 @@ function showMyProfileTab(tab) {
 
 function renderChecklistValise() {
   const content = document.getElementById('my-profile-tab-content');
-  
-  // Afficher les items proposés de apporterData par activité
-  let html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
-  
+
+  const items = [];
   planningData.forEach((day, dayIdx) => {
     day.activities.forEach((activity, actIdx) => {
-      const activityData = apporterData[activity.nom];
-      if (!activityData) return;
-      
-      html += `
-        <div style="background: linear-gradient(135deg, var(--accent-cyan) 0%, #4a9b8e 100%); padding: 0; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(111, 184, 176, 0.15);">
-          <div style="background: linear-gradient(135deg, var(--accent-cyan) 0%, #5aa89a 100%); padding: 14px; color: white; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">${activity.emoji} ${activity.nom} <span style="font-size: 11px; opacity: 0.9;">- ${day.jour}</span></div>
-          <div style="padding: 12px; display: flex; flex-direction: column; gap: 12px;">
-            ${(() => {
-              let categoryHtml = '';
-              const categoryEmojis = { materiel: '📦', eau: '💧', hygiene: '🧴' };
-              const categoryNames = { materiel: 'Matériel', eau: 'Eau/Encas', hygiene: 'Hygiène/Protection' };
-              
-              Object.entries(activityData).forEach(([category, items]) => {
-                const emoji = categoryEmojis[category] || '📌';
-                const categoryName = categoryNames[category] || category;
-                
-                categoryHtml += `
-                  <div>
-                    <div style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 6px; text-transform: uppercase;">${emoji} ${categoryName}</div>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                      ${items.map((item, itemIdx) => {
-                        const key = dayIdx + '-' + actIdx + '-' + category + '-' + itemIdx;
-                        const isChecked = checklistValise[key] || false;
-                        return `
-                          <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: white; border-radius: 4px; cursor: pointer;" onclick="toggleApporterItem('${key}'); renderChecklistValise()">
-                            <input type="checkbox" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-cyan);" onclick="event.stopPropagation();">
-                            <span style="font-size: 12px; color: var(--primary); flex: 1;">${item.nom}</span>
-                            <span style="font-size: 12px; color: var(--primary-light);">${isChecked ? '✓' : ''}</span>
-                          </div>
-                        `;
-                      }).join('')}
-                    </div>
-                  </div>
-                `;
-              });
-              
-              return categoryHtml;
-            })()}
-          </div>
-        </div>
-      `;
+      const list = Array.isArray(activity.apporter) ? activity.apporter : [];
+      list.forEach((itemName, itemIdx) => {
+        items.push({
+          key: `${dayIdx}-${actIdx}-${itemIdx}`,
+          name: itemName,
+          source: `${activity.nom} · ${day.jour}`
+        });
+      });
     });
   });
-  
-  html += '</div>';
-  
-  content.innerHTML = html.trim() === '<div style="display: flex; flex-direction: column; gap: 16px;"></div>' ? '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📭 Aucun item à apporter</div>' : html;
-}
 
-function toggleChecklistItem(itemIdx) {
-  const key = `item-${itemIdx}`;
-  checklistValise[key] = !checklistValise[key];
-  saveAllData();
-  renderChecklistValise();
+  if (items.length === 0) {
+    content.innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📭 Aucun objet à préparer pour l\'instant</div>';
+    return;
+  }
+
+  const packedCount = items.filter(i => checklistValise[i.key]).length;
+  const pct = Math.round((packedCount / items.length) * 100);
+
+  let html = `
+    <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.14) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px; margin-bottom: 16px; text-align: center;">
+      <div style="font-weight: 800; font-size: 17px; margin-bottom: 6px;">🎒 ${packedCount} / ${items.length} dans la valise</div>
+      <div style="height: 8px; border-radius: 4px; background: var(--bg-sunken); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+  `;
+
+  html += items.map(i => {
+    const packed = checklistValise[i.key] || false;
+    return `
+      <div onclick="toggleApporterItem('${i.key}'); renderChecklistValise();" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-raised); border-radius: 10px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(51, 131, 172, 0.06);">
+        <input type="checkbox" ${packed ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan); flex-shrink: 0;" onclick="event.stopPropagation();">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">${i.name}</div>
+          <div style="font-size: 10px; color: var(--primary-light);">${i.source}</div>
+        </div>
+        <span style="font-size: 12px; flex-shrink: 0;">${packed ? '✅' : '⬜'}</span>
+      </div>
+    `;
+  }).join('');
+
+  content.innerHTML = html;
 }
 
 function saveMyProfile() {
@@ -4739,40 +4647,6 @@ function openModal(id) {
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
-}
-
-// ============== EDIT MODE ==============
-function toggleEditMode() {
-  editMode = !editMode;
-  if (editMode) {
-    document.getElementById('editBtn').style.display = 'none';
-    document.getElementById('saveBtn').style.display = 'inline-block';
-    document.getElementById('cancelBtn').style.display = 'inline-block';
-    document.querySelectorAll('.card').forEach(card => card.classList.add('edit-mode'));
-  }
-}
-
-function saveChanges() {
-  editMode = false;
-  saveAllData();
-  document.getElementById('editBtn').style.display = 'inline-block';
-  document.getElementById('saveBtn').style.display = 'none';
-  document.getElementById('cancelBtn').style.display = 'none';
-  document.querySelectorAll('.card').forEach(card => card.classList.remove('edit-mode'));
-  addNotification('💾 Changements sauvegardés!');
-}
-
-function cancelEdit() {
-  editMode = false;
-  loadAllData();
-  document.getElementById('editBtn').style.display = 'inline-block';
-  document.getElementById('saveBtn').style.display = 'none';
-  document.getElementById('cancelBtn').style.display = 'none';
-  document.querySelectorAll('.card').forEach(card => card.classList.remove('edit-mode'));
-  renderPlanning();
-  renderShopping();
-  renderChallenges();
-  addNotification('❌ Édition annulée');
 }
 
 // ============== OFFLINE ==============
