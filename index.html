@@ -2241,6 +2241,33 @@ async function loadFromSupabaseCloud() {
       renderNotifications();
     }
     
+    // Load sondages
+    const pollsData = await window.loadFromSupabase('polls');
+    if (pollsData && pollsData.length > 0) {
+      console.log(`✅ Loaded ${pollsData.length} polls from Supabase`);
+      polls = pollsData.map(p => ({
+        id: p.id,
+        question: p.question,
+        options: p.options || [],
+        creator: p.creator || '',
+        timestamp: p.created_at || new Date()
+      }));
+    }
+
+    // Load dépenses
+    const expensesData = await window.loadFromSupabase('expenses');
+    if (expensesData && expensesData.length > 0) {
+      console.log(`✅ Loaded ${expensesData.length} expenses from Supabase`);
+      expenses = expensesData.map(e => ({
+        id: e.id,
+        payer: e.payer,
+        amount: e.amount,
+        description: e.description || '',
+        splitAmong: e.split_among || [],
+        timestamp: e.created_at || new Date()
+      }));
+    }
+
     console.log('✅ Données chargées depuis Supabase!');
   } catch (err) {
     console.log('📱 Utilisation des données locales (Supabase non disponible)');
@@ -2323,6 +2350,27 @@ function saveAllData() {
     // Les données de valise restent en localStorage seulement
     
     
+    // Sync sondages
+    polls.forEach(poll => {
+      window.syncToSupabase('polls', {
+        id: poll.id,
+        question: poll.question,
+        options: poll.options || [],
+        creator: poll.creator || ''
+      }).catch(() => {});
+    });
+
+    // Sync dépenses
+    expenses.forEach(exp => {
+      window.syncToSupabase('expenses', {
+        id: exp.id,
+        payer: exp.payer,
+        amount: exp.amount,
+        description: exp.description || '',
+        split_among: exp.splitAmong || []
+      }).catch(() => {});
+    });
+
     // Sync user profiles (avatars compressés maintenant)
     PARTICIPANTS.forEach(p => {
       const profile = personalsData[p.id];
@@ -3605,6 +3653,9 @@ function confirmDeletePoll(pollId) {
     polls = polls.filter(p => p.id !== pollId);
     saveAllData();
     renderPolls();
+    if (window.supabaseReady && window.supabase) {
+      window.supabase.from('polls').delete().eq('id', pollId).then(() => {}).catch(() => {});
+    }
   });
 }
 
@@ -3761,6 +3812,9 @@ function confirmDeleteExpense(id) {
     expenses = expenses.filter(e => e.id !== id);
     saveAllData();
     renderExpenses();
+    if (window.supabaseReady && window.supabase) {
+      window.supabase.from('expenses').delete().eq('id', id).then(() => {}).catch(() => {});
+    }
   });
 }
 
