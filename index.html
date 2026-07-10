@@ -2196,7 +2196,19 @@ function loadAllData() {
 
   const data = localStorage.getItem('saraillon_all');
   if (data) {
-    const parsed = JSON.parse(data);
+    // ✅ Si ce JSON est corrompu (écriture tronquée par un ancien dépassement de quota,
+    // stockage modifié à la main, etc.), on ignore proprement plutôt que de bloquer
+    // TOUT le chargement de l'app dès la première ligne — sans ce filet, une donnée
+    // locale abîmée empêchait l'app de démarrer, sur ce téléphone, tant qu'on n'allait
+    // pas vider le cache à la main.
+    let parsed = null;
+    try {
+      parsed = JSON.parse(data);
+    } catch (err) {
+      console.error('Données locales corrompues, on repart des valeurs par défaut', err);
+      parsed = null;
+    }
+    if (parsed) {
     inscriptions = parsed.inscriptions || {};
     // ✅ Ne restaure les challenges depuis le cache local QUE si sa version correspond au code actuel.
     if (parsed.challengesVersion === CHALLENGES_VERSION) {
@@ -2219,6 +2231,7 @@ function loadAllData() {
     expenses = parsed.expenses || [];
     choreLog = parsed.choreLog || [];
     departureTasksDone = parsed.departureTasksDone || {};
+    }
   }
 
   // ✅ Si le profil chargé (cache local) n'a pas de vraie photo, on réapplique la photo par défaut
@@ -2408,7 +2421,19 @@ function saveAllData() {
     currentUser, participants: PARTICIPANTS, planning: planningData, planningVersion: PLANNING_VERSION, checklistValise, personalsData,
     polls, expenses, choreLog, departureTasksDone
   };
-  localStorage.setItem('saraillon_all', JSON.stringify(data));
+  // ✅ Protégé contre un dépassement de quota localStorage (les photos de galerie en base64
+  // peuvent faire grossir ce blob jusqu'à la limite du navigateur). Sans ce try/catch, une
+  // exception ici arrêtait tout le reste de saveAllData() — historique, sync Supabase, indicateur —
+  // exactement comme l'a fait le bug "history" plus tôt : silencieux, mais tous les boutons cassés.
+  try {
+    localStorage.setItem('saraillon_all', JSON.stringify(data));
+  } catch (err) {
+    console.error('localStorage.setItem a échoué (quota dépassé ?)', err);
+    if (!window.__quotaWarningShown) {
+      window.__quotaWarningShown = true;
+      showNotification('⚠️ Stockage local plein — les données restent synchronisées en ligne mais pas sur cet appareil', 'error');
+    }
+  }
   saveHistory(data);
   
   // ✅ Afficher l'indicateur de sauvegarde
@@ -2553,11 +2578,22 @@ function applyHistory(data) {
   galleryItems = data.gallery;
   feed = data.feed;
   currentUser = data.currentUser;
+  // ✅ Ces champs étaient bien sauvegardés dans l'historique mais jamais restaurés :
+  // annuler/refaire laissait les dépenses, sondages, valise et corvées inchangés,
+  // ce qui donnait un "annuler" trompeur (partiel).
+  expenses = data.expenses || expenses;
+  polls = data.polls || polls;
+  checklistValise = data.checklistValise || checklistValise;
+  choreLog = data.choreLog || choreLog;
+  departureTasksDone = data.departureTasksDone || departureTasksDone;
   renderPlanning();
   renderShopping();
   renderChallenges();
   renderGallery();
   renderFeed();
+  renderExpenses();
+  renderPolls();
+  renderChoreLogPanel();
 }
 
 function switchTab(tab) {
