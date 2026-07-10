@@ -101,7 +101,7 @@ let personalsData = {
 // Structure "à apporter" par activité avec checkboxes
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de challenges (quêtes),
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-const CHALLENGES_VERSION = 2;
+const CHALLENGES_VERSION = 3;
 
 let challenges = [
   {
@@ -154,6 +154,49 @@ let challenges = [
     likes: [],
     comments: [],
     timestamp: new Date()
+  },
+  {
+    id: 5,
+    creator: "CHALLENGE 1",
+    xp: 20,
+    completedBy: [],
+    description: "",
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge-1.mp4" },
+    likes: [],
+    comments: [],
+    timestamp: new Date()
+  },
+  {
+    id: 6,
+    creator: "CHALLENGE 2",
+    xp: 20,
+    completedBy: [],
+    description: "",
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge-2.mp4" },
+    likes: [],
+    comments: [],
+    timestamp: new Date()
+  },
+  {
+    id: 7,
+    creator: "CHALLENGE 3",
+    xp: 20,
+    completedBy: [],
+    description: "",
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge-3.mp4" },
+    likes: [],
+    comments: [],
+    timestamp: new Date()
+  },
+  {
+    id: 8,
+    creator: "CHALLENGE 4",
+    xp: 20,
+    completedBy: [],
+    description: "",
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge-4.mp4" },
+    likes: [],
+    comments: [],
+    timestamp: new Date()
   }
 ];
-
