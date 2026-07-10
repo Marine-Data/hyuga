@@ -1439,6 +1439,7 @@
             </div>
           </div>
           <div id="chores-display"></div>
+          <div id="chore-log-panel" style="margin-top: 20px;"></div>
         </div>
       </div>
 
@@ -1467,7 +1468,7 @@
         <div class="content">
           <div class="card">
             <div style="display: flex; gap: 8px;">
-              <input type="text" id="new-item" placeholder="Ajouter..." style="margin-bottom: 0;">
+              <input type="text" id="new-item" placeholder="Ajouter..." style="margin-bottom: 0;" onkeydown="if(event.key==='Enter'){event.preventDefault(); addShoppingItem();}">
               <button class="btn btn-primary btn-small" onclick="addShoppingItem()">+</button>
             </div>
           </div>
@@ -1775,6 +1776,19 @@ window.loadFromSupabase = async (table) => {
     return null;
   }
 };
+
+// ✅ Helper générique de suppression, utilisé pour les photos de galerie, quêtes, etc.
+window.deleteFromSupabase = async (table, id) => {
+  try {
+    if (!window.supabaseReady || !window.supabase) return false;
+    const { error } = await window.supabase.from(table).delete().eq('id', id);
+    if (error) console.error(`Supabase delete error (${table}): ${formatSupabaseError(error)}`);
+    return !error;
+  } catch (err) {
+    console.error(`Supabase delete error (${table}): ${formatSupabaseError(err)}`);
+    return false;
+  }
+};
 </script>
 
 <!-- Données statiques du séjour (participants, planning, corvées, avatars par défaut, quêtes) -->
@@ -1785,6 +1799,20 @@ window.loadFromSupabase = async (table) => {
 // ============== DATA ==============
 // Participants, planning, corvées, avatars par défaut et quêtes vivent
 // maintenant dans saraillon-data.js (chargé juste avant ce script).
+
+// ✅ Échappe le HTML pour tout contenu tapé par un participant (commentaires, descriptions,
+// options de sondage, messages du feed...) avant de l'injecter dans le DOM via innerHTML.
+// Sans ça, n'importe qui pourrait taper du HTML/JS dans un commentaire et l'exécuter
+// chez tout le monde qui ouvre l'app (faille XSS stockée).
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 let currentUser = PARTICIPANTS[0];
 let inscriptions = {
@@ -1802,6 +1830,8 @@ let currentViewingProfileId = null;
 let checklistValise = {};
 
 let shoppingList = [];
+let choreLog = []; // ✅ Historique des corvées accomplies : { id, personId, personName, choreName, emoji, xp, timestamp }
+let departureTasksDone = {}; // ✅ Tâches du jour de départ cochées : { "dayIdx-actIdx": true }
 let polls = [];
 let expenses = [];
 let galleryItems = [];
@@ -1897,6 +1927,7 @@ function renderProfileSelectCarousel() {
       ${portrait(centerP, 190, 1, 0, '0 0 50px rgba(255, 203, 5, 0.5), 0 20px 40px rgba(0,0,0,0.4)')}
       <div style="margin-top: 14px; display: inline-block; background: ${centerP.c}; color: ${centerP.text}; padding: 3px 12px; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);">${centerP.label}</div>
       <div style="margin-top: 8px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 15px; color: var(--primary); text-shadow: 0 2px 10px rgba(255,255,255,0.8);">${centerP.p.name.toUpperCase()}</div>
+      ${(['Marine', 'Mathieu'].includes(centerP.p.name) && new Date() < new Date('2026-07-18')) ? `<div style="margin-top: 4px; display: inline-block; background: rgba(239, 68, 68, 0.12); color: var(--danger); padding: 2px 10px; border-radius: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;">🧪 PROFIL TEST — jusqu'au 17/07</div>` : ''}
     </div>
     <div onclick="shiftProfileCarousel(1)" style="position: absolute; right: -6px; cursor: pointer;">
       ${portrait(nextP, 68, 0.4, 2, '0 8px 20px rgba(0,0,0,0.3)')}
@@ -2019,6 +2050,7 @@ async function enterMainApp() {
   renderHome(); // ✅ Rafraîchir le widget d'activité récente sur Home
   checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
   renderDaySelector();
+  renderChoreLogPanel();
   renderChallenges();
   renderInscriptions();
   renderPolls();
@@ -2185,6 +2217,8 @@ function loadAllData() {
     }
     polls = parsed.polls || [];
     expenses = parsed.expenses || [];
+    choreLog = parsed.choreLog || [];
+    departureTasksDone = parsed.departureTasksDone || {};
   }
 
   // ✅ Si le profil chargé (cache local) n'a pas de vraie photo, on réapplique la photo par défaut
@@ -2372,7 +2406,7 @@ function saveAllData() {
   const data = {
     inscriptions, challenges, challengesVersion: CHALLENGES_VERSION, shopping: shoppingList, gallery: galleryItems, feed, notifications,
     currentUser, participants: PARTICIPANTS, planning: planningData, planningVersion: PLANNING_VERSION, checklistValise, personalsData,
-    polls, expenses
+    polls, expenses, choreLog, departureTasksDone
   };
   localStorage.setItem('saraillon_all', JSON.stringify(data));
   saveHistory(data);
@@ -2679,7 +2713,7 @@ function renderHome() {
     const timeago = getTimeAgo(item.timestamp);
     html += `
       <div style="padding: 10px 12px; background: var(--bg-sunken); border-radius: 12px; box-shadow: inset 4px 0 0 var(--accent-cyan); font-size: 13px; line-height: 1.4;">
-        <strong>${item.emoji || ''} ${item.user}</strong> ${item.message}
+        <strong>${item.emoji || ''} ${escapeHtml(item.user)}</strong> ${escapeHtml(item.message)}
         <div style="color: var(--primary-light); font-size: 11px; margin-top: 3px;">${timeago}</div>
       </div>
     `;
@@ -2927,7 +2961,7 @@ function showConfirmation(message, onConfirm) {
   modal.innerHTML = `
     <div style="background: var(--bg-raised); padding: 24px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 0 0 2px var(--border), 0 20px 50px rgba(0,0,0,0.35); text-align: center;">
       <div style="font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 16px;">⚠️ Confirmation</div>
-      <div style="font-size: 14px; color: var(--primary-soft); margin-bottom: 20px; line-height: 1.5;">${message}</div>
+      <div style="font-size: 14px; color: var(--primary-soft); margin-bottom: 20px; line-height: 1.5;">${escapeHtml(message)}</div>
       <div style="display: flex; gap: 10px;">
         <button class="btn btn-primary" style="flex: 1;" onclick="confirmConfirmation(${confirmId}, true)">✅ Confirmer</button>
         <button class="btn" style="flex: 1; background: var(--bg-sunken); color: var(--primary);" onclick="confirmConfirmation(${confirmId}, false)">❌ Annuler</button>
@@ -3037,7 +3071,7 @@ function renderNotifications() {
     
     return `
     <div class="notif-item ${!n.read ? 'unread' : ''}" onclick="markRead(${n.id}); ${navAction}" style="cursor: pointer;">
-      <div style="font-size: 12px; color: var(--primary);">${n.emoji} ${n.message}</div>
+      <div style="font-size: 12px; color: var(--primary);">${n.emoji} ${escapeHtml(n.message)}</div>
       <div class="notif-time">${new Date(n.timestamp).toLocaleTimeString('fr-FR')}</div>
     </div>
   `;
@@ -3072,9 +3106,9 @@ function renderPlanningOverview() {
       <div class="card" onclick="openPlanningDay(${dayIdx})" style="cursor: pointer; display: flex; align-items: center; gap: 14px;">
         <div style="width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; flex-shrink: 0; box-shadow: 0 4px 10px rgba(12, 47, 58, 0.25);">${day.activities[0]?.emoji || '📅'}</div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 800; font-size: 15px;">${day.jour}</div>
-          <div style="font-size: 11px; color: var(--primary-light); margin-bottom: 4px;">${day.date || ''}</div>
-          <div style="font-size: 12px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${activityNames}${totalItems > 0 ? ` · 🎒 ${totalItems}` : ''}</div>
+          <div style="font-weight: 800; font-size: 15px;">${escapeHtml(day.jour)}</div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-bottom: 4px;">${escapeHtml(day.date || '')}</div>
+          <div style="font-size: 12px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(activityNames)}${totalItems > 0 ? ` · 🎒 ${totalItems}` : ''}</div>
         </div>
         <div style="font-size: 20px; color: var(--primary-light);">›</div>
       </div>
@@ -3095,15 +3129,87 @@ function closePlanningDay() {
 
 function renderPlanningDayDetail(dayIdx) {
   const day = planningData[dayIdx];
+  // ✅ Le dernier jour du séjour (jour de départ) est une succession de tâches ménage/rangement
+  // à faire dans l'ordre avant de partir : on affiche une checklist unique sur une seule feuille,
+  // avec horaires, plutôt que les cartes d'activité éditables classiques.
+  if (dayIdx === planningData.length - 1) {
+    renderDepartureDayChecklist(dayIdx);
+    return;
+  }
   let html = `
     <button class="btn btn-small" onclick="closePlanningDay()" style="margin-bottom: 16px; background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);">← Tous les jours</button>
     <div style="text-align: center; margin-bottom: 20px;">
-      <div style="font-weight: 800; font-size: 20px;">${day.jour}</div>
-      <div style="font-size: 13px; color: var(--primary-light);">${day.date || ''}</div>
+      <div style="font-weight: 800; font-size: 20px;">${escapeHtml(day.jour)}</div>
+      <div style="font-size: 13px; color: var(--primary-light);">${escapeHtml(day.date || '')}</div>
     </div>
   `;
   html += day.activities.map((activity, actIdx) => renderActivityDetailCard(dayIdx, activity, actIdx)).join('');
   document.getElementById('planning-content').innerHTML = html;
+}
+
+function renderDepartureDayChecklist(dayIdx) {
+  const day = planningData[dayIdx];
+  const tasks = day.activities;
+  const doneCount = tasks.filter((a, actIdx) => departureTasksDone[`${dayIdx}-${actIdx}`]).length;
+  const pct = Math.round((doneCount / tasks.length) * 100);
+  const xpPerTask = 10;
+
+  let html = `
+    <button class="btn btn-small" onclick="closePlanningDay()" style="margin-bottom: 16px; background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);">← Tous les jours</button>
+    <div class="card" style="background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: white; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(227, 185, 79, 0.3);">
+      <div style="font-size: 30px; margin-bottom: 4px;">🧳</div>
+      <div style="font-weight: 800; font-size: 18px;">${escapeHtml(day.jour)} · Jour du départ</div>
+      <div style="font-size: 12.5px; opacity: 0.9; margin-bottom: 12px;">${escapeHtml(day.date || '')} — coche chaque tâche dans l'ordre pour gagner de l'XP</div>
+      <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,0.35); overflow: hidden;">
+        <div style="height: 100%; width: ${pct}%; background: white; transition: width 0.4s ease;"></div>
+      </div>
+      <div style="font-size: 12px; margin-top: 6px; font-weight: 700;">${doneCount} / ${tasks.length} tâches faites</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+  `;
+
+  html += tasks.map((activity, actIdx) => {
+    const key = `${dayIdx}-${actIdx}`;
+    const done = !!departureTasksDone[key];
+    return `
+      <div onclick="toggleDepartureTask(${dayIdx}, ${actIdx})" class="card" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; background: ${done ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 100%)' : 'var(--bg-raised)'}; border-radius: 12px; transition: background 0.25s ease;">
+        <div style="width: 46px; flex-shrink: 0; text-align: center; font-size: 11px; font-weight: 700; color: var(--primary-light);">${escapeHtml(activity.horaires || '')}</div>
+        <div style="font-size: 22px; flex-shrink: 0; opacity: ${done ? '0.5' : '1'};">${activity.emoji || '📌'}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 13.5px; color: var(--primary); text-decoration: ${done ? 'line-through' : 'none'}; opacity: ${done ? '0.55' : '1'};">${escapeHtml(activity.nom)}</div>
+          ${activity.notes ? `<div style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">${escapeHtml(activity.notes)}</div>` : ''}
+        </div>
+        <input type="checkbox" ${done ? 'checked' : ''} style="width: 22px; height: 22px; cursor: pointer; accent-color: var(--accent-gold); flex-shrink: 0;" onclick="event.stopPropagation(); toggleDepartureTask(${dayIdx}, ${actIdx});">
+      </div>
+    `;
+  }).join('');
+
+  html += '</div>';
+  document.getElementById('planning-content').innerHTML = html;
+}
+
+function toggleDepartureTask(dayIdx, actIdx) {
+  const key = `${dayIdx}-${actIdx}`;
+  const activity = planningData[dayIdx].activities[actIdx];
+  const wasDone = !!departureTasksDone[key];
+  departureTasksDone[key] = !wasDone;
+  const xpPerTask = 10;
+
+  if (!wasDone) {
+    choreLog.push({
+      id: Date.now(),
+      personId: currentUser.id,
+      personName: currentUser.name,
+      choreName: `Départ : ${activity.nom}`,
+      emoji: activity.emoji || '🧳',
+      xp: xpPerTask,
+      timestamp: new Date()
+    });
+    showNotification(`✅ +${xpPerTask} XP`, 'success');
+  }
+
+  saveAllData();
+  renderDepartureDayChecklist(dayIdx);
 }
 
 function renderActivityDetailCard(dayIdx, activity, actIdx) {
@@ -3114,16 +3220,16 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
     <div class="card">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
         <span style="font-size: 26px;">${activity.emoji || '📌'}</span>
-        <input type="text" value="${activity.nom}" placeholder="Nom de l'activité" onblur="updateActivityField(${dayIdx},${actIdx},'nom',this.value)" style="flex: 1; font-weight: 800; font-size: 15px; background: var(--bg-sunken); border-radius: 6px; padding: 8px 10px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
+        <input type="text" value="${escapeHtml(activity.nom)}" placeholder="Nom de l'activité" onblur="updateActivityField(${dayIdx},${actIdx},'nom',this.value)" style="flex: 1; font-weight: 800; font-size: 15px; background: var(--bg-sunken); border-radius: 6px; padding: 8px 10px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
       </div>
       <div style="display: flex; gap: 8px; margin-bottom: 10px;">
         <div style="flex: 1;">
           <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">⏰ HORAIRES</label>
-          <input type="text" value="${activity.horaires || ''}" placeholder="À définir" onblur="updateActivityField(${dayIdx},${actIdx},'horaires',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); font-size: 13px;">
+          <input type="text" value="${escapeHtml(activity.horaires || '')}" placeholder="À définir" onblur="updateActivityField(${dayIdx},${actIdx},'horaires',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); font-size: 13px;">
         </div>
         <div style="flex: 1;">
           <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">📍 LIEU</label>
-          <input type="text" value="${activity.lieu || ''}" placeholder="Lieu" onblur="updateActivityField(${dayIdx},${actIdx},'lieu',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); font-size: 13px;">
+          <input type="text" value="${escapeHtml(activity.lieu || '')}" placeholder="Lieu" onblur="updateActivityField(${dayIdx},${actIdx},'lieu',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); font-size: 13px;">
         </div>
       </div>
       <div style="margin-bottom: 10px;">
@@ -3138,7 +3244,7 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
           return `
             <div style="display: flex; align-items: center; gap: 8px; padding: 5px 0;">
               <input type="checkbox" ${packed ? 'checked' : ''} onchange="toggleApporterItem('${key}')" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-cyan); flex-shrink: 0;">
-              <input type="text" value="${item}" onblur="updateApporterItemText(${dayIdx},${actIdx},${itemIdx},this.value)" style="flex: 1; background: white; border-radius: 4px; padding: 6px 8px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">
+              <input type="text" value="${escapeHtml(item)}" onblur="updateApporterItemText(${dayIdx},${actIdx},${itemIdx},this.value)" style="flex: 1; background: white; border-radius: 4px; padding: 6px 8px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">
               <button onclick="removeApporterItem(${dayIdx},${actIdx},${itemIdx})" style="background: none; border: none; cursor: pointer; color: var(--accent-pink); font-size: 14px; padding: 4px; flex-shrink: 0;">🗑️</button>
             </div>
           `;
@@ -3147,7 +3253,7 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
       </div>
       ${activity.comments && activity.comments.length > 0 ? `
         <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
-          ${activity.comments.map(c => `<div style="padding: 8px 10px; background: var(--bg-sunken); border-radius: 6px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">💬 <strong>${c.author}:</strong> ${c.text}</div>`).join('')}
+          ${activity.comments.map(c => `<div style="padding: 8px 10px; background: var(--bg-sunken); border-radius: 6px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">💬 <strong>${escapeHtml(c.author)}:</strong> ${escapeHtml(c.text)}</div>`).join('')}
         </div>
       ` : ''}
       ${activity.inscription ? `
@@ -3285,10 +3391,17 @@ function spinRoulette() {
     }
 
     const choreCount = Math.min(CHORES.length, available.length);
-    let html = '<div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); padding: 16px; border-radius: 10px; margin-bottom: 18px; color: white; text-align: center;"><strong style="font-size: 14px;">⚡ Corvées Assignées!</strong></div><div style="display: flex; flex-direction: column; gap: 12px;">';
-    
+    let html = `
+      <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.25);">
+        <div style="font-size: 26px; margin-bottom: 4px;">⚡</div>
+        <strong style="font-size: 15px; letter-spacing: 0.3px;">Corvées assignées !</strong>
+        <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+    `;
+
     const usedIndices = new Set();
-    const assignments = [];
+    currentChoreAssignments = [];
     for (let i = 0; i < choreCount; i++) {
       let choreIdx;
       do {
@@ -3298,18 +3411,11 @@ function spinRoulette() {
       
       const chore = CHORES[choreIdx];
       const person = available[i];
+      const xp = 15;
       
-      assignments.push({ chore, person });
+      currentChoreAssignments.push({ chore, person, xp, dayIdx: selectedDay, done: false });
       
-      html += `
-        <div class="card" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); box-shadow: 0 4px 12px rgba(153, 51, 255, 0.1); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; animation-delay: ${i * 0.1}s;">
-          <div style="font-size: 28px; flex-shrink: 0;">${chore.emoji}</div>
-          <div style="flex: 1;">
-            <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px;">${chore.name}</div>
-            <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${person.name}</div>
-          </div>
-        </div>
-      `;
+      html += renderChoreAssignmentCard(i);
     }
     html += '</div>';
 
@@ -3317,6 +3423,84 @@ function spinRoulette() {
     addNotification('⚡ Corvées assignées!', '⚡', 'corvees');
     btn.disabled = false;
   }, 3000);
+}
+
+let currentChoreAssignments = [];
+
+function renderChoreAssignmentCard(i) {
+  const a = currentChoreAssignments[i];
+  if (!a) return '';
+  return `
+    <div class="card" id="chore-card-${i}" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: ${a.done ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 100%)' : 'linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%)'}; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.1); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; animation-delay: ${i * 0.1}s; border-radius: 12px; transition: background 0.3s ease;">
+      <div style="font-size: 28px; flex-shrink: 0; opacity: ${a.done ? '0.5' : '1'};">${a.chore.emoji}</div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px; text-decoration: ${a.done ? 'line-through' : 'none'}; opacity: ${a.done ? '0.6' : '1'};">${escapeHtml(a.chore.name)}</div>
+        <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(a.person.name)}</div>
+      </div>
+      <button class="btn btn-small" style="flex-shrink: 0; border: none; font-weight: 700; padding: 10px 14px; border-radius: 8px; transition: all 0.2s ease; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${a.done ? 'white' : 'var(--primary)'};" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ +${a.xp} XP` : `Fait ! (+${a.xp} XP)`}</button>
+    </div>
+  `;
+}
+
+function completeChore(i) {
+  const a = currentChoreAssignments[i];
+  if (!a || a.done) return;
+  a.done = true;
+
+  choreLog.push({
+    id: Date.now(),
+    personId: a.person.id,
+    personName: a.person.name,
+    choreName: a.chore.name,
+    emoji: a.chore.emoji,
+    xp: a.xp,
+    dayIdx: a.dayIdx,
+    timestamp: new Date()
+  });
+
+  const card = document.getElementById(`chore-card-${i}`);
+  if (card) card.outerHTML = renderChoreAssignmentCard(i);
+
+  addNotification(`⚡ ${a.person.name} a fait "${a.chore.name}" (+${a.xp} XP) !`, '⚡', 'corvees');
+  addFeedEntry(`a fait la corvée "${a.chore.name}" (+${a.xp} XP) !`, '⚡');
+  showNotification(`⚡ Corvée faite ! +${a.xp} XP`, 'success');
+  saveAllData();
+  renderChoreLogPanel();
+}
+
+function renderChoreLogPanel() {
+  const panel = document.getElementById('chore-log-panel');
+  if (!panel) return;
+
+  if (choreLog.length === 0) {
+    panel.innerHTML = '';
+    return;
+  }
+
+  // ✅ Total d'XP corvées par personne + les 5 dernières corvées faites
+  const totals = {};
+  PARTICIPANTS.forEach(p => { totals[p.id] = 0; });
+  choreLog.forEach(entry => { if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15); });
+  const ranking = PARTICIPANTS.map(p => ({ p, xp: totals[p.id] || 0 })).filter(r => r.xp > 0).sort((a, b) => b.xp - a.xp);
+  const recent = [...choreLog].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
+
+  panel.innerHTML = `
+    <div class="card" style="background: linear-gradient(135deg, rgba(153, 51, 255, 0.06) 0%, rgba(31, 182, 201, 0.04) 100%); padding: 16px; border-radius: 14px;">
+      <div style="font-weight: 800; font-size: 13px; letter-spacing: 0.4px; margin-bottom: 10px; color: var(--primary);">⚡ CORVÉES ACCOMPLIES</div>
+      ${ranking.length > 0 ? `
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+        ${ranking.map(r => `<span style="font-size: 11px; background: white; padding: 4px 10px; border-radius: 10px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.06); font-weight: 600;">${escapeHtml(r.p.name)} · ${r.xp} XP</span>`).join('')}
+      </div>` : ''}
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        ${recent.map(entry => `
+          <div style="font-size: 12px; color: var(--primary-light); display: flex; align-items: center; gap: 6px;">
+            <span>${entry.emoji}</span>
+            <span><strong style="color: var(--primary);">${escapeHtml(entry.personName)}</strong> — ${escapeHtml(entry.choreName)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
 
 // ============== CHALLENGES ==============
@@ -3327,13 +3511,16 @@ function renderChallenges() {
     const completedBy = ch.completedBy || [];
     const userCompleted = completedBy.includes(currentUser.id);
     const xp = ch.xp || 20;
+    const totalParticipants = PARTICIPANTS.length;
+    const progressPct = Math.round((completedBy.length / totalParticipants) * 100);
     return `
-    <div class="card" style="position: relative;">
-      <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;">
-        <button class="btn-icon-small" onclick="editChallenge(${ch.id})" title="Éditer" style="background: white; border: none; border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(12, 47, 58, 0.12)'; this.style.transform='scale(1.05)';" onmouseout="this.style.boxShadow='0 2px 6px rgba(12, 47, 58, 0.08)'; this.style.transform='scale(1)';">✏️</button>
-        <button class="btn-icon-small" onclick="duplicateChallenge(${ch.id})" title="Dupliquer" style="background: white; border: none; border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(12, 47, 58, 0.12)'; this.style.transform='scale(1.05)';" onmouseout="this.style.boxShadow='0 2px 6px rgba(12, 47, 58, 0.08)'; this.style.transform='scale(1)';">📋</button>
+    <div class="card" style="position: relative; border-radius: 16px; overflow: hidden; ${userCompleted ? 'box-shadow: 0 4px 20px rgba(227, 185, 79, 0.25), 0 0 0 2px rgba(227, 185, 79, 0.4);' : ''}">
+      <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 2;">
+        <button class="btn-icon-small" onclick="editChallenge(${ch.id})" title="Éditer" style="background: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">✏️</button>
+        <button class="btn-icon-small" onclick="duplicateChallenge(${ch.id})" title="Dupliquer" style="background: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">📋</button>
+        <button class="btn-icon-small" onclick="confirmDeleteChallenge(${ch.id})" title="Supprimer" style="background: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15); color: var(--danger); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">🗑️</button>
       </div>
-      <div style="display: flex; gap: 12px; margin-bottom: 14px; padding-bottom: 14px; padding-right: 70px; box-shadow: inset 0 -1px 3px rgba(12, 47, 58, 0.05);">
+      <div style="display: flex; gap: 12px; margin-bottom: 14px; padding-bottom: 14px; padding-right: 108px; box-shadow: inset 0 -1px 3px rgba(12, 47, 58, 0.05);">
         ${ch.isQuest ? `
         <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--accent-gold), #ffb700); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.3);">
           🎮
@@ -3347,27 +3534,35 @@ function renderChallenges() {
           ${ch.creator.charAt(0)}
         </div>
         <div style="flex: 1;">
-          <div style="font-weight: 700; font-size: 14px;">${ch.creator}</div>
+          <div style="font-weight: 700; font-size: 14px;">${escapeHtml(ch.creator)}</div>
           <div style="font-size: 11px; color: var(--primary-light);">${new Date(ch.timestamp).toLocaleDateString('fr-FR')} · 🏆 ${xp} XP</div>
         </div>
         `}
       </div>
       ${ch.media ? `<div style="margin-bottom: 14px; border-radius: 8px; overflow: hidden; max-height: 300px; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.1);">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
-      <div style="margin-bottom: 14px; font-size: 13px; line-height: 1.5; white-space: pre-line;">${ch.description}</div>
+      <div style="margin-bottom: 14px; font-size: 13px; line-height: 1.5; white-space: pre-line;">${escapeHtml(ch.description)}</div>
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="font-size: 10.5px; color: var(--primary-light); font-weight: 600;">${completedBy.length} / ${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''}</span>
+        </div>
+        <div style="height: 5px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden;">
+          <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+        </div>
+      </div>
       ${completedBy.length > 0 ? `
       <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
         ${completedBy.map(pid => {
           const p = PARTICIPANTS.find(pp => pp.id === pid);
-          return p ? `<span style="font-size: 11px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(227, 185, 79, 0.3);">✅ ${p.name}</span>` : '';
+          return p ? `<span style="font-size: 11px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(227, 185, 79, 0.3);">✅ ${escapeHtml(p.name)}</span>` : '';
         }).join('')}
       </div>` : ''}
       <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <button class="btn btn-small" style="background: ${userCompleted ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${userCompleted ? 'white' : 'var(--primary)'}; flex: 1.4; font-weight: 700; border: none; box-shadow: 0 2px 6px rgba(227, 185, 79, 0.15); transition: all 0.3s ease;" onclick="toggleChallengeCompletion(${ch.id})">${userCompleted ? '✅ Relevé !' : '🎯 Relever le défi'}</button>
-        <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; font-weight: ${userLiked ? '700' : '400'}; border: none; box-shadow: 0 2px 6px rgba(${userLiked ? '224, 122, 150' : '51, 131, 172'}, 0.1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(${userLiked ? '224, 122, 150' : '51, 131, 172'}, 0.15)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(${userLiked ? '224, 122, 150' : '51, 131, 172'}, 0.1)';" onclick="likeCh(${ch.id})">❤️ ${likesCount}</button>
-        <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1; border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(12, 47, 58, 0.12)'; this.style.transform='scale(1.02)';" onmouseout="this.style.boxShadow='0 2px 6px rgba(12, 47, 58, 0.08)'; this.style.transform='scale(1)';" onclick="toggleChallengeComments(${ch.id})">💬 ${ch.comments.length}</button>
+        <button class="btn btn-small" style="background: ${userCompleted ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${userCompleted ? 'white' : 'var(--primary)'}; flex: 1.4; font-weight: 700; border: none; box-shadow: 0 2px 6px rgba(227, 185, 79, 0.15); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" onclick="toggleChallengeCompletion(${ch.id})">${userCompleted ? '✅ Relevé !' : '🎯 Relever le défi'}</button>
+        <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; font-weight: ${userLiked ? '700' : '400'}; border: none; box-shadow: 0 2px 6px rgba(${userLiked ? '224, 122, 150' : '51, 131, 172'}, 0.1); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" onclick="likeCh(${ch.id})">❤️ ${likesCount}</button>
+        <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1; border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" onclick="toggleChallengeComments(${ch.id})">💬 ${ch.comments.length}</button>
       </div>
       <div id="ch-comments-${ch.id}" style="display: none; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, var(--bg-sunken) 0%, var(--bg-raised) 100%); border-radius: 8px;">
-        ${ch.comments.map(c => `<div style="font-size: 12px; margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);"><strong>${c.author}:</strong> ${c.text}</div>`).join('')}
+        ${ch.comments.map(c => `<div style="font-size: 12px; margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);"><strong>${escapeHtml(c.author)}:</strong> ${escapeHtml(c.text)}</div>`).join('')}
         <div style="display: flex; gap: 8px; margin-top: 10px;">
           <input type="text" placeholder="Commenter..." id="ch-comment-${ch.id}" style="flex: 1; margin-bottom: 0; border: none; padding: 10px; border-radius: 6px; background: white; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
           <button class="btn btn-small btn-primary" style="border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);" onclick="addChallengeComment(${ch.id})">📤</button>
@@ -3377,7 +3572,19 @@ function renderChallenges() {
   `;
   }).join('');
   
-  document.getElementById('challenges-content').innerHTML = renderChallengesLeaderboard() + (html || '<p style="text-align: center; color: var(--primary-light); padding: 40px 20px;">Aucun challenge</p>');
+  document.getElementById('challenges-content').innerHTML = renderChallengesLeaderboard() + (html || '<div style="text-align: center; color: var(--primary-light); padding: 50px 20px;"><div style="font-size: 40px; margin-bottom: 10px;">🏝️</div><p style="margin: 0; font-size: 14px;">Aucun défi pour le moment — lance le premier !</p></div>');
+}
+
+function confirmDeleteChallenge(id) {
+  const ch = challenges.find(c => c.id === id);
+  if (!ch) return;
+  const label = ch.isQuest ? (ch.questLabel || 'cette quête') : 'ce challenge';
+  showConfirmation(`Supprimer ${label} ? Cette action est définitive.`, () => {
+    challenges = challenges.filter(c => c.id !== id);
+    saveAllData();
+    renderChallenges();
+    showNotification('🗑️ Supprimé', 'success');
+  });
 }
 
 function toggleChallengeCompletion(id) {
@@ -3387,11 +3594,13 @@ function toggleChallengeCompletion(id) {
   const idx = ch.completedBy.indexOf(currentUser.id);
   if (idx > -1) {
     ch.completedBy.splice(idx, 1);
+    showNotification('Défi annulé', 'success');
   } else {
     ch.completedBy.push(currentUser.id);
     const xp = ch.xp || 20;
     addNotification(`🏆 ${currentUser.name} a relevé "${(ch.questLabel || ch.creator)}" (+${xp} XP) !`, '🏆', 'challenge');
     addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP) !`, '🏆');
+    showNotification(`🏆 Défi relevé ! +${xp} XP`, 'success');
   }
   saveAllData();
   renderChallenges();
@@ -3405,6 +3614,10 @@ function computeXpLeaderboard() {
     (ch.completedBy || []).forEach(pid => {
       if (totals[pid] !== undefined) totals[pid] += xp;
     });
+  });
+  // ✅ L'XP des corvées accomplies compte aussi dans le classement global
+  choreLog.forEach(entry => {
+    if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15);
   });
   return PARTICIPANTS
     .map(p => ({ p, xp: totals[p.id] || 0 }))
@@ -3666,7 +3879,7 @@ function renderShopping() {
       html += `
         <div class="card" style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px; padding: 12px; background: var(--bg-sunken); box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">
           <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleShop(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
-          <span style="flex: 1; font-size: 13px; font-weight: 500; color: var(--primary);">${item.item}</span>
+          <span style="flex: 1; font-size: 13px; font-weight: 500; color: var(--primary);">${escapeHtml(item.item)}</span>
           <button class="btn btn-small btn-danger" style="border: none; background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 6px 10px; border-radius: 6px; cursor: pointer;" onclick="confirmRemoveShop(${item.id})">🗑️</button>
         </div>
       `;
@@ -3681,7 +3894,7 @@ function renderShopping() {
       html += `
         <div class="card" style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px; padding: 12px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%); opacity: 0.7; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);">
           <input type="checkbox" checked onchange="toggleShop(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
-          <span style="flex: 1; font-size: 13px; text-decoration: line-through; color: var(--primary-light);">${item.item}</span>
+          <span style="flex: 1; font-size: 13px; text-decoration: line-through; color: var(--primary-light);">${escapeHtml(item.item)}</span>
           <button class="btn btn-small btn-danger" style="border: none; background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 6px 10px; border-radius: 6px; cursor: pointer;" onclick="confirmRemoveShop(${item.id})">🗑️</button>
         </div>
       `;
@@ -3694,12 +3907,14 @@ function renderShopping() {
 
 function addShoppingItem() {
   const input = document.getElementById('new-item');
-  if (input.value.trim()) {
-    shoppingList.push({ id: Date.now(), item: input.value.toUpperCase(), done: false });
-    saveAllData();
-    renderShopping();
-    input.value = '';
-  }
+  if (!input) return;
+  const value = input.value.trim();
+  if (!value) return;
+  shoppingList.push({ id: Date.now(), item: value.toUpperCase(), done: false });
+  saveAllData();
+  renderShopping();
+  input.value = '';
+  input.focus();
 }
 
 function toggleShop(id) {
@@ -3742,7 +3957,7 @@ function renderPolls() {
         <div onclick="voteOnPoll(${poll.id}, ${idx})" style="cursor: pointer; position: relative; margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: var(--bg-sunken); box-shadow: ${isMyVote ? 'inset 0 0 0 2px #e35b2e' : 'inset 0 1px 3px rgba(12, 47, 58, 0.05)'};">
           <div style="position: absolute; top: 0; left: 0; height: 100%; width: ${pct}%; background: linear-gradient(135deg, rgba(255, 157, 92, 0.35) 0%, rgba(227, 91, 46, 0.2) 100%); transition: width 0.4s ease;"></div>
           <div style="position: relative; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 13px;">
-            <span style="font-weight: ${isMyVote ? '700' : '400'};">${isMyVote ? '✅ ' : ''}${opt.text}</span>
+            <span style="font-weight: ${isMyVote ? '700' : '400'};">${isMyVote ? '✅ ' : ''}${escapeHtml(opt.text)}</span>
             <span style="font-weight: 700; color: #e35b2e; font-size: 12px;">${pct}% (${opt.votes.length})</span>
           </div>
         </div>
@@ -3752,7 +3967,7 @@ function renderPolls() {
     return `
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-          <div class="card-title" style="margin: 0;">🗳️ ${poll.question}</div>
+          <div class="card-title" style="margin: 0;">🗳️ ${escapeHtml(poll.question)}</div>
           <button class="btn-icon-small" onclick="confirmDeletePoll(${poll.id})" title="Supprimer" style="background: var(--bg-sunken); border: none; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; flex-shrink: 0;">🗑️</button>
         </div>
         ${optionsHtml}
@@ -3912,7 +4127,7 @@ function renderExpenses() {
     return `
       <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <div style="font-weight: 700; font-size: 13.5px;">${exp.description || 'Dépense'}</div>
+          <div style="font-weight: 700; font-size: 13.5px;">${escapeHtml(exp.description) || 'Dépense'}</div>
           <div style="font-size: 11px; color: var(--primary-light);">${payer ? payer.name : '?'} a payé · réparti entre ${splitCount} personne${splitCount > 1 ? 's' : ''}</div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -4056,7 +4271,7 @@ function renderGallery() {
         ${item.type === 'image'
           ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
           : `<video src="${item.src}" controls style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
-        <div class="ig-location-badge">📍 ${item.location}</div>
+        <div class="ig-location-badge">📍 ${escapeHtml(item.location)}</div>
       </div>
 
       <!-- Barre d'actions SOUS la photo -->
@@ -4068,7 +4283,7 @@ function renderGallery() {
       <!-- Likes, légende, commentaires -->
       <div style="padding: 0 16px 16px;">
         ${likesCount > 0 ? `<div style="font-weight: 700; font-size: 12.5px; color: var(--primary); margin-bottom: 6px;">${likesCount} mention${likesCount > 1 ? 's' : ''} J'aime</div>` : ''}
-        ${item.description ? `<div style="font-size: 12.5px; color: var(--primary); margin-bottom: 8px; line-height: 1.5;"><strong>${item.creator}</strong> ${item.description}</div>` : ''}
+        ${item.description ? `<div style="font-size: 12.5px; color: var(--primary); margin-bottom: 8px; line-height: 1.5;"><strong>${escapeHtml(item.creator)}</strong> ${escapeHtml(item.description)}</div>` : ''}
         ${taggedUsers.length > 0 ? `
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
             ${taggedUsers.map(name => `<button class="ig-tag-chip" onclick="filterGalleryByTag('${name}')">🏷️ ${name}</button>`).join('')}
@@ -4230,7 +4445,7 @@ function toggleGalleryComments(itemId) {
   item.comments.forEach(c => {
     html += `
       <div style="font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; box-shadow: 0 1px 0 var(--border);">
-        <strong>${c.user}:</strong> ${highlightMentions(c.text)}
+        <strong>${escapeHtml(c.user)}:</strong> ${highlightMentions(c.text)}
         <div style="font-size: 10px; color: var(--primary-light);">${new Date(c.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
       </div>
     `;
@@ -4304,7 +4519,9 @@ function parseMentions(text) {
 
 // ✅ Met en surbrillance les @pseudo dans le texte affiché (façon Instagram)
 function highlightMentions(text) {
-  return text.replace(/@([a-zA-Z0-9_À-ÿ]+)/g, '<span style="color: var(--accent-cyan); font-weight: 600;">@$1</span>');
+  // ✅ On échappe d'abord tout le texte (faille XSS), puis on surligne les @mentions
+  // sur le texte déjà nettoyé — le HTML injecté ici est le seul HTML volontaire.
+  return escapeHtml(text).replace(/@([a-zA-Z0-9_À-ÿ]+)/g, '<span style="color: var(--accent-cyan); font-weight: 600;">@$1</span>');
 }
 
 // ✅ Vérifie si l'utilisateur courant a été mentionné dans un nouveau commentaire, et notifie localement
@@ -4357,12 +4574,12 @@ function editGalleryItem(itemId) {
       
       <div style="margin-bottom: 12px;">
         <label style="font-size: 11px; color: var(--primary-light); display: block; margin-bottom: 6px;">📍 Lieu:</label>
-        <input type="text" id="edit-location" value="${item.location}" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--bg-sunken); color: var(--primary); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.1);">
+        <input type="text" id="edit-location" value="${escapeHtml(item.location)}" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--bg-sunken); color: var(--primary); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.1);">
       </div>
       
       <div style="margin-bottom: 12px;">
         <label style="font-size: 11px; color: var(--primary-light); display: block; margin-bottom: 6px;">📝 Description:</label>
-        <textarea id="edit-desc" style="width: 100%; padding: 8px; min-height: 80px; border-radius: 6px; background: var(--bg-sunken); color: var(--primary); font-size: 12px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.1);">${item.description}</textarea>
+        <textarea id="edit-desc" style="width: 100%; padding: 8px; min-height: 80px; border-radius: 6px; background: var(--bg-sunken); color: var(--primary); font-size: 12px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.1);">${escapeHtml(item.description)}</textarea>
       </div>
       
       <div style="margin-bottom: 12px; padding: 12px; background: var(--bg-sunken); border-radius: 6px;">
@@ -4374,6 +4591,7 @@ function editGalleryItem(itemId) {
         <button class="btn btn-primary" style="flex: 1;" onclick="saveGalleryEdit(${itemId})">💾 Enregistrer</button>
         <button class="btn" style="flex: 1; background: var(--bg-sunken); color: var(--primary);" onclick="this.closest('div').parentElement.remove()">❌ Annuler</button>
       </div>
+      <button class="btn btn-danger" style="width: 100%; margin-top: 8px; border: none; background: rgba(239, 68, 68, 0.1); color: var(--danger);" onclick="confirmDeleteGalleryItem(${itemId})">🗑️ Supprimer la photo</button>
     </div>
   `;
   
@@ -4400,6 +4618,20 @@ function saveGalleryEdit(itemId) {
   addNotification('📸 Photo modifiée!', '📸', 'gallery');
 }
 
+function confirmDeleteGalleryItem(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  showConfirmation('Supprimer définitivement cette photo ?', () => {
+    galleryItems = galleryItems.filter(i => i.id !== itemId);
+    saveAllData();
+    const editModal = document.querySelector('[style*="position: fixed"]');
+    if (editModal) editModal.remove();
+    renderGallery();
+    window.deleteFromSupabase('gallery_items', itemId);
+    showNotification('🗑️ Photo supprimée', 'success');
+  });
+}
+
 function filterGalleryByTag(tagName) {
   const person = PARTICIPANTS.find(p => p.name === tagName);
   if (!person) return;
@@ -4422,7 +4654,7 @@ function filterGalleryByTag(tagName) {
     html += `
       <div style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1.5px var(--border), 0 2px 6px rgba(0,0,0,0.1);">
         ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;"></video>`}
-        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">${item.location}</div>
+        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">${escapeHtml(item.location)}</div>
       </div>
     `;
   });
@@ -4458,7 +4690,8 @@ function showAllProfiles() {
 function renderMyProfile() {
   const user = currentUser;
   const personalData = personalsData[user.id] || {};
-  const officialBio = (user.bio && user.bio.trim()) ? user.bio : (personalData.bio || '');
+  // ✅ La bio personnalisée en app (personalData.bio) gagne toujours sur la bio par défaut (user.bio)
+  const officialBio = (personalData.bio && personalData.bio.trim()) ? personalData.bio : (user.bio || '');
   
   // Déterminer comment afficher l'avatar
   let avatarHTML = '';
@@ -4519,7 +4752,7 @@ function showMyProfileTab(tab) {
         <input type="file" id="avatarInput" accept="image/*" style="width: 100%; padding: 8px; border: none; border-radius: 6px; background: white; cursor: pointer; margin-bottom: 16px;" onchange="previewAvatar(event)">
         
         <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📝 Pseudo</label>
-        <input type="text" id="pseudoInput" placeholder="Ton pseudo..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;" value="${currentUser.pseudo || ''}">
+        <input type="text" id="pseudoInput" placeholder="Ton pseudo..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;" value="${escapeHtml(currentUser.pseudo || '')}">
         
         <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">💬 Bio</label>
         <textarea id="bioInput" style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;">${personalsData[currentUser.id]?.bio || ''}</textarea>
@@ -4535,19 +4768,30 @@ function showMyProfileTab(tab) {
 function renderChecklistValise() {
   const content = document.getElementById('my-profile-tab-content');
 
-  const items = [];
+  // ✅ On regroupe par nom d'objet normalisé (insensible à la casse/espaces) pour éviter
+  // qu'un même objet ("Maillot de bain") apparaisse en double/triple s'il est demandé
+  // par plusieurs activités différentes. La clé de la valise est basée sur ce nom normalisé
+  // (préfixe "pack:" pour ne pas entrer en collision avec les clés par activité utilisées
+  // dans l'onglet Planning, qui restent indépendantes).
+  const grouped = {};
   planningData.forEach((day, dayIdx) => {
     day.activities.forEach((activity, actIdx) => {
       const list = Array.isArray(activity.apporter) ? activity.apporter : [];
-      list.forEach((itemName, itemIdx) => {
-        items.push({
-          key: `${dayIdx}-${actIdx}-${itemIdx}`,
-          name: itemName,
-          source: `${activity.nom} · ${day.jour}`
-        });
+      list.forEach((itemName) => {
+        const norm = String(itemName || '').trim().toLowerCase();
+        if (!norm) return;
+        if (!grouped[norm]) {
+          grouped[norm] = { key: `pack:${norm}`, name: itemName.trim(), sources: [] };
+        }
+        const sourceLabel = `${activity.nom} · ${day.jour}`;
+        if (!grouped[norm].sources.includes(sourceLabel)) {
+          grouped[norm].sources.push(sourceLabel);
+        }
       });
     });
   });
+
+  const items = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 
   if (items.length === 0) {
     content.innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📭 Aucun objet à préparer pour l\'instant</div>';
@@ -4568,12 +4812,13 @@ function renderChecklistValise() {
 
   html += items.map(i => {
     const packed = checklistValise[i.key] || false;
+    const sourceLabel = i.sources.length > 1 ? `${i.sources.length} activités` : i.sources[0];
     return `
       <div onclick="toggleApporterItem('${i.key}'); renderChecklistValise();" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-raised); border-radius: 10px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(12, 47, 58, 0.06);">
         <input type="checkbox" ${packed ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan); flex-shrink: 0;" onclick="event.stopPropagation();">
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 13px; font-weight: 600; text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">${i.name}</div>
-          <div style="font-size: 10px; color: var(--primary-light);">${i.source}</div>
+          <div style="font-size: 13px; font-weight: 600; text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">${escapeHtml(i.name)}</div>
+          <div style="font-size: 10px; color: var(--primary-light);" title="${escapeHtml(i.sources.join(', '))}">${escapeHtml(sourceLabel)}</div>
         </div>
         <span style="font-size: 12px; flex-shrink: 0;">${packed ? '✅' : '⬜'}</span>
       </div>
@@ -4688,7 +4933,7 @@ function renderAllProfiles() {
           <div style="width: 50px; height: 50px; font-size: 50px; border-radius: 50%; overflow: hidden; flex-shrink: 0;">${avatarHTML}</div>
           <div style="flex: 1;">
             <div class="card-title" style="margin-bottom: 4px;">${user.name}</div>
-            <div style="font-size: 12px; color: var(--primary-light); margin-bottom: 6px; font-style: italic;">${user.bio || personalData.bio || 'Aventurier(e) du groupe'}</div>
+            <div style="font-size: 12px; color: var(--primary-light); margin-bottom: 6px; font-style: italic;">${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}</div>
             <div style="font-size: 11px; color: var(--accent-cyan); margin-top: 8px;">▶ Voir profil</div>
           </div>
         </div>
@@ -4713,7 +4958,7 @@ function showPublicProfile(userId) {
       <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); overflow: hidden;">${avatarHTML}</div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
       <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
-        "${user.bio || personalData.bio || 'Aventurier(e) du groupe'}"
+        "${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}"
       </div>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
@@ -4747,7 +4992,7 @@ function showPublicProfileTab(userId, tab) {
     } else {
       content.innerHTML = '<div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">' + userFeed.slice(0, 5).map(entry => `
         <div style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 14px; border-radius: 8px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 2px 6px rgba(111, 184, 176, 0.1);">
-          <div style="font-weight: 700; font-size: 13px; color: var(--primary);">${entry.emoji} ${entry.message}</div>
+          <div style="font-weight: 700; font-size: 13px; color: var(--primary);">${entry.emoji} ${escapeHtml(entry.message)}</div>
           <div style="font-size: 11px; color: var(--primary-light); margin-top: 6px;">Il y a peu</div>
         </div>
       `).join('') + '</div>';
@@ -4833,7 +5078,7 @@ function renderFeed() {
               <div style="font-weight: 700; color: var(--primary); cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px;" onclick="showPublicProfileFromFeed(${participant.id})">${entry.emoji} <span>${participant.name}</span></div>
               <div style="font-size: 11px; background: var(--bg-sunken); padding: 4px 8px; border-radius: 4px; color: var(--primary-light); font-weight: 500;">${timeStr}</div>
             </div>
-            <div style="font-size: 13px; color: var(--primary); margin-bottom: 10px; line-height: 1.4;">${entry.message}</div>
+            <div style="font-size: 13px; color: var(--primary); margin-bottom: 10px; line-height: 1.4;">${escapeHtml(entry.message)}</div>
             <div style="display: flex; gap: 12px;">
               <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️ ${entry.likes.length}</button>
               <button onclick="commentFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); font-weight: 500; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)'; this.style.color='var(--primary)';" onmouseout="this.style.transform='scale(1)'; this.style.color='var(--primary-light)';">💬 ${entry.comments.length}</button>
