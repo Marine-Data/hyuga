@@ -4411,8 +4411,9 @@ function uploadGallery() {
     };
 
     if (isImage) {
-      // ✅ Compresser les images (600x600 JPEG 70%) pour éviter les erreurs Supabase sur les gros base64
-      compressImage(e.target.result, finishUpload, 600);
+      // ✅ 1080px / qualité 82% : net sur téléphone (contre 600px/70% avant, très flou en plein écran),
+      // tout en restant raisonnable en taille de base64 pour Supabase (~200-350 Ko au lieu de ~60 Ko).
+      compressImage(e.target.result, finishUpload, 1080, 0.82);
     } else {
       finishUpload(e.target.result); // Vidéos : pas de compression canvas possible
     }
@@ -4917,7 +4918,7 @@ function previewAvatar(event) {
 }
 
 // Compresser l'image (redimensionner + réduire qualité)
-function compressImage(imageSource, callback, maxSize = 300) {
+function compressImage(imageSource, callback, maxSize = 300, quality = 0.7) {
   const img = new Image();
   img.src = imageSource;
   
@@ -4925,7 +4926,7 @@ function compressImage(imageSource, callback, maxSize = 300) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
-    // Redimensionner à maxSize max (300 pour avatars, 600 pour galerie)
+    // Redimensionner à maxSize max (300 pour avatars, 1080 pour galerie)
     let width = img.width;
     let height = img.height;
     
@@ -4945,8 +4946,8 @@ function compressImage(imageSource, callback, maxSize = 300) {
     canvas.height = height;
     ctx.drawImage(img, 0, 0, width, height);
     
-    // Convertir en JPEG avec qualité réduite (0.7 = 70%)
-    const compressedImage = canvas.toDataURL('image/jpeg', 0.7);
+    // Convertir en JPEG avec qualité réduite
+    const compressedImage = canvas.toDataURL('image/jpeg', quality);
     callback(compressedImage);
   };
   
