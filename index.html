@@ -1018,6 +1018,26 @@
       90%  { opacity: 1; }
       100% { left: 108%; transform: translateY(0) rotate(-2deg); opacity: 0; }
     }
+    /* ✨ CONFETTIS dorés (feedback quête / corvée / surprise débloquée) */
+    .anim-confetti {
+      position: absolute;
+      inset: 0;
+    }
+    .anim-confetti-piece {
+      position: absolute;
+      top: -20px;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      opacity: 0.95;
+      animation-name: confettiFall;
+      animation-timing-function: ease-in;
+      animation-fill-mode: forwards;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(70vh) rotate(340deg); opacity: 0; }
+    }
     /* 🌊 VAGUELETTES décoratives dans le hero */
     .hero-waves {
       position: absolute;
@@ -1387,6 +1407,9 @@
             <span style="opacity: 0.4;">·</span>
             <span>📅 <strong id="home-hud-days" style="color: var(--primary);">...</strong></span>
           </div>
+
+          <!-- ESPRIT DE GROUPE : jauge collective (quêtes + corvées faites par tout le monde) -->
+          <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
 
           <!-- SOUVENIR DU JOUR -->
           <div id="home-memory" style="margin-bottom: 22px;"></div>
@@ -2048,17 +2071,25 @@ async function enterMainApp() {
   renderHome(); // ✅ Rafraîchir le widget d'activité récente sur Home
   checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
   renderDaySelector();
-  renderChoreLogPanel();
+  await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   renderChallenges();
   renderInscriptions();
   renderPolls();
   renderExpenses();
+  showMorningWisdomIfDue(); // ✅ Message du matin (sagesse + programme du jour), une fois par jour
 
   showNotification(`👋 Bienvenue ${currentUser.name}!`, 'success');
 
   if (!autoSaveStarted) {
     autoSaveStarted = true;
     setInterval(() => { saveAllData(); }, 30000); // ✅ Auto-save toutes les 30s
+  }
+
+  if (!window.__choreCloudPollStarted) {
+    window.__choreCloudPollStarted = true;
+    // ✅ Repasse chercher les corvées du groupe toutes les 25s (assignations et
+    // complétions faites par d'autres depuis leur téléphone pendant le séjour).
+    setInterval(() => { loadChoreAssignmentsCloud(); }, 25000);
   }
 
   if (!localStorage.getItem('saraillon_onboarding_seen')) {
@@ -2724,6 +2755,7 @@ function renderHome() {
 
   updateTodayPlaneBanner();
   renderHomeInscriptionAlert();
+  renderHomeGroupSpirit();
   renderHomeMemoryOfDay();
   renderHomePackingProgress();
   renderHomeHud();
@@ -2905,6 +2937,50 @@ function renderHomeHud() {
       daysEl.textContent = '🏁';
     }
   }
+}
+
+// ✅ Jauge "esprit de groupe" : progression collective mêlant défis/quêtes relevés
+// par tout le monde et corvées faites, affichée sur l'accueil. But : donner un
+// signal visible de dynamique de groupe, pas une compétition entre individus.
+function renderHomeGroupSpirit() {
+  const container = document.getElementById('home-group-spirit');
+  if (!container) return;
+
+  const totalQuestSlots = challenges.length * PARTICIPANTS.length;
+  const doneQuestSlots = challenges.reduce((sum, ch) => sum + ((ch.completedBy || []).length), 0);
+
+  const totalChoreSlots = cloudChoreAssignments.length;
+  const doneChoreSlots = cloudChoreAssignments.filter(r => r.done).length;
+
+  const totalSlots = totalQuestSlots + totalChoreSlots;
+  const doneSlots = doneQuestSlots + doneChoreSlots;
+
+  if (totalSlots === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const pct = Math.round((doneSlots / totalSlots) * 100);
+
+  let msg;
+  if (pct === 0) msg = "L'aventure commence, personne n'a encore coché de défi ou de corvée !";
+  else if (pct < 30) msg = 'Le groupe démarre en douceur.';
+  else if (pct < 60) msg = 'Belle dynamique de groupe !';
+  else if (pct < 90) msg = 'Le groupe est très soudé, ça avance fort !';
+  else msg = 'Esprit de groupe au top, bravo à tous !';
+
+  container.innerHTML = `
+    <div style="background: var(--bg-raised); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow);">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif;">✨ Esprit de groupe</span>
+        <span style="font-size: 13px; font-weight: 700; color: var(--accent-gold);">${pct}%</span>
+      </div>
+      <div style="height: 10px; border-radius: 6px; background: var(--bg-sunken); overflow: hidden;">
+        <div style="height: 100%; width: ${pct}%; border-radius: 6px; background: linear-gradient(90deg, var(--accent-gold), var(--accent-cyan)); transition: width 0.6s ease;"></div>
+      </div>
+      <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 6px;">${msg}</div>
+    </div>
+  `;
 }
 
 function getTimeAgo(timestamp) {
@@ -3377,6 +3453,21 @@ function selectDay(idx) {
   selectedDay = idx;
   document.querySelectorAll('#day-selector .tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('#day-selector .tab-btn')[idx].classList.add('active');
+
+  // ✅ Affiche les corvées déjà assignées pour ce jour (par n'importe qui du
+  // groupe), au lieu de repartir d'un écran vide tant qu'on n'a pas re-tourné la roue.
+  const dayRows = cloudChoreAssignments.filter(r => r.day_idx === idx);
+  currentChoreAssignments = dayRows
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .map(r => ({
+      id: r.id,
+      chore: { name: r.chore_name, emoji: r.emoji },
+      person: PARTICIPANTS.find(p => p.id === r.person_id) || { id: r.person_id, name: '?' },
+      xp: r.xp,
+      dayIdx: r.day_idx,
+      done: r.done
+    }));
+  renderChoresDisplay();
 }
 
 function spinRoulette() {
@@ -3425,15 +3516,6 @@ function spinRoulette() {
     }
 
     const choreCount = Math.min(CHORES.length, available.length);
-    let html = `
-      <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.25);">
-        <div style="font-size: 26px; margin-bottom: 4px;">⚡</div>
-        <strong style="font-size: 15px; letter-spacing: 0.3px;">Corvées assignées !</strong>
-        <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-    `;
-
     const usedIndices = new Set();
     currentChoreAssignments = [];
     for (let i = 0; i < choreCount; i++) {
@@ -3442,24 +3524,107 @@ function spinRoulette() {
         choreIdx = Math.floor(Math.random() * CHORES.length);
       } while (usedIndices.has(choreIdx));
       usedIndices.add(choreIdx);
-      
+
       const chore = CHORES[choreIdx];
       const person = available[i];
       const xp = 15;
-      
-      currentChoreAssignments.push({ chore, person, xp, dayIdx: selectedDay, done: false });
-      
-      html += renderChoreAssignmentCard(i);
-    }
-    html += '</div>';
+      // ✅ id généré côté client (uuid) pour pouvoir retrouver/mettre à jour cette
+      // ligne précise dans Supabase quand la corvée est cochée comme faite.
+      const id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${i}`;
 
-    document.getElementById('chores-display').innerHTML = html;
+      currentChoreAssignments.push({ id, chore, person, xp, dayIdx: selectedDay, done: false });
+    }
+
+    renderChoresDisplay();
+
+    // ✅ Envoie chaque assignation à Supabase pour que la roue soit visible sur
+    // tous les téléphones du groupe, pas seulement celui qui a tourné la roue.
+    currentChoreAssignments.forEach(a => {
+      window.syncToSupabase('chore_assignments', {
+        id: a.id,
+        day_idx: a.dayIdx,
+        person_id: a.person.id,
+        chore_name: a.chore.name,
+        emoji: a.chore.emoji,
+        xp: a.xp,
+        done: false
+      });
+    });
+
     addNotification('⚡ Corvées assignées!', '⚡', 'corvees');
     btn.disabled = false;
   }, 3000);
 }
 
 let currentChoreAssignments = [];
+// ✅ Miroir local des lignes Supabase de la table chore_assignments (assignations +
+// complétions), rafraîchi au démarrage et toutes les 25s pour que la roue des
+// corvées soit visible et à jour sur tous les téléphones du groupe.
+let cloudChoreAssignments = [];
+
+function renderChoresDisplay() {
+  const container = document.getElementById('chores-display');
+  if (!container) return;
+  if (currentChoreAssignments.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  let html = `
+    <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.25);">
+      <div style="font-size: 26px; margin-bottom: 4px;">⚡</div>
+      <strong style="font-size: 15px; letter-spacing: 0.3px;">Corvées assignées !</strong>
+      <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+  `;
+  currentChoreAssignments.forEach((a, i) => { html += renderChoreAssignmentCard(i); });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ✅ Charge les assignations de corvées depuis Supabase (partagées entre tous les
+// téléphones) et met à jour l'affichage du jour actuellement sélectionné.
+async function loadChoreAssignmentsCloud() {
+  if (!window.supabaseReady) return;
+  const rows = await window.loadFromSupabase('chore_assignments');
+  if (!rows) return;
+  cloudChoreAssignments = rows;
+
+  const dayRows = cloudChoreAssignments.filter(r => r.day_idx === selectedDay);
+  if (dayRows.length > 0) {
+    currentChoreAssignments = dayRows
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .map(r => ({
+        id: r.id,
+        chore: { name: r.chore_name, emoji: r.emoji },
+        person: PARTICIPANTS.find(p => p.id === r.person_id) || { id: r.person_id, name: '?' },
+        xp: r.xp,
+        dayIdx: r.day_idx,
+        done: r.done
+      }));
+    renderChoresDisplay();
+  }
+  renderChoreLogPanel();
+  renderHomeGroupSpirit();
+}
+
+// ✅ Combine les corvées faites enregistrées localement (avant ce correctif) avec
+// celles synchronisées via Supabase, pour ne perdre aucun historique.
+function getAllChoreCompletions() {
+  const cloudDone = cloudChoreAssignments
+    .filter(r => r.done)
+    .map(r => ({
+      id: r.id,
+      personId: r.person_id,
+      personName: (PARTICIPANTS.find(p => p.id === r.person_id) || {}).name || '?',
+      choreName: r.chore_name,
+      emoji: r.emoji,
+      xp: r.xp,
+      dayIdx: r.day_idx,
+      timestamp: r.created_at
+    }));
+  return [...choreLog, ...cloudDone];
+}
 
 function renderChoreAssignmentCard(i) {
   const a = currentChoreAssignments[i];
@@ -3498,25 +3663,43 @@ function completeChore(i) {
   addNotification(`⚡ ${a.person.name} a fait "${a.chore.name}" (+${a.xp} XP) !`, '⚡', 'corvees');
   addFeedEntry(`a fait la corvée "${a.chore.name}" (+${a.xp} XP) !`, '⚡');
   showNotification(`⚡ Corvée faite ! +${a.xp} XP`, 'success');
+
+  // ✅ Marque cette corvée comme faite côté Supabase (upsert sur l'id) pour que
+  // tout le monde voie la complétion sans devoir rouvrir l'app.
+  if (a.id) {
+    window.syncToSupabase('chore_assignments', {
+      id: a.id,
+      day_idx: a.dayIdx,
+      person_id: a.person.id,
+      chore_name: a.chore.name,
+      emoji: a.chore.emoji,
+      xp: a.xp,
+      done: true
+    });
+  }
+
   saveAllData();
   renderChoreLogPanel();
+  celebrateWithConfetti();
 }
 
 function renderChoreLogPanel() {
   const panel = document.getElementById('chore-log-panel');
   if (!panel) return;
 
-  if (choreLog.length === 0) {
+  const allCompletions = getAllChoreCompletions();
+  if (allCompletions.length === 0) {
     panel.innerHTML = '';
     return;
   }
 
   // ✅ Total d'XP corvées par personne + les 5 dernières corvées faites
+  // (fusion des complétions locales historiques et de celles synchronisées via Supabase)
   const totals = {};
   PARTICIPANTS.forEach(p => { totals[p.id] = 0; });
-  choreLog.forEach(entry => { if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15); });
+  allCompletions.forEach(entry => { if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15); });
   const ranking = PARTICIPANTS.map(p => ({ p, xp: totals[p.id] || 0 })).filter(r => r.xp > 0).sort((a, b) => b.xp - a.xp);
-  const recent = [...choreLog].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
+  const recent = [...allCompletions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
 
   panel.innerHTML = `
     <div class="card" style="background: linear-gradient(135deg, rgba(153, 51, 255, 0.06) 0%, rgba(31, 182, 201, 0.04) 100%); padding: 16px; border-radius: 14px;">
@@ -3635,9 +3818,11 @@ function toggleChallengeCompletion(id) {
     addNotification(`🏆 ${currentUser.name} a relevé "${(ch.questLabel || ch.creator)}" (+${xp} XP) !`, '🏆', 'challenge');
     addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP) !`, '🏆');
     showNotification(`🏆 Défi relevé ! +${xp} XP`, 'success');
+    celebrateWithConfetti();
   }
   saveAllData();
   renderChallenges();
+  renderHomeGroupSpirit();
 }
 
 function computeXpLeaderboard() {
@@ -5310,6 +5495,7 @@ function revealSurprise() {
     `;
     showNotification('🎉 Surprise débloquée !', 'success');
     addNotification(`💎 ${currentUser.name} a découvert la surprise !`, '💎', 'surprises');
+    celebrateWithConfetti();
     input.value = '';
     input.disabled = true;
   } else {
@@ -5323,6 +5509,55 @@ document.addEventListener('DOMContentLoaded', function() {
   // Afficher le modal de sélection de profil au démarrage
   startProfileSelection();
 });
+
+// ============== MESSAGE DU MATIN ==============
+// Petites phrases originales (écrites pour l'app, pas des citations) inspirées des
+// valeurs de la tradition confucéenne : harmonie du groupe, gratitude, bienveillance
+// envers les autres et la nature, attention à soi. Une par jour de séjour, associée
+// au programme du jour, affichée une seule fois par appareil et par jour.
+const MORNING_WISDOM = [
+  "L'harmonie du groupe se construit dans les petits gestes du quotidien.",
+  "Prendre soin de soi aujourd'hui, c'est mieux prendre soin des autres demain.",
+  "Un mot de gratitude change la journée de celui qui le reçoit, et de celui qui le donne.",
+  "Le respect commence par l'écoute : accorder un instant d'attention sincère à chacun.",
+  "La nature qui nous entoure mérite la même douceur que celle qu'on offre à ses proches.",
+  "Le calme d'un esprit se cultive jour après jour, comme un jardin qu'on arrose.",
+  "Rendre service sans rien attendre en retour est la plus discrète des richesses.",
+  "Une journée réussie est une journée où l'on a fait un peu de bien, même invisible.",
+  "L'équilibre entre soi et les autres se retrouve en accordant du temps aux deux.",
+  "La bienveillance envers les animaux et les lieux qu'on traverse honore le voyage lui-même.",
+  "Savourer l'instant présent, ensemble, est déjà une forme de sagesse.",
+  "Un sourire donné à un inconnu revient souvent, sous une autre forme, plus tard."
+];
+
+function summarizeTodayProgram(dayIdx) {
+  const day = planningData[dayIdx];
+  if (!day || !day.activities || day.activities.length === 0) {
+    return "pas de programme particulier prévu, profitez-en pour souffler";
+  }
+  const names = day.activities.map(a => a.nom).filter(Boolean).slice(0, 3);
+  let summary = names.join(', ');
+  if (day.activities.length > names.length) {
+    summary += ` (+${day.activities.length - names.length} autre${day.activities.length - names.length > 1 ? 's' : ''})`;
+  }
+  return summary;
+}
+
+function showMorningWisdomIfDue() {
+  const dayIdx = getTripDayIndex(new Date());
+  if (dayIdx === null) return; // avant ou après le séjour, rien à afficher
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('saraillon_morning_wisdom_shown') === todayKey) return;
+
+  const wisdom = MORNING_WISDOM[dayIdx % MORNING_WISDOM.length];
+  const programSummary = summarizeTodayProgram(dayIdx);
+  const fullMessage = `${wisdom} Aujourd'hui : ${programSummary}. Belle journée à toi 🌞`;
+
+  addNotification(fullMessage, '🌞', 'morning');
+  showNotification(`🌞 ${wisdom}`, 'success');
+  localStorage.setItem('saraillon_morning_wisdom_shown', todayKey);
+}
 
 // ============== ANIMATIONS MÉDITERRANÉE ==============
 // Principe : une animation = un événement réel. Courtes, non intrusives,
@@ -5385,8 +5620,31 @@ const MedAnim = (() => {
     spawn(svg, 9200);
   }
 
-  return { dolphin, seagull, boat, prefersReduced };
+  // ✨ Éclat de confettis dorés — feedback ponctuel quand une quête, une corvée
+  // ou une surprise est débloquée. Courte pluie de petits carrés en chute libre.
+  function confetti() {
+    if (prefersReduced) return;
+    const colors = ['#f4b942', '#1fb6c9', '#ef6a7c', '#2fae6e', '#f6f3ea'];
+    let pieces = '';
+    for (let i = 0; i < 22; i++) {
+      const left = Math.round(Math.random() * 100);
+      const delay = (Math.random() * 0.3).toFixed(2);
+      const duration = (1.1 + Math.random() * 0.6).toFixed(2);
+      const rotate = Math.round(Math.random() * 360);
+      const color = colors[i % colors.length];
+      pieces += `<div class="anim-confetti-piece" style="left:${left}%; background:${color}; animation-delay:${delay}s; animation-duration:${duration}s; transform: rotate(${rotate}deg);"></div>`;
+    }
+    spawn(`<div class="anim-confetti">${pieces}</div>`, 2200);
+  }
+
+  return { dolphin, seagull, boat, confetti, prefersReduced };
 })();
+
+// ✅ Point d'entrée global court, appelé depuis les complétions de corvées,
+// quêtes/défis et la surprise débloquée.
+function celebrateWithConfetti() {
+  MedAnim.confetti();
+}
 // Accès global pour test rapide (console) : MedAnim.dolphin(), MedAnim.seagull('Plongée dans 1h'), MedAnim.boat()
 window.MedAnim = MedAnim;
 
