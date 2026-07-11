@@ -324,6 +324,9 @@
           </div>
 
           <!-- ESPRIT DE GROUPE : jauge collective (quêtes + corvées faites par tout le monde) -->
+          <!-- SYNCHRONISATION -->
+          <div id="home-sync-status" style="margin-bottom: 14px;"></div>
+
           <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
 
           <!-- CLASSEMENT XP -->
@@ -539,13 +542,14 @@
         <div class="content">
           <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.04) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">📱 Installation</div>
-            <button id="pwa-install-btn" class="btn btn-primary" onclick="installPWA()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.25); background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary);">📲 Installer l'application</button>📲 Installer l'application</button>
+            <button id="pwa-install-btn" class="btn btn-primary" onclick="installPWA()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.25); background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary);">📲 Installer l'application</button>
             <p style="font-size: 11px; color: var(--primary-light); margin: 10px 0 0; line-height: 1.5;">Sur iPhone : bouton Partager → "Sur l'écran d'accueil". Sur Android/Chrome : le bouton apparaît automatiquement si dispo, sinon menu ⋮ → "Installer l'application".</p>
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">💾 Données</div>
             <button class="btn btn-primary" onclick="backupData()" style="width: 100%; margin-bottom: 12px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬇️ Télécharger sauvegarde</button>
-            <button class="btn btn-primary" onclick="restoreData()" style="width: 100%; margin-bottom: 0; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬆️ Restaurer données</button>
+            <button class="btn btn-primary" onclick="restoreData()" style="width: 100%; margin-bottom: 12px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬆️ Restaurer données</button>
+            <button class="btn btn-primary" onclick="exportTripSouvenir()" style="width: 100%; margin-bottom: 0; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">📖 Télécharger le souvenir du séjour</button>
             <input type="file" id="restore-file" accept=".json" style="display: none;">
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
@@ -702,7 +706,40 @@ function formatSupabaseError(err) {
   return parts.length ? parts.join(' | ') : JSON.stringify(err);
 }
 
-window.syncToSupabase = async (table, data) => {
+// ✅ File d'attente hors-ligne : toute synchro qui échoue (vraiment hors ligne,
+// ou requête qui timeout alors que le navigateur se croit en ligne) est mise de
+// côté ici, en localStorage pour survivre à une fermeture de l'app, et retentée
+// automatiquement au retour du réseau au lieu d'être perdue silencieusement.
+function readSyncQueue() {
+  try { return JSON.parse(localStorage.getItem('saraillon_sync_queue') || '[]'); }
+  catch (e) { return []; }
+}
+function writeSyncQueue(queue) {
+  try { localStorage.setItem('saraillon_sync_queue', JSON.stringify(queue)); } catch (e) {}
+  window.__syncQueueLength = queue.length;
+}
+function queueFailedSync(table, data) {
+  const queue = readSyncQueue();
+  queue.push({ table, data, ts: Date.now() });
+  writeSyncQueue(queue);
+}
+window.flushSyncQueue = async function() {
+  if (!window.supabaseReady || !navigator.onLine) return;
+  const queue = readSyncQueue();
+  if (queue.length === 0) return;
+  const remaining = [];
+  for (const item of queue) {
+    const ok = await window.syncToSupabase(item.table, item.data, true);
+    if (!ok) remaining.push(item);
+  }
+  writeSyncQueue(remaining);
+  if (remaining.length === 0 && queue.length > 0 && typeof showNotification === 'function') {
+    showNotification('📡 Tout est resynchronisé !', 'success');
+  }
+};
+window.__syncQueueLength = readSyncQueue().length;
+
+window.syncToSupabase = async (table, data, isRetry) => {
   try {
     // Déterminer les colonnes de matching selon la table
     let onConflict = 'id';
@@ -718,13 +755,23 @@ window.syncToSupabase = async (table, data) => {
     
     // Spécifier la colonne de matching pour le upsert
     const { error } = await window.supabase.from(table).upsert(data, { onConflict });
-    if (error) console.error(`Supabase sync error (${table}): ${formatSupabaseError(error)}`, data);
-    return !error;
+    if (error) {
+      console.error(`Supabase sync error (${table}): ${formatSupabaseError(error)}`, data);
+      if (!isRetry) queueFailedSync(table, data);
+      return false;
+    }
+    window.lastSyncSuccess = new Date();
+    return true;
   } catch (err) {
     console.error(`Supabase sync error (${table}): ${formatSupabaseError(err)}`, data);
+    if (!isRetry) queueFailedSync(table, data);
     return false;
   }
 };
+
+// Retente la file d'attente au retour du réseau + toutes les 30s si des éléments restent
+window.addEventListener('online', () => window.flushSyncQueue());
+setInterval(() => window.flushSyncQueue(), 30000);
 
 window.loadFromSupabase = async (table) => {
   try {

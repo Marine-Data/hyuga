@@ -294,6 +294,7 @@ async function enterMainApp() {
       safe(renderNotifications);
       safe(updateNotifBadge);
       safe(renderHomeGroupSpirit);
+      safe(renderSyncStatus);
     }, 25000);
   }
 
@@ -1026,6 +1027,7 @@ function renderHome() {
 
   updateTodayPlaneBanner();
   renderHomeInscriptionAlert();
+  renderSyncStatus();
   renderHomeGroupSpirit();
   renderWeatherBanner();
   renderCountdownBanner();
@@ -1263,6 +1265,44 @@ function renderHomeHud() {
 // ✅ Jauge "esprit de groupe" : progression collective mêlant défis/quêtes relevés
 // par tout le monde et corvées faites, affichée sur l'accueil. But : donner un
 // signal visible de dynamique de groupe, pas une compétition entre individus.
+// ✅ Petit indicateur discret "synchronisé à HH:MM" — rassure que les données
+// sont bien à jour, et signale le nombre d'actions en attente si hors ligne.
+function renderSyncStatus() {
+  const container = document.getElementById('home-sync-status');
+  if (!container) return;
+
+  const queueLen = window.__syncQueueLength || 0;
+  const online = navigator.onLine;
+
+  let text, color, dot;
+  if (!online) {
+    text = queueLen > 0 ? `Hors ligne · ${queueLen} action${queueLen > 1 ? 's' : ''} en attente` : 'Hors ligne';
+    color = 'var(--accent-red)';
+    dot = '●';
+  } else if (queueLen > 0) {
+    text = `Resynchronisation en cours · ${queueLen} en attente`;
+    color = 'var(--accent-gold)';
+    dot = '●';
+  } else if (window.lastSyncSuccess) {
+    const hh = String(window.lastSyncSuccess.getHours()).padStart(2, '0');
+    const mm = String(window.lastSyncSuccess.getMinutes()).padStart(2, '0');
+    text = `Synchronisé à ${hh}:${mm}`;
+    color = 'var(--accent-green)';
+    dot = '●';
+  } else {
+    text = 'En attente de synchronisation...';
+    color = 'var(--primary-light)';
+    dot = '●';
+  }
+
+  container.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 10.5px; color: var(--primary-light);">
+      <span style="color: ${color}; font-size: 8px;">${dot}</span>${text}
+    </div>
+  `;
+}
+setInterval(renderSyncStatus, 15000);
+
 function renderHomeGroupSpirit() {
   const container = document.getElementById('home-group-spirit');
   if (!container) return;
@@ -1517,3 +1557,4 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
+

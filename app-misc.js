@@ -1,4 +1,75 @@
-// ============== MODALS ==============
+// ============== EXPORT SOUVENIR DU SÉJOUR ==============
+// ✅ Génère une page HTML autonome (photos, XP, corvées, quêtes) téléchargeable —
+// un souvenir qui survit à la suppression de l'app, à garder ou imprimer.
+function exportTripSouvenir() {
+  const r = computeTripRecap();
+  const ranking = computeXpLeaderboard();
+  const topPhotos = [...galleryItems]
+    .sort((a, b) => ((b.likes || []).length) - ((a.likes || []).length))
+    .slice(0, 12);
+
+  const rankingRows = ranking.map((row, i) => `
+    <tr>
+      <td style="padding:8px 12px; color:#c99a3f; font-family:'Playfair Display',Georgia,serif;">${i + 1}</td>
+      <td style="padding:8px 12px;">${escapeHtml(row.p.name)}</td>
+      <td style="padding:8px 12px; text-align:right; font-weight:700; color:#c99a3f;">${row.xp} XP</td>
+    </tr>
+  `).join('');
+
+  const photosHtml = topPhotos.map(p => `
+    <div style="border:2px solid #c99a3f; border-radius:10px; padding:3px; background:#fff;">
+      ${p.type === 'image' ? `<img src="${p.src}" style="width:100%; height:180px; object-fit:cover; border-radius:7px; display:block;">` : ''}
+    </div>
+  `).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8">
+<title>Saraillon — Souvenir du séjour</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #f6f3ea; color: #0c2f3a; margin: 0; padding: 40px 20px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; text-align: center; margin-bottom: 4px; }
+  .eyebrow { text-align: center; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #c99a3f; margin-bottom: 30px; }
+  .seal { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe08a, #c99a3f 70%); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; box-shadow: 0 4px 12px rgba(12,47,58,0.2); }
+  h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; border-bottom: 1px solid #e4d9c0; padding-bottom: 8px; margin-top: 40px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(12,47,58,0.06); }
+  .stats { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 140px; background: #fff; border: 1px solid #e4d9c0; border-radius: 10px; padding: 16px; text-align: center; }
+  .stat .num { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #c99a3f; }
+  .stat .lbl { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #4a5a5e; margin-top: 4px; }
+  .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  footer { text-align: center; margin-top: 50px; font-size: 12px; font-style: italic; color: #7bb3bf; }
+  @media print { body { padding: 0; } }
+</style></head>
+<body><div class="wrap">
+  <div class="seal">S</div>
+  <div class="eyebrow">Saraillon · 21 — 30 août 2026</div>
+  <h1>Le carnet du séjour</h1>
+
+  <div class="stats">
+    <div class="stat"><div class="num">${r.totalXp}</div><div class="lbl">XP cumulés</div></div>
+    <div class="stat"><div class="num">${r.choresDone}</div><div class="lbl">Corvées faites</div></div>
+    <div class="stat"><div class="num">${r.questsDone}</div><div class="lbl">Défis relevés</div></div>
+  </div>
+
+  <h2>Classement final</h2>
+  <table>${rankingRows}</table>
+
+  ${photosHtml ? `<h2>Les photos les plus aimées</h2><div class="photos">${photosHtml}</div>` : ''}
+
+  <footer>Merci pour ce séjour, à très vite pour le prochain 🏝️</footer>
+</div></body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'saraillon-souvenir-du-sejour.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showNotification('📖 Souvenir téléchargé ! Ouvre le fichier et imprime-le (Cmd/Ctrl+P) si tu veux un PDF.', 'success');
+}
 function openModal(id) {
   document.getElementById(id).classList.add('active');
 }

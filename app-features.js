@@ -245,6 +245,7 @@ function renderTripRecap() {
         </div>
       ` : ''}
       <div style="margin-top: 10px; font-size: 11px; color: var(--primary-light); font-style: italic;">Merci pour ce séjour, à très vite pour le prochain 🏝️</div>
+      <button class="btn" onclick="exportTripSouvenir()" style="width: 100%; margin-top: 14px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none;">📖 Télécharger le souvenir du séjour</button>
     </div>
   `;
 }
