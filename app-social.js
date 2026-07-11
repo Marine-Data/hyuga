@@ -289,7 +289,7 @@ function showPublicProfile(userId) {
     <div class="card" style="text-align: center; padding: 24px;">
       <button class="btn" onclick="showAllProfiles()" style="width: 100%; margin-bottom: 18px; background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">← Retour aux participants</button>
       
-      <div style="${avatarWrapStyle}">${avatarHTML}</div>
+      <div style="${avatarWrapStyle} cursor: pointer;" onclick="showPublicProfileTab(${userId}, 'feed')" title="Voir les activités">${avatarHTML}</div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
       <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
         "${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}"
@@ -338,7 +338,11 @@ function showPublicProfileTab(userId, tab) {
       content.innerHTML = '<div style="text-align: center; color: var(--primary-light); margin-top: 20px;">Aucune photo 📸</div>';
     } else {
       content.innerHTML = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px;">' + userPhotos.slice(0, 9).map(p => `
-        <div style="aspect-ratio: 1; background: linear-gradient(45deg, var(--accent-purple), var(--accent-pink)); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 24px;">📷</div>
+        <div style="aspect-ratio: 1; border-radius: 6px; overflow: hidden; cursor: pointer;" onclick="switchTab('gallery')">
+          ${p.type === 'image'
+            ? `<img src="${p.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
+            : `<video src="${p.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
+        </div>
       `).join('') + '</div>';
     }
   }
