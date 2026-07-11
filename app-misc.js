@@ -1,4 +1,27 @@
-// ============== MISSIONS SECRÈTES DU MATIN ==============
+// ✅ Upload de la photo de fond de l'écran d'accueil/connexion, chemin fixe pour
+// que tout le monde la voie automatiquement (y compris avant connexion).
+async function uploadHeroBackground(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('hero-bg-upload-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    const publicUrl = await uploadFileToStorage('app-assets', 'hero-login.jpg', file);
+    const img = document.getElementById('hero-bg-photo');
+    if (img) {
+      img.src = `${publicUrl}?t=${Date.now()}`;
+      img.style.display = 'block';
+    }
+    if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
+    showNotification('🖼️ Fond d\'accueil mis à jour !', 'success');
+  } catch (err) {
+    console.error('Échec upload fond accueil:', err);
+    if (progressEl) progressEl.textContent = '❌ Échec, réessaie.';
+  }
+}
+
+
 // 🔧 Chaque matin, chaque personne reçoit UNE mission privée, visible d'elle
 // seule dans l'app. {target} est remplacé par le prénom de la personne visée.
 const SECRET_MISSION_TEMPLATES = {
@@ -374,7 +397,31 @@ function toggleDeezer() {
   document.getElementById('deezerPanel').classList.toggle('open');
 }
 
-// ============== SURPRISE ==============
+// ✅ Upload direct de la version vidéo (avec musique) des Olympiades, exportée
+// depuis Canva — même mécanisme que les vidéos de challenges, chemin fixe pour
+// que tout le monde y accède automatiquement une fois uploadée.
+async function uploadOlympiadesVideo(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('olympiades-video-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    const publicUrl = await uploadFileToStorage('challenge-videos', 'olympiades.mp4', file);
+    const player = document.getElementById('olympiades-video-player');
+    if (player) {
+      player.src = `${publicUrl}?t=${Date.now()}`;
+      player.style.display = 'block';
+    }
+    document.getElementById('olympiades-video-upload').style.display = 'none';
+    showNotification('🎥 Vidéo des Olympiades ajoutée !', 'success');
+  } catch (err) {
+    console.error('Échec upload vidéo Olympiades:', err);
+    if (progressEl) progressEl.textContent = '❌ Échec, réessaie.';
+  }
+}
+
+
 function revealSurprise() {
   const input = document.getElementById('surprise-code');
   if (input.value.toUpperCase() === 'MAGIA') {
@@ -404,6 +451,16 @@ function revealSurprise() {
             <iframe loading="lazy" style="width: 100%; aspect-ratio: 16/9; border: none; display: block;" src="https://www.canva.com/design/DAHJ270_OqQ/view?embed" allowfullscreen allow="fullscreen"></iframe>
           </div>
           <a href="https://www.canva.com/d/vtjIiXCFg_OPhF6" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
+        </div>
+        <div style="margin-top: 16px;" id="olympiades-video-slot">
+          <video id="olympiades-video-player" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/olympiades.mp4" controls style="width: 100%; border-radius: 12px; display: none; box-shadow: 0 6px 18px rgba(0,0,0,0.2);" onloadeddata="document.getElementById('olympiades-video-player').style.display='block'; document.getElementById('olympiades-video-upload').style.display='none';" onerror="document.getElementById('olympiades-video-upload').style.display='block';"></video>
+          <div id="olympiades-video-upload" style="display: none;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: white; cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.2);">
+              🎥 Ajouter la version vidéo avec musique
+              <input type="file" accept="video/mp4,video/*" style="display: none;" onchange="uploadOlympiadesVideo(this)">
+            </label>
+            <span id="olympiades-video-progress" style="font-size: 11px; color: white; opacity: 0.85; margin-left: 8px;"></span>
+          </div>
         </div>
       </div>
     `;
