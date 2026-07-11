@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f3ea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SARAILLON">
+  <meta name="description" content="🏝️ SARAILLON - L'app ultime de gestion de séjour">
+  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22SARAILLON ULTIMATE%22,%22short_name%22:%22SARAILLON%22,%22start_url%22:%22./%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%232b3a55%22,%22scope%22:%22./%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27><rect fill=%27%232b3a55%27 width=%27192%27 height=%27192%27/><text x=%2750%%27 y=%2750%%27 font-size=%27100%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 fill=%27%23e3b94f%27>🏝️</text></svg>%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any maskable%22}]}">
+  <title>🏝️ SARAILLON ULTIMATE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<!-- MODAL: SÉLECTION DE PROFIL -->
+<div id="modalProfileSelect" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #bfe3f5; display: none; z-index: 9999; overflow: hidden;">
+  <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMax slice" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="medSky" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#7ec8f0"/>
+        <stop offset="55%" stop-color="#bfe3f5"/>
+        <stop offset="100%" stop-color="#ffe9b8"/>
+      </linearGradient>
+      <radialGradient id="medSun" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="45%" stop-color="#fff3c4"/>
+        <stop offset="100%" stop-color="#ffe9b8" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="medMountainFar" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#a9c9dc"/>
+        <stop offset="100%" stop-color="#8db0c9"/>
+      </linearGradient>
+      <linearGradient id="medMountainNear" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#89b0a3"/>
+        <stop offset="100%" stop-color="#6c9a8c"/>
+      </linearGradient>
+      <linearGradient id="medSea" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#4fb8c4"/>
+        <stop offset="100%" stop-color="#1f7a94"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="800" height="600" fill="url(#medSky)"/>
+    <circle cx="620" cy="140" r="150" fill="url(#medSun)"/>
+    <circle cx="620" cy="140" r="42" fill="#fffef2"/>
+    <path d="M0 320 Q90 260 180 300 T360 280 Q460 250 540 290 T720 270 Q770 265 800 285 L800 380 L0 380 Z" fill="url(#medMountainFar)" opacity="0.9"/>
+    <path d="M0 360 Q100 315 210 345 T420 330 Q520 305 610 340 T800 320 L800 400 L0 400 Z" fill="url(#medMountainNear)" opacity="0.85"/>
+    <ellipse cx="700" cy="395" rx="60" ry="10" fill="#4a7a6c" opacity="0.5"/>
+    <rect x="0" y="380" width="800" height="220" fill="url(#medSea)"/>
+    <path d="M0 400 Q40 392 80 400 T160 400 T240 400 T320 400 T400 400 T480 400 T560 400 T640 400 T720 400 T800 400 L800 600 L0 600 Z" fill="#7fd0d6" opacity="0.4"/>
+    <path d="M0 440 Q40 432 80 440 T160 440 T240 440 T320 440 T400 440 T480 440 T560 440 T640 440 T720 440 T800 440 L800 600 L0 600 Z" fill="#3ba2ae" opacity="0.35"/>
+    <g opacity="0.9">
+      <path d="M150 470 L165 435 L180 470 Z" fill="#fffef2"/>
+      <line x1="165" y1="435" x2="165" y2="475" stroke="#fffef2" stroke-width="2"/>
+      <path d="M140 478 L190 478 L180 490 L150 490 Z" fill="#e8d9b0"/>
+    </g>
+    <g transform="translate(40,50)" opacity="0.85">
+      <path d="M0 20 Q20 0 40 10 Q25 15 20 30 Q10 15 0 20 Z" fill="#9fc09a"/>
+      <path d="M40 10 Q60 -5 78 8 Q60 12 55 25 Q47 15 40 10 Z" fill="#8bb086"/>
+    </g>
+    <g transform="translate(680,40) scale(0.9)" opacity="0.8">
+      <path d="M0 20 Q20 0 40 10 Q25 15 20 30 Q10 15 0 20 Z" fill="#9fc09a"/>
+    </g>
+  </svg>
+  <div style="position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 24px;">
+    <div style="margin-bottom: 8px; text-align: center; flex-shrink: 0;">
+      <div style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; color: var(--primary); text-shadow: 0 2px 12px rgba(255,255,255,0.7); letter-spacing: 2px;">🏝️ SARAILLON</div>
+      <div style="width: 60px; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-gold), transparent); margin: 10px auto;"></div>
+      <p style="color: #b8790a; font-size: 11px; font-style: italic; margin-bottom: 2px;">누구세요?</p>
+      <p style="color: rgba(34,85,164,0.6); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px;">CHOISIS TON PERSONNAGE</p>
+    </div>
+    <div style="flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; min-height: 0;">
+      <div id="profileCarousel" style="position: relative; width: 100%; max-width: 480px; height: 100%; max-height: 360px; display: flex; align-items: center; justify-content: center; touch-action: pan-y;"></div>
+      <button onclick="shiftProfileCarousel(-1)" aria-label="Précédent" style="position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.55); backdrop-filter: blur(6px); border: none; color: var(--primary); font-size: 20px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 3;">‹</button>
+      <button onclick="shiftProfileCarousel(1)" aria-label="Suivant" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.55); backdrop-filter: blur(6px); border: none; color: var(--primary); font-size: 20px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 3;">›</button>
+    </div>
+    <button id="profileCarouselConfirm" class="btn" onclick="confirmProfileCarouselSelection()" style="margin-top: 6px; padding: 12px 32px; background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: #1a1a1a; border: none; border-radius: 30px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 6px 20px rgba(255, 203, 5, 0.4); flex-shrink: 0;">Choisir ce personnage →</button>
+    <div id="profileCarouselDots" style="display: flex; gap: 6px; margin-top: 14px; flex-shrink: 0;"></div>
+  </div>
+</div>
+
+<div id="modalProfileComplete" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+  <div style="background: white; padding: 40px; border-radius: 15px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;">
+    <h2 style="margin-bottom: 10px;">✨ Complète ton profil</h2>
+    <p style="margin-bottom: 30px; color: var(--primary-light); font-size: 14px;">Personnalise tes infos</p>
+    <div style="margin-bottom: 20px; text-align: center;">
+      <div id="profileSelectAvatar" style="width: 100px; height: 100px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; margin: 0 auto; border: none; box-shadow: 0 4px 16px rgba(227, 185, 79, 0.3);">👤</div>
+      <div id="profileSelectName" style="font-weight: 600; margin-top: 10px; color: var(--primary);">Nom</div>
+    </div>
+    <div style="margin-bottom: 15px;">
+      <label style="font-weight: 600; color: var(--primary-light); display: block; margin-bottom: 6px;">📸 Ta photo</label>
+      <input type="file" id="completeAvatarInput" accept="image/*" onchange="handleCompleteAvatarUpload(event)" style="width: 100%;">
+    </div>
+    <div style="margin-bottom: 15px;">
+      <label style="font-weight: 600; color: var(--primary-light); display: block; margin-bottom: 6px;">Pseudo</label>
+      <input type="text" id="completePseudoInput" placeholder="Ton surnom..." style="width: 100%; padding: 10px; border: none; border-radius: 6px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); background: var(--bg-sunken); transition: all 0.3s ease;" onfocus="this.style.boxShadow='inset 0 2px 6px rgba(12, 47, 58, 0.08), 0 0 0 3px rgba(12, 47, 58, 0.1)'; this.style.background='white';" onblur="this.style.boxShadow='inset 0 2px 6px rgba(12, 47, 58, 0.08)'; this.style.background='var(--bg-sunken)';">
+    </div>
+    <div style="margin-bottom: 15px;">
+      <label style="font-weight: 600; color: var(--primary-light); display: block; margin-bottom: 6px;">Bio</label>
+      <textarea id="completeBioInput" placeholder="Dis-nous un truc..." style="width: 100%; padding: 10px; border: none; border-radius: 6px; resize: vertical; min-height: 70px; font-family: inherit; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); background: var(--bg-sunken); transition: all 0.3s ease;" onfocus="this.style.boxShadow='inset 0 2px 6px rgba(12, 47, 58, 0.08), 0 0 0 3px rgba(12, 47, 58, 0.1)'; this.style.background='white';" onblur="this.style.boxShadow='inset 0 2px 6px rgba(12, 47, 58, 0.08)'; this.style.background='var(--bg-sunken)';"></textarea>
+    </div>
+    <div style="margin-bottom: 20px;">
+      <label style="font-weight: 600; color: var(--primary-light); display: block; margin-bottom: 6px;">🍽️ Régimes</label>
+      <input type="text" id="completeRegimesInput" placeholder="Ex: Végétarienne..." style="width: 100%; padding: 10px; border: none; border-radius: 6px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); background: var(--bg-sunken); transition: all 0.3s ease;" onfocus="this.style.boxShadow='inset 0 2px 6px rgba(12, 47, 58, 0.08), 0 0 0 3px rgba(12, 47, 58, 0.1)'; this.style.background='white';" onblur="this.style.boxShadow='inset 0 2px 6px rgba(12, 47, 58, 0.08)'; this.style.background='var(--bg-sunken)';">
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="goBackToProfileSelect()" style="flex: 1; padding: 12px; background: var(--bg-sunken); color: var(--primary); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(12, 47, 58, 0.08); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(12, 47, 58, 0.12)'; this.style.transform='translateY(-1px)';" onmouseout="this.style.boxShadow='0 2px 8px rgba(12, 47, 58, 0.08)'; this.style.transform='translateY(0)';">← Retour</button>
+      <button onclick="finishProfileSetup()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.25); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 8px 20px rgba(12, 47, 58, 0.4)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='0 4px 12px rgba(12, 47, 58, 0.25)'; this.style.transform='translateY(0)';">✅ Entrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING (3 écrans, affiché une seule fois par appareil) -->
+<div id="onboardingModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 20%, rgba(34,85,164,0.35) 0%, rgba(10,14,22,0.95) 70%); display: none; align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+  <div style="background: var(--bg-raised); padding: 32px 26px; border-radius: 18px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 8px 0 var(--border), 0 20px 50px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);">
+    <div id="onboarding-slide-1" class="onboarding-slide">
+      <div style="font-size: 52px; margin-bottom: 16px;">🏝️</div>
+      <h2 style="margin: 0 0 10px;">Bienvenue sur SARAILLON !</h2>
+      <p style="font-size: 13px; color: var(--primary-light); line-height: 1.6;">Ton compagnon pour tout le séjour : planning, activités, souvenirs et bonne humeur entre nous 9.</p>
+    </div>
+    <div id="onboarding-slide-2" class="onboarding-slide" style="display: none;">
+      <div style="font-size: 52px; margin-bottom: 16px;">📅</div>
+      <h2 style="margin: 0 0 10px;">Planning & Inscriptions</h2>
+      <p style="font-size: 13px; color: var(--primary-light); line-height: 1.6;">Retrouve le programme jour par jour, inscris-toi aux activités (plongée, bateau, via ferrata...) et n'oublie rien grâce à la checklist valise.</p>
+    </div>
+    <div id="onboarding-slide-3" class="onboarding-slide" style="display: none;">
+      <div style="font-size: 52px; margin-bottom: 16px;">🎮</div>
+      <h2 style="margin: 0 0 10px;">Quêtes, Corvées & Galerie</h2>
+      <p style="font-size: 13px; color: var(--primary-light); line-height: 1.6;">Relève des quêtes pour gagner de l'XP, découvre qui fait la vaisselle, et partage tes plus belles photos avec le groupe !</p>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 6px; margin: 20px 0;">
+      <div class="onboarding-dot" id="onboarding-dot-1" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-gold);"></div>
+      <div class="onboarding-dot" id="onboarding-dot-2" style="width: 8px; height: 8px; border-radius: 50%; background: var(--border);"></div>
+      <div class="onboarding-dot" id="onboarding-dot-3" style="width: 8px; height: 8px; border-radius: 50%; background: var(--border);"></div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="closeOnboarding()" style="flex: 1; padding: 12px; background: var(--bg-sunken); color: var(--primary-light); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">Passer</button>
+      <button id="onboarding-next-btn" onclick="nextOnboardingSlide()" style="flex: 1.4; padding: 12px; background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary); border: none; border-radius: 6px; cursor: pointer; font-weight: 700; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.3);">Suivant →</button>
+    </div>
+  </div>
+</div>
+
+<div id="appContent" style="display: none;">
+
+<!-- HOME PAGE -->
+<!-- APP -->
+<div id="appContainer" style="display: none;">
+  <div class="app-wrapper">
+    <!-- SIDEBAR -->
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <!-- HEADER -->
+      <div class="app-header">
+        <!-- SECTION RETOUR (Gauche) -->
+        <button class="btn-header" onclick="goHome()" id="backBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 12px;">← Home</button>
+        
+        <!-- LOGO (Centre) -->
+        <div class="header-logo" style="flex: 1; text-align: center; min-width: 0;">
+          <h1>🏝️ SARAILLON</h1>
+        </div>
+        
+        <!-- ACTIONS (Droite) - Groupées logiquement -->
+        <div class="header-actions" style="display: flex; gap: 4px; align-items: center;">
+          <!-- Actions principales -->
+          <button class="btn-header" onclick="switchTab('profile'); showMyProfile();" title="Mon Profil" style="padding: 8px 10px;">👥</button>
+          <button class="btn-header" onclick="toggleNotifications()" title="Notifications" style="padding: 8px 10px; position: relative;">
+            🔔 <span class="notif-badge" id="notifBadge" style="display: none; position: absolute; top: 0; right: 0; background: var(--accent-pink); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: 700;">0</span>
+          </button>
+          
+          <!-- Actions secondaires (Undo/Redo) -->
+          <button class="btn-header" onclick="toggleUndo()" id="undoBtn" title="Annuler" style="padding: 8px 8px; font-size: 13px;">↶</button>
+          <button class="btn-header" onclick="toggleRedo()" id="redoBtn" title="Refaire" style="padding: 8px 8px; font-size: 13px;">↷</button>
+        </div>
+      </div>
+
+      <!-- HOME -->
+      <div id="home" class="tab-content active">
+        <!-- SCÈNE HÉROS -->
+        <div style="position: relative; height: 260px; overflow: hidden;">
+          <svg viewBox="0 0 800 340" preserveAspectRatio="xMidYMax slice" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="homeSky" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#bdeef2"/>
+                <stop offset="55%" stop-color="#7fdce4"/>
+                <stop offset="100%" stop-color="#f3e6c0"/>
+              </linearGradient>
+              <radialGradient id="homeSun" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#fffdf3"/>
+                <stop offset="40%" stop-color="#ffe9a8"/>
+                <stop offset="100%" stop-color="#ffe9a8" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="homeHills" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#5aa88f"/>
+                <stop offset="100%" stop-color="#3f8f78"/>
+              </linearGradient>
+              <linearGradient id="homeSea" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#5fd6df"/>
+                <stop offset="55%" stop-color="#1fb6c9"/>
+                <stop offset="100%" stop-color="#0e7a90"/>
+              </linearGradient>
+              <linearGradient id="homeSand" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#f4d98a"/>
+                <stop offset="100%" stop-color="#e0b45c"/>
+              </linearGradient>
+              <linearGradient id="homeScrim" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#002233" stop-opacity="0.42"/>
+              </linearGradient>
+              <radialGradient id="sunGlint" cx="50%" cy="0%" r="80%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- ciel -->
+            <rect x="0" y="0" width="800" height="340" fill="url(#homeSky)"/>
+            <!-- soleil + halo -->
+            <circle cx="640" cy="66" r="110" fill="url(#homeSun)"/>
+            <circle cx="640" cy="66" r="30" fill="#fffdf3"/>
+            <!-- collines / côte -->
+            <path d="M0 168 Q110 128 220 152 T440 138 Q540 120 630 148 T800 132 L800 210 L0 210 Z" fill="url(#homeHills)" opacity="0.9"/>
+            <!-- oliviers stylisés sur la colline -->
+            <g opacity="0.5" fill="#2f7a63">
+              <circle cx="120" cy="150" r="10"/><circle cx="138" cy="146" r="8"/>
+              <circle cx="500" cy="140" r="9"/><circle cx="516" cy="137" r="7"/>
+            </g>
+            <!-- mer -->
+            <rect x="0" y="205" width="800" height="135" fill="url(#homeSea)"/>
+            <!-- reflet du soleil sur l'eau (sable qui brille / glint) -->
+            <ellipse cx="640" cy="230" rx="150" ry="34" fill="url(#sunGlint)"/>
+            <!-- vaguelettes -->
+            <path d="M0 224 Q40 217 80 224 T160 224 T240 224 T320 224 T400 224 T480 224 T560 224 T640 224 T720 224 T800 224 L800 250 L0 250 Z" fill="#bff0f2" opacity="0.35"/>
+            <path d="M0 250 Q40 243 80 250 T160 250 T240 250 T320 250 T400 250 T480 250 T560 250 T640 250 T720 250 T800 250 L800 280 L0 280 Z" fill="#0e7a90" opacity="0.30"/>
+            <!-- plage de sable doré au premier plan -->
+            <path d="M0 288 Q200 268 420 286 Q620 302 800 282 L800 340 L0 340 Z" fill="url(#homeSand)"/>
+            <ellipse cx="360" cy="316" rx="240" ry="16" fill="#fff2c9" opacity="0.45"/>
+            <!-- palmier -->
+            <g transform="translate(64,196)">
+              <path d="M6 0 Q10 60 4 120" stroke="#7a5a2e" stroke-width="7" fill="none" stroke-linecap="round"/>
+              <g fill="#2fae6e">
+                <path d="M6 2 Q-40 -6 -60 22 Q-30 8 6 12 Z"/>
+                <path d="M6 2 Q52 -6 74 20 Q40 6 6 12 Z"/>
+                <path d="M6 2 Q-24 -34 -48 -30 Q-14 -18 6 8 Z"/>
+                <path d="M6 2 Q36 -34 62 -28 Q28 -16 6 8 Z"/>
+                <path d="M6 2 Q4 -44 -4 -46 Q2 -20 6 10 Z"/>
+              </g>
+            </g>
+            <!-- parasol -->
+            <g transform="translate(700,250)">
+              <line x1="0" y1="0" x2="0" y2="46" stroke="#8a6a3a" stroke-width="4" stroke-linecap="round"/>
+              <path d="M-34 2 Q0 -30 34 2 Z" fill="#ef6a7c"/>
+              <path d="M-34 2 Q-17 -6 0 2 Z" fill="#fff" opacity="0.55"/>
+              <path d="M0 2 Q17 -6 34 2 Z" fill="#fff" opacity="0.35"/>
+            </g>
+            <!-- voile au loin -->
+            <g opacity="0.9" transform="translate(250,206)">
+              <path d="M0 20 L14 -14 L28 20 Z" fill="#fffef2"/>
+              <line x1="14" y1="-14" x2="14" y2="24" stroke="#fffef2" stroke-width="2"/>
+            </g>
+            <rect x="0" y="0" width="800" height="340" fill="url(#homeScrim)"/>
+          </svg>
+          <div id="today-plane-banner" style="display: none; position: absolute; top: 18px; left: 20px; z-index: 2; max-width: 80%;">
+            <div class="plane-group" style="display: flex; align-items: center; white-space: nowrap; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); padding: 6px 14px 6px 8px; border-radius: 30px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);">
+              <span style="font-size: 16px; margin-right: 6px;">✈️</span>
+              <span class="tow-flag" style="color: var(--primary); font-weight: 700; font-size: 11px;"></span>
+            </div>
+          </div>
+          <div style="position: absolute; bottom: 34px; left: 20px; z-index: 2; color: white;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.9; margin-bottom: 4px;">안녕하세요 <span id="bow-character" style="display: inline-block; transform-origin: 70% 90%; animation: bowGreeting 2.5s ease-in-out 1;">🙇</span></div>
+            <div id="home-greeting" style="font-size: 26px; font-weight: 800; text-shadow: 0 2px 16px rgba(0,0,0,0.35); font-family: 'Bricolage Grotesque', sans-serif;">Bienvenue !</div>
+          </div>
+        </div>
+
+        <!-- FICHE BLANCHE -->
+        <div style="background: var(--bg); border-radius: 28px 28px 0 0; margin-top: -24px; position: relative; z-index: 2; padding: 22px 20px 20px;">
+          <div id="home-inscriptions-alert"></div>
+
+          <!-- BARRE DE RECHERCHE (raccourci planning) -->
+          <div onclick="switchTab('planning')" style="display: flex; align-items: center; gap: 10px; background: var(--bg-raised); border-radius: 16px; padding: 13px 16px; margin-bottom: 20px; box-shadow: var(--shadow-lg); cursor: pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e7a90" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <span style="font-size: 13px; color: var(--primary-light); font-weight: 500;">Où veux-tu aller aujourd'hui ?</span>
+          </div>
+
+          <!-- STATS EN LIGNE -->
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-size: 12.5px; color: var(--primary-light);">
+            <span>🎒 <strong id="home-hud-valise" style="color: var(--primary);">0%</strong></span>
+            <span style="opacity: 0.4;">·</span>
+            <span>🏆 <strong id="home-hud-xp" style="color: var(--primary);">0 XP</strong></span>
+            <span style="opacity: 0.4;">·</span>
+            <span>📅 <strong id="home-hud-days" style="color: var(--primary);">...</strong></span>
+          </div>
+
+          <!-- ESPRIT DE GROUPE : jauge collective (quêtes + corvées faites par tout le monde) -->
+          <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
+
+          <!-- SOUVENIR DU JOUR -->
+          <div id="home-memory" style="margin-bottom: 22px;"></div>
+
+          <!-- À LA UNE (scroll horizontal) -->
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+            <div style="font-size: 18px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif;">À la une</div>
+            <a onclick="switchTab('planning')" style="font-size: 12px; color: var(--accent-sand); font-weight: 700; cursor: pointer;">Voir tout</a>
+          </div>
+          <div id="home-featured-row" style="display: flex; gap: 12px; overflow-x: auto; margin: 0 -20px 24px; padding: 0 20px 4px; scrollbar-width: none;"></div>
+
+          <!-- EXPLORER (grille : toutes les icônes visibles) -->
+          <div style="font-size: 18px; font-weight: 800; color: var(--primary); margin-bottom: 14px; font-family: 'Bricolage Grotesque', sans-serif;">Explorer</div>
+          <div id="home-menu-tiles" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 10px; margin-bottom: 26px;"></div>
+
+          <!-- FIL D'ACTIVITÉ -->
+          <div class="card">
+            <div class="card-title">Fil d'activité</div>
+            <div id="home-feed" style="display: flex; flex-direction: column; gap: 10px; max-height: 200px; overflow-y: auto;">
+              <div style="font-size: 13px; color: var(--primary-light); text-align: center; padding: 12px;">Chargement...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLANNING -->
+      <div id="planning" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">📅 Planning</button>
+          <button class="tab-btn" onclick="exportPlanning()">⬇️ Export</button>
+        </div>
+        <div class="content" id="planning-content"></div>
+      </div>
+
+      <!-- CORVEES -->
+      <div id="corvees" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">⚡ Corvées</button>
+        </div>
+        <div style="padding: 16px 20px;">
+          <div style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px;" id="day-selector"></div>
+          <div style="text-align: center; margin: 20px 0;">
+            <button id="spin-btn" class="btn btn-primary" style="font-size: 16px; padding: 20px 30px; transition: transform 0.8s;" onclick="spinRoulette()">🎡 SPIN!</button>
+          </div>
+          <div id="carousel-wheel" style="display: none; text-align: center; margin: 30px 0;">
+            <div class="carousel-wheel-track" style="display: flex; gap: 15px; justify-content: center; align-items: center; min-height: 100px; perspective: 1000px; overflow-x: auto; padding: 4px;">
+              <div id="carousel-items" style="display: flex; gap: 20px; position: relative;"></div>
+            </div>
+          </div>
+          <div id="chores-display"></div>
+          <div id="chore-log-panel" style="margin-top: 20px;"></div>
+        </div>
+      </div>
+
+      <!-- CHALLENGES -->
+      <div id="challenges" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab('challenges')">🏁 Challenges</button>
+          <button class="tab-btn" onclick="showCreateChallenge()" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(153, 51, 255, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Créer</button>
+        </div>
+        <div class="content" id="challenges-content"></div>
+      </div>
+
+      <!-- INSCRIPTIONS -->
+      <div id="inscriptions" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">✍️ Inscriptions</button>
+        </div>
+        <div class="content" id="inscriptions-content"></div>
+      </div>
+
+      <!-- SHOPPING -->
+      <div id="shopping" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">📝 Liste de course</button>
+        </div>
+        <div class="content">
+          <div class="card">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="new-item" placeholder="Ajouter..." style="margin-bottom: 0;" onkeydown="if(event.key==='Enter'){event.preventDefault(); addShoppingItem();}">
+              <button class="btn btn-primary btn-small" onclick="addShoppingItem()">+</button>
+            </div>
+          </div>
+          <div id="shopping-list"></div>
+        </div>
+      </div>
+
+      <!-- SONDAGES -->
+      <div id="polls" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">🗳️ Sondages</button>
+          <button class="tab-btn" onclick="showCreatePoll()" style="background: linear-gradient(135deg, #ff9d5c 0%, #e35b2e 100%); color: white; font-weight: 600;">➕ Créer</button>
+        </div>
+        <div class="content">
+          <div id="polls-content"></div>
+        </div>
+      </div>
+
+      <!-- DÉPENSES -->
+      <div id="expenses" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">💰 Dépenses</button>
+          <button class="tab-btn" onclick="showAddExpense()" style="background: linear-gradient(135deg, var(--accent-cyan) 0%, #2e8f82 100%); color: white; font-weight: 600;">➕ Ajouter</button>
+        </div>
+        <div class="content">
+          <div id="expenses-balance"></div>
+          <div id="expenses-list"></div>
+        </div>
+      </div>
+
+      <!-- GALLERY -->
+      <div id="gallery" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">📸 Galerie</button>
+          <button class="tab-btn" onclick="showUploadForm()" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(153, 51, 255, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Uploader</button>
+        </div>
+        <div class="content">
+          <div id="upload-form" style="display: none;">
+            <div class="card">
+              <input type="text" id="gallery-location" placeholder="Lieu?">
+              <textarea id="gallery-desc" placeholder="Description..." style="min-height: 60px;"></textarea>
+              <div style="margin: 12px 0; padding: 12px; background: var(--bg-sunken); border-radius: 6px;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 10px; color: var(--primary-soft);">🏷️ Personnes dans la photo:</div>
+                <div id="gallery-tags-checkboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+              </div>
+              <input type="file" id="gallery-input" accept="image/*,video/*">
+              <button class="btn btn-primary" onclick="uploadGallery()" style="width: 100%;">Uploader</button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <select id="gallery-filter-day" onchange="applyGalleryFilters()" style="flex: 1; padding: 10px; border-radius: 8px; background: var(--bg-sunken); color: var(--primary); font-size: 12px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08);">
+              <option value="">📅 Tous les jours</option>
+            </select>
+            <select id="gallery-filter-person" onchange="applyGalleryFilters()" style="flex: 1; padding: 10px; border-radius: 8px; background: var(--bg-sunken); color: var(--primary); font-size: 12px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08);">
+              <option value="">👤 Tout le monde</option>
+            </select>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 20px; padding-top: 4px;" id="gallery-grid"></div>
+        </div>
+      </div>
+
+      <!-- FEED -->
+      <div id="feed" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">✨ Actualité</button>
+        </div>
+        <div class="content" id="feed-content"></div>
+      </div>
+
+      <!-- PROFILE -->
+      <div id="profile" class="tab-content">
+        <div class="content">
+          <!-- MON PROFIL TAB -->
+          <div style="display: flex; gap: 8px; margin-bottom: 16px; box-shadow: 0 2px 0 var(--border); padding-bottom: 12px;">
+            <button class="tab-btn active" onclick="showMyProfile()" style="box-shadow: inset 0 -3px 0 var(--accent-purple); margin-bottom: -14px;">👤 Mon Profil</button>
+            <button class="tab-btn" onclick="showGroupProfiles()" style="box-shadow: inset 0 -3px 0 transparent; margin-bottom: -14px;">👥 Groupe</button>
+          </div>
+          <div id="my-profile-content"></div>
+          <div id="all-profiles-content" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- SURPRISES -->
+      <div id="surprises" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">💎 Surprises</button>
+        </div>
+        <div class="content">
+          <div class="card" style="text-align: center; padding: 28px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%);">
+            <div style="font-size: 60px; margin-bottom: 16px; display: inline-block; animation: bounce 2s infinite;">🔐</div>
+            <div class="card-title" style="justify-content: center; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); margin-bottom: 12px;">Un Secret T'attend...</div>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.9); margin-bottom: 20px;">Quelqu'un connaît peut-être le code magique 👀</p>
+            <input type="password" id="surprise-code" placeholder="Code secret..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; margin-bottom: 14px; text-align: center; font-size: 14px; letter-spacing: 2px; background: rgba(255,255,255,0.95); box-shadow: inset 0 2px 6px rgba(0,0,0,0.1); color: var(--primary);">
+            <button class="btn btn-primary" onclick="revealSurprise()" style="width: 100%; border: none; background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%); color: var(--primary); font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">✨ Révéler</button>
+          </div>
+          <div id="surprise-content"></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="settings" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">⚙️ Paramètres</button>
+        </div>
+        <div class="content">
+          <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.04) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">📱 Installation</div>
+            <button id="pwa-install-btn" class="btn btn-primary" onclick="installPWA()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.25); background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary);">📲 Installer l'application</button>📲 Installer l'application</button>
+            <p style="font-size: 11px; color: var(--primary-light); margin: 10px 0 0; line-height: 1.5;">Sur iPhone : bouton Partager → "Sur l'écran d'accueil". Sur Android/Chrome : le bouton apparaît automatiquement si dispo, sinon menu ⋮ → "Installer l'application".</p>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">💾 Données</div>
+            <button class="btn btn-primary" onclick="backupData()" style="width: 100%; margin-bottom: 12px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬇️ Télécharger sauvegarde</button>
+            <button class="btn btn-primary" onclick="restoreData()" style="width: 100%; margin-bottom: 0; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬆️ Restaurer données</button>
+            <input type="file" id="restore-file" accept=".json" style="display: none;">
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">🔗 Partage</div>
+            <button class="btn btn-primary" onclick="shareApp()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">📤 Partager l'app</button>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">👤 Personnage</div>
+            <button class="btn btn-primary" onclick="switchToOtherProfile()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">🔄 Changer de personnage</button>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, rgba(111, 184, 176, 0.1) 0%, rgba(111, 184, 176, 0.05) 100%); padding: 18px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 4px 12px rgba(111, 184, 176, 0.12);">
+            <div class="card-title" style="margin-bottom: 12px;">ℹ️ À Propos</div>
+            <p style="font-size: 13px; color: var(--primary-light); margin: 0; line-height: 1.5;">🏝️ <strong>SARAILLON v4.0</strong><br>L'app ultime de gestion de séjour<br><span style="font-size: 11px; opacity: 0.7;">Créée pour 9 amis en quête d'aventure</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS PANEL -->
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-header">
+      <h3>🔔 NOTIFICATIONS</h3>
+      <button style="border: none; background: none; cursor: pointer; font-size: 18px;" onclick="toggleNotifications()">✕</button>
+    </div>
+    <div id="notif-content"></div>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Edit Planning Activity Modal -->
+
+
+  <!-- Create Challenge Modal -->
+  <div class="modal" id="createChallengeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Nouveau Challenge</h2>
+        <button class="modal-close" onclick="closeModal('createChallengeModal')">✕</button>
+      </div>
+      <input type="text" id="challenge-creator" placeholder="Ton nom">
+      <textarea id="challenge-desc" placeholder="Description" style="min-height: 70px;"></textarea>
+      <input type="file" id="challenge-media" accept="image/*,video/*">
+      <button class="btn btn-success" id="challengeSubmitBtn" onclick="confirmCreateChallenge()" style="width: 100%; margin-bottom: 10px;">Créer</button>
+      <button class="btn btn-danger" onclick="closeModal('createChallengeModal')" style="width: 100%;">Annuler</button>
+    </div>
+  </div>
+
+  <!-- SONDAGE -->
+  <div class="modal" id="createPollModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Nouveau Sondage</h2>
+        <button class="modal-close" onclick="closeModal('createPollModal')">✕</button>
+      </div>
+      <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 6px;">❓ QUESTION</label>
+      <input type="text" id="poll-question" placeholder="Ex: Où dîne-t-on ce soir ?">
+      <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin: 10px 0 6px;">📋 OPTIONS (2 à 5)</label>
+      <input type="text" id="poll-option-0" placeholder="Option 1">
+      <input type="text" id="poll-option-1" placeholder="Option 2">
+      <input type="text" id="poll-option-2" placeholder="Option 3 (optionnel)">
+      <input type="text" id="poll-option-3" placeholder="Option 4 (optionnel)">
+      <input type="text" id="poll-option-4" placeholder="Option 5 (optionnel)">
+      <button class="btn btn-success" onclick="createPoll()" style="width: 100%; margin-bottom: 10px; margin-top: 6px;">Lancer le sondage</button>
+      <button class="btn btn-danger" onclick="closeModal('createPollModal')" style="width: 100%;">Annuler</button>
+    </div>
+  </div>
+
+  <!-- DÉPENSE -->
+  <div class="modal" id="createExpenseModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Nouvelle Dépense</h2>
+        <button class="modal-close" onclick="closeModal('createExpenseModal')">✕</button>
+      </div>
+      <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 6px;">💳 QUI A PAYÉ ?</label>
+      <select id="expense-payer" style="width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 6px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08);"></select>
+      <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 6px;">💶 MONTANT (€)</label>
+      <input type="number" id="expense-amount" placeholder="Ex: 45.50" step="0.01" min="0">
+      <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin: 10px 0 6px;">📝 DESCRIPTION</label>
+      <input type="text" id="expense-desc" placeholder="Ex: Courses, essence, restaurant...">
+      <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin: 10px 0 6px;">👥 RÉPARTIR ENTRE</label>
+      <div id="expense-split-checkboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;"></div>
+      <button class="btn btn-success" onclick="createExpense()" style="width: 100%; margin-bottom: 10px;">Ajouter</button>
+      <button class="btn btn-danger" onclick="closeModal('createExpenseModal')" style="width: 100%;">Annuler</button>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal (obsolete - kept hidden, replaced by inline editing in profile tab) -->
+
+  <!-- DEEZER -->
+  <button class="deezer-tab" onclick="toggleDeezer()">🎵</button>
+  <div class="deezer-panel" id="deezerPanel">
+    <div class="deezer-header">
+      <h3>🎵 MUSIQUE</h3>
+      <button class="deezer-close" onclick="toggleDeezer()">✕</button>
+    </div>
+    <div class="deezer-content">
+      <iframe title="deezer" src="https://widget.deezer.com/widget/dark/playlist/15298797043" width="100%" height="100%" frameborder="0" allowtransparency="true" allow="encrypted-media; clipboard-write"></iframe>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="notificationsContainer"></div>
+
+  <!-- BOTTOM TAB BAR - NEW NAVIGATION -->
+
+  <div class="bottom-tab-bar" id="bottomTabBar">
+    <button class="tab-item active" onclick="switchToTab('home', event)">
+      <div class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11.3 3.3a1 1 0 0 1 1.4 0l7.8 7.4a1 1 0 0 1-.7 1.7H19v6.6a2 2 0 0 1-2 2h-2.5v-5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v5H7a2 2 0 0 1-2-2v-6.6H3.2a1 1 0 0 1-.7-1.7z"/></svg></div>
+      <div class="tab-label">Home</div>
+    </button>
+    <button class="tab-item" onclick="switchToTab('gallery', event)">
+      <div class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M9.2 3.5a1.5 1.5 0 0 0-1.3.8L7.2 5.5H5.5A2.5 2.5 0 0 0 3 8v9.5A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5V8a2.5 2.5 0 0 0-2.5-2.5h-1.7l-.7-1.2a1.5 1.5 0 0 0-1.3-.8zM12 9a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg></div>
+      <div class="tab-label">Photos</div>
+    </button>
+    <button class="tab-item" onclick="switchToTab('profile', event)">
+      <div class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M12 13.5c-4.4 0-8 2.9-8 6.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1c0-3.6-3.6-6.5-8-6.5z"/></svg></div>
+      <div class="tab-label">Profil</div>
+    </button>
+  </div>
+
+  <!-- COUCHE ANIMATIONS MÉDITERRANÉE (par-dessus l'app, ne capte pas les clics) -->
+  <div id="anim-layer"></div>
+
+  <!-- OFFLINE INDICATOR -->
+  <div class="offline-indicator" id="offlineIndicator">📡 Mode hors ligne</div>
+
+  <!-- SAVE INDICATOR -->
+  <div class="save-indicator" id="saveIndicator">✅ Sauvegardé</div>
+</div>
+
+</div> <!-- Fermer appContent -->
+
+<script type="module">
+// ============== SUPABASE INITIALIZATION ==============
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/+esm';
+
+const SUPABASE_URL = 'https://iupghubmnibbdipingnj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SaQ7IOxIEnUhj0-VQ9TsVw_1UIAldOt';
+
+// Initialize Supabase - store globally
+window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.supabaseReady = true;
+
+// Helper functions for Supabase sync
+function formatSupabaseError(err) {
+  if (!err) return 'Erreur inconnue';
+  // ✅ PostgREST/Supabase renvoie { message, details, hint, code } — on les extrait explicitement
+  const parts = [];
+  if (err.message) parts.push(err.message);
+  if (err.code) parts.push(`code: ${err.code}`);
+  if (err.details) parts.push(`détails: ${err.details}`);
+  if (err.hint) parts.push(`piste: ${err.hint}`);
+  return parts.length ? parts.join(' | ') : JSON.stringify(err);
+}
+
+window.syncToSupabase = async (table, data) => {
+  try {
+    // Déterminer les colonnes de matching selon la table
+    let onConflict = 'id';
+    if (table === 'inscriptions') {
+      onConflict = 'person_id,day_idx,act_idx';
+    } else if (table === 'checklist_valise') {
+      onConflict = 'key';
+    } else if (table === 'user_profiles') {
+      onConflict = 'person_id';
+    } else if (table === 'push_subscriptions') {
+      onConflict = 'endpoint';
+    }
+    
+    // Spécifier la colonne de matching pour le upsert
+    const { error } = await window.supabase.from(table).upsert(data, { onConflict });
+    if (error) console.error(`Supabase sync error (${table}): ${formatSupabaseError(error)}`, data);
+    return !error;
+  } catch (err) {
+    console.error(`Supabase sync error (${table}): ${formatSupabaseError(err)}`, data);
+    return false;
+  }
+};
+
+window.loadFromSupabase = async (table) => {
+  try {
+    const { data, error } = await window.supabase.from(table).select('*');
+    if (error) {
+      console.error(`Supabase load error (${table}): ${formatSupabaseError(error)}`);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error(`Supabase load error (${table}): ${formatSupabaseError(err)}`);
+    return null;
+  }
+};
+
+// ✅ Helper générique de suppression, utilisé pour les photos de galerie, quêtes, etc.
+window.deleteFromSupabase = async (table, id) => {
+  try {
+    if (!window.supabaseReady || !window.supabase) return false;
+    const { error } = await window.supabase.from(table).delete().eq('id', id);
+    if (error) console.error(`Supabase delete error (${table}): ${formatSupabaseError(error)}`);
+    return !error;
+  } catch (err) {
+    console.error(`Supabase delete error (${table}): ${formatSupabaseError(err)}`);
+    return false;
+  }
+};
+</script>
+
+<!-- Données statiques du séjour (participants, planning, corvées, avatars par défaut, quêtes) -->
+<script src="./saraillon-data.js"></script>
+
+<script src="./app-core.js"></script>
+<script src="./app-planning.js"></script>
+<script src="./app-challenges.js"></script>
+<script src="./app-activities.js"></script>
+<script src="./app-gallery.js"></script>
+<script src="./app-social.js"></script>
+<script src="./app-misc.js"></script>
+<script src="./app-anim.js"></script>
+<script src="./app-init.js"></script>
+
+</body>
+</html>
