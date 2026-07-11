@@ -1,4 +1,4 @@
-    :root {
+:root {
       /* SARAILLON — AMBIANCE MÉDITERRANÉE (refonte) */
       --primary: #0c2f3a;           /* Encre marine profonde, texte principal */
       --primary-soft: #0e7a90;      /* Eau profonde, texte secondaire */
@@ -54,7 +54,7 @@
     }
 
     .app-wrapper {
-      max-width: 480px;
+      max-width: 900px;
       margin: 0 auto;
       display: flex;
       min-height: 100vh;
@@ -193,7 +193,7 @@
     .content {
       max-width: 100%;
       margin: 0 auto;
-      padding: 20px 24px;
+      padding: 0;
     }
 
     .card {
