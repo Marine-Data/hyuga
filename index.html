@@ -2496,7 +2496,7 @@ function saveAllData() {
   if (window.supabaseReady && window.syncToSupabase) {
     // Sync shopping list
     shoppingList.forEach(item => {
-      window.syncToSupabase('shopping_list', { id: item.id, item: item.item, done: item.done }).catch(() => {});
+      window.syncToSupabase('shopping_list', { id: item.id, item: item.item, done: item.done }).catch(err => console.error('Sync Supabase échouée:', err));
     });
     
     // Sync inscriptions (clé composée: person_id, day_idx, act_idx)
@@ -2507,7 +2507,7 @@ function saveAllData() {
           person_id: personId, 
           day_idx: dayIdx, 
           act_idx: actIdx 
-        }).catch(() => {});
+        }).catch(err => console.error('Sync Supabase échouée:', err));
       }
     });
     
@@ -2529,7 +2529,7 @@ function saveAllData() {
         tags: item.tags || [],
         likes: item.likes || [],
         comments: item.comments || []
-      }).catch(() => {});
+      }).catch(err => console.error('Sync Supabase échouée:', err));
     });
     
     // Sync feed entries
@@ -2543,7 +2543,7 @@ function saveAllData() {
         emoji: entry.emoji,
         data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [] }),
         timestamp: entry.timestamp
-      }).catch(() => {});
+      }).catch(err => console.error('Sync Supabase échouée:', err));
     });
     
     // Notifications: synchronisées individuellement dans addNotification() dès leur création (pas ici en masse)
@@ -2559,7 +2559,7 @@ function saveAllData() {
         question: poll.question,
         options: poll.options || [],
         creator: poll.creator || ''
-      }).catch(() => {});
+      }).catch(err => console.error('Sync Supabase échouée:', err));
     });
 
     // Sync dépenses
@@ -2570,28 +2570,33 @@ function saveAllData() {
         amount: exp.amount,
         description: exp.description || '',
         split_among: exp.splitAmong || []
-      }).catch(() => {});
+      }).catch(err => console.error('Sync Supabase échouée:', err));
     });
 
-    // Sync user profiles (avatars compressés maintenant)
-    PARTICIPANTS.forEach(p => {
-      const profile = personalsData[p.id];
-      // ✅ Garde-fou : n'envoyer que des données valides pour éviter les erreurs d'upsert silencieuses
-      if (profile && Number.isInteger(p.id)) {
+    // Sync user profile — ⚠️ SEULEMENT le profil de l'utilisateur actuel de CET
+    // appareil. Avant ce correctif, chaque appareil renvoyait les 9 profils à
+    // partir de son propre cache local à chaque sauvegarde (toutes les 30s et à
+    // chaque action) : si le téléphone de Marine avait une copie ancienne de la
+    // bio de Delphine, il écrasait régulièrement la vraie mise à jour de Delphine
+    // dans Supabase avec cette ancienne version. C'est la cause des "anciennes
+    // descriptions de profil" qui réapparaissaient.
+    if (currentUser && Number.isInteger(currentUser.id)) {
+      const profile = personalsData[currentUser.id];
+      if (profile) {
         const avatarStr = typeof profile.avatar === 'string' ? profile.avatar : '';
         if (avatarStr.length > 2000000) {
-          console.error(`Avatar trop volumineux pour ${p.name} (${avatarStr.length} caractères), sync ignorée`);
-          return;
+          console.error(`Avatar trop volumineux (${avatarStr.length} caractères), sync ignorée`);
+        } else {
+          window.syncToSupabase('user_profiles', {
+            person_id: currentUser.id,
+            pseudo: String(currentUser.pseudo || ''),
+            bio: String(profile.bio || ''),
+            avatar: avatarStr,
+            regimes: String(currentUser.regimes || '')
+          }).catch(err => console.error('Échec sync profil:', err));
         }
-        window.syncToSupabase('user_profiles', {
-          person_id: p.id,
-          pseudo: String(p.pseudo || ''),
-          bio: String(profile.bio || ''),
-          avatar: avatarStr,
-          regimes: String(p.regimes || '')
-        }).catch(() => {});
       }
-    });
+    }
   }
 }
 
@@ -3149,7 +3154,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true) {
       emoji: notif.emoji,
       type: notif.type,
       author_id: currentUser ? currentUser.id : null
-    }).catch(() => {});
+    }).catch(err => console.error('Sync Supabase échouée:', err));
   }
 }
 
