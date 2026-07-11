@@ -1,4 +1,170 @@
-// ============== EXPORT SOUVENIR DU SÉJOUR ==============
+// ============== MISSIONS SECRÈTES DU MATIN ==============
+// 🔧 Chaque matin, chaque personne reçoit UNE mission privée, visible d'elle
+// seule dans l'app. {target} est remplacé par le prénom de la personne visée.
+const SECRET_MISSION_TEMPLATES = {
+  info: [
+    "Découvre le prénom du dernier livre que {target} a adoré.",
+    "Découvre un rêve de voyage que {target} n'a jamais réalisé.",
+    "Découvre un plat que {target} refuserait de manger même affamée.",
+    "Découvre ce qui rendrait {target} vraiment heureuse aujourd'hui.",
+    "Découvre le morceau de musique préféré de {target} en ce moment.",
+    "Découvre un talent caché que {target} n'a jamais montré au groupe."
+  ],
+  action: [
+    "Prépare le café ou le thé de {target} ce matin, sans qu'elle le demande.",
+    "Fais un compliment sincère et discret à {target} aujourd'hui.",
+    "Trouve un petit geste pour rendre la journée de {target} plus douce.",
+    "Laisse un petit mot gentil quelque part pour {target}.",
+    "Propose ton aide à {target} pour une tâche, sans qu'elle ait eu à demander.",
+    "Trouve un moyen de faire rire {target} aujourd'hui."
+  ]
+};
+
+let todaySecretMission = null;
+
+// ✅ Génère (une fois par jour et par personne) et charge la mission secrète du
+// jour de l'utilisateur actuel. Ne touche jamais aux missions des autres.
+async function ensureTodaySecretMission() {
+  if (!window.supabaseReady) return;
+  const dayIdx = getTripDayIndex(new Date());
+  if (dayIdx === null) { todaySecretMission = null; renderSecretMission(); return; }
+
+  const { data, error } = await window.supabase
+    .from('secret_missions')
+    .select('*')
+    .eq('day_idx', dayIdx)
+    .eq('person_id', currentUser.id)
+    .limit(1);
+
+  if (!error && data && data.length > 0) {
+    todaySecretMission = data[0];
+    renderSecretMission();
+    return;
+  }
+
+  // Pas encore de mission pour aujourd'hui → on en génère une
+  const others = PARTICIPANTS.filter(p => p.id !== currentUser.id);
+  const target = others[Math.floor(Math.random() * others.length)];
+  const type = Math.random() < 0.5 ? 'info' : 'action';
+  const pool = SECRET_MISSION_TEMPLATES[type];
+  const template = pool[Math.floor(Math.random() * pool.length)].replace('{target}', target.name);
+
+  const newMission = {
+    day_idx: dayIdx,
+    person_id: currentUser.id,
+    target_id: target.id,
+    type,
+    template,
+    xp: 25,
+    completed: false
+  };
+
+  const { data: inserted, error: insertError } = await window.supabase
+    .from('secret_missions')
+    .insert(newMission)
+    .select()
+    .limit(1);
+
+  if (!insertError && inserted && inserted.length > 0) {
+    todaySecretMission = inserted[0];
+  }
+  renderSecretMission();
+}
+
+function renderSecretMission() {
+  const container = document.getElementById('home-secret-mission');
+  if (!container) return;
+
+  if (!todaySecretMission) { container.innerHTML = ''; return; }
+
+  const m = todaySecretMission;
+  if (m.completed) {
+    container.innerHTML = `
+      <div class="card-luxe" style="text-align: center;">
+        <span class="eyebrow">Mission secrète</span>
+        <div class="title-serif" style="font-size: 15px;">🕵️ Mission accomplie !</div>
+        <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 4px;">Reviens demain pour une nouvelle mission.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const icon = m.type === 'info' ? '🔍' : '💌';
+  container.innerHTML = `
+    <div class="card-luxe">
+      <span class="eyebrow">Mission secrète du jour</span>
+      <div class="title-serif" style="font-size: 15px; margin-bottom: 8px;">${icon} ${escapeHtml(m.template)}</div>
+      <div style="font-size: 10.5px; color: var(--primary-light); margin-bottom: 10px; font-style: italic;">Reste discret·ète — la personne ne doit pas savoir qu'il s'agit d'une mission.</div>
+      ${m.type === 'info' ? `
+        <input type="text" id="secret-mission-answer" placeholder="Ta découverte..." style="width: 100%; margin-bottom: 8px;">
+        <button class="btn btn-primary" style="width: 100%; border: none;" onclick="completeSecretMissionInfo()">Valider</button>
+      ` : `
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
+          📷 Ajouter la preuve en photo
+          <input type="file" accept="image/*" capture="environment" style="display: none;" onchange="completeSecretMissionAction(this)">
+        </label>
+        <span id="secret-mission-progress" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
+      `}
+    </div>
+  `;
+}
+
+async function completeSecretMissionInfo() {
+  const input = document.getElementById('secret-mission-answer');
+  const answer = input ? input.value.trim() : '';
+  if (!answer) { showNotification('Écris ta découverte avant de valider', 'error'); return; }
+
+  todaySecretMission.answer_text = answer;
+  todaySecretMission.completed = true;
+  todaySecretMission.completed_at = new Date().toISOString();
+  await window.supabase.from('secret_missions').update({
+    answer_text: answer, completed: true, completed_at: todaySecretMission.completed_at
+  }).eq('id', todaySecretMission.id);
+
+  showNotification(`🕵️ Mission accomplie ! +${todaySecretMission.xp} XP`, 'success');
+  if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
+  renderSecretMission();
+  if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+}
+
+async function completeSecretMissionAction(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('secret-mission-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi...';
+
+  try {
+    const path = `mission-${todaySecretMission.id}-${Date.now()}.jpg`;
+    const publicUrl = await uploadFileToStorage('secret-missions', path, file);
+
+    todaySecretMission.photo_url = publicUrl;
+    todaySecretMission.completed = true;
+    todaySecretMission.completed_at = new Date().toISOString();
+    await window.supabase.from('secret_missions').update({
+      photo_url: publicUrl, completed: true, completed_at: todaySecretMission.completed_at
+    }).eq('id', todaySecretMission.id);
+
+    showNotification(`🕵️ Mission accomplie ! +${todaySecretMission.xp} XP`, 'success');
+    if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
+    renderSecretMission();
+    if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+  } catch (err) {
+    console.error('Échec upload mission secrète:', err);
+    if (progressEl) progressEl.textContent = '❌ Échec, réessaie.';
+  }
+}
+
+// ✅ XP des missions secrètes complétées, à additionner au classement — on ne
+// lit que le total par personne, jamais le contenu des missions des autres.
+async function getSecretMissionsXpByPerson() {
+  if (!window.supabaseReady) return {};
+  const { data, error } = await window.supabase.from('secret_missions').select('person_id, xp, completed').eq('completed', true);
+  if (error || !data) return {};
+  const totals = {};
+  data.forEach(row => { totals[row.person_id] = (totals[row.person_id] || 0) + row.xp; });
+  return totals;
+}
+
 // ✅ Génère une page HTML autonome (photos, XP, corvées, quêtes) téléchargeable —
 // un souvenir qui survit à la suppression de l'app, à garder ou imprimer.
 function exportTripSouvenir() {
@@ -215,8 +381,25 @@ function revealSurprise() {
   if (input.value.toUpperCase() === 'MAGIA') {
     document.getElementById('surprise-content').innerHTML = `
       <div class="card" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); color: white; text-align: center; margin-top: 12px; border: none;">
-        <h3 style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 12px;">🎉 SURPRISE !</h3>
-        <p style="font-size: 13px; line-height: 1.8;">Dimanche - Lieu secret 🤫<br>10h30 – 00h00<br>Mystère et magie ✨</p>
+        <h3 style="font-family: var(--font-display); font-weight: 500; font-size: 20px; margin-bottom: 4px;">🎉 Les Olympiades de Saraillon</h3>
+        <p style="font-size: 12px; opacity: 0.9; margin-bottom: 16px;">Dimanche · Lieu secret 🤫 · 10h30 – 00h00</p>
+        <div style="text-align: left; background: rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; font-size: 12.5px; line-height: 1.7;">
+          <strong>Règles du jeu</strong><br>
+          🏆 2 points par épreuve remportée<br>
+          📉 -0,5 point si un membre n'écoute pas les consignes<br>
+          🔍 +0,25 point par référence débusquée dans le support visuel/sonore<br>
+          🏃 +0,5 point pour l'équipe arrivée au complet en premier
+        </div>
+        <div style="text-align: left; margin-top: 14px; font-size: 12.5px; line-height: 1.8;">
+          <strong>Ⅰ. Examen Chūnin</strong> — Garage · 2 matchs en 11 points<br>
+          <span style="opacity: 0.85; font-size: 11.5px;">Service raté → commenter façon journaliste sportif. Équipe perdante : chanson ou choré au dîner.</span><br><br>
+          <strong>Ⅱ. Licence Hunter</strong> — Route du jardin · 2 matchs en 13 points<br>
+          <span style="opacity: 0.85; font-size: 11.5px;">Équipe perdante prépare les cocktails du soir.</span><br><br>
+          <strong>Ⅲ. L'Entraînement de Rock Lee</strong> — Route du jardin<br>
+          <span style="opacity: 0.85; font-size: 11.5px;">Ballon 7 rebonds pieds/genoux + Pierre-Feuille-Ciseaux inversé. Équipe perdante dresse la table.</span><br><br>
+          <strong>Ⅳ. Épreuve finale — Karaoké</strong><br>
+          <span style="opacity: 0.85; font-size: 11.5px;">Artiste, titre, paroles, suite inventée, funfact, backs, choré — 1 point chacun. Équipe perdante gère les inscriptions aux activités.</span>
+        </div>
       </div>
     `;
     showNotification('🎉 Surprise débloquée !', 'success');
@@ -289,4 +472,3 @@ function showMorningWisdomIfDue() {
   showNotification(`🌞 ${wisdom}`, 'success');
   localStorage.setItem('saraillon_morning_wisdom_shown', todayKey);
 }
-
