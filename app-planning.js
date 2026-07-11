@@ -117,6 +117,10 @@ function toggleDepartureTask(dayIdx, actIdx) {
       timestamp: new Date()
     });
     showNotification(`✅ +${xpPerTask} XP`, 'success');
+    // ✅ Private joke : réaction spéciale quand Inès coche un truc de sa valise
+    if (currentUser.name === 'Inès') {
+      showNotification('🐟 Nickel !', 'success');
+    }
   }
 
   saveAllData();
@@ -352,7 +356,7 @@ function spinRoulette() {
       });
     });
 
-    addNotification('⚡ Corvées assignées!', '⚡', 'corvees');
+    addNotification('⚡ La roue a tourné !', '⚡', 'corvees');
     btn.disabled = false;
   }, 3000);
 }

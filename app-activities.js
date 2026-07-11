@@ -70,6 +70,11 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
     addNotification(`✍️ ${person.name} inscrite à ${activity.nom}`, '✍️', 'inscriptions');
     addFeedEntry(`s'est inscrite à ${activity.nom}`, '✍️');
     if (typeof MedAnim !== 'undefined') MedAnim.dolphin(); // 🐬 saut de célébration
+    // ✅ Private joke : réaction spéciale quand Inès s'inscrit à une activité
+    if (person.name === 'Inès') {
+      showNotification('✨ Parf !', 'success');
+      if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
+    }
   }
   
   saveAllData();

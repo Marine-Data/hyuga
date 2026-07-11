@@ -205,7 +205,11 @@ function showMorningWisdomIfDue() {
   const todayKey = new Date().toISOString().slice(0, 10);
   if (localStorage.getItem('saraillon_morning_wisdom_shown') === todayKey) return;
 
-  const wisdom = MORNING_WISDOM[dayIdx % MORNING_WISDOM.length];
+  // ✅ Blague spéciale le samedi matin, validée avec Marine
+  const isSaturday = new Date().getDay() === 6;
+  const wisdom = isSaturday
+    ? "Proverbe fonctionnaire : ne dors jamais le matin sinon tu ne sauras jamais quoi foutre l'après-midi."
+    : MORNING_WISDOM[dayIdx % MORNING_WISDOM.length];
   const programSummary = summarizeTodayProgram(dayIdx);
   const fullMessage = `${wisdom} Aujourd'hui : ${programSummary}. Belle journée à toi 🌞`;
 

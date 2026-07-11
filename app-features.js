@@ -33,14 +33,15 @@ async function renderWeatherBanner() {
   } catch (e) { /* cache corrompu, on refetch */ }
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LOCATION.lat}&longitude=${WEATHER_LOCATION.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&timezone=Europe%2FParis&forecast_days=1`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LOCATION.lat}&longitude=${WEATHER_LOCATION.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,wind_speed_10m_max&timezone=Europe%2FParis&forecast_days=1`;
     const res = await fetch(url);
     const data = await res.json();
     const payload = {
       code: data.daily.weather_code[0],
       tmax: Math.round(data.daily.temperature_2m_max[0]),
       tmin: Math.round(data.daily.temperature_2m_min[0]),
-      uv: data.daily.uv_index_max[0]
+      uv: data.daily.uv_index_max[0],
+      wind: Math.round(data.daily.wind_speed_10m_max[0])
     };
     localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: payload }));
     paintWeatherBanner(container, payload);
@@ -50,19 +51,21 @@ async function renderWeatherBanner() {
   }
 }
 
-function paintWeatherBanner(container, { code, tmax, tmin, uv }) {
+function paintWeatherBanner(container, { code, tmax, tmin, uv, wind }) {
   const info = weatherCodeToInfo(code);
   let uvNote = '';
   if (uv >= 8) uvNote = ' · ☀️ UV très fort, crème solaire indispensable';
   else if (uv >= 6) uvNote = ' · 🧴 UV fort, pense à la crème';
   const isRainy = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code);
+  // ✅ Blague Mistral, validée avec Marine — s'affiche au-delà de 40 km/h de vent
+  const mistralNote = (wind && wind >= 40) ? ' · 💨 Bulletin météo : Mistral annoncé, tenue discriminante recommandée' : '';
 
   container.innerHTML = `
     <div style="background: var(--bg-raised); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px;">
       <div style="width: 40px; height: 40px; flex-shrink: 0;">${EXPLORE_ICONS_3D.meteo}</div>
       <div style="flex: 1;">
         <div style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif;">${info.label} à ${WEATHER_LOCATION.label} · ${tmin}°–${tmax}°C</div>
-        <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 2px;">UV ${uv}${uvNote}${isRainy ? ' · pense aux activités indoor aujourd\'hui' : ''}</div>
+        <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 2px;">UV ${uv}${uvNote}${isRainy ? ' · pense aux activités indoor aujourd\'hui' : ''}${mistralNote}</div>
       </div>
     </div>
   `;

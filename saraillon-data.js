@@ -28,6 +28,7 @@ const CHORES = [
   { name: "Préparer déjeuner", emoji: "🥗" },
   { name: "Préparer dîner", emoji: "🍽️" },
   { name: "Rentrer poubelles matin", emoji: "📦" },
+  { name: "Arrosage du jardin (le soir)", emoji: "🌱" },
 ];
 
 // ---- Planning du séjour ----

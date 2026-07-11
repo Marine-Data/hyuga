@@ -173,7 +173,7 @@ function uploadGallery() {
       input.value = '';
       document.getElementById('gallery-tags-checkboxes').innerHTML = '';
       
-      addNotification('📸 Photo uploadée!', '📸', 'gallery');
+      addNotification('📸 Nouvelle preuve versée au dossier.', '📸', 'gallery');
       addFeedEntry(`a partagé une photo: "${location}"`, '📸');
     };
 
