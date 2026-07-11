@@ -76,7 +76,27 @@ const MedAnim = (() => {
     spawn(`<div class="anim-confetti">${pieces}</div>`, 2200);
   }
 
-  return { dolphin, seagull, boat, confetti, prefersReduced };
+  // ✈️ Avion qui traverse — jour de départ / jour de retour
+  function plane() {
+    const svg = `<div class="anim-plane"><svg viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 22 L40 20 L58 6 L66 6 L54 20 L74 20 L84 12 L92 12 L86 22 L92 24 L84 24 L74 22 L54 22 L66 34 L58 34 L40 24 L4 22 Z" fill="#0c2f3a"/>
+    </svg></div>`;
+    spawn(svg, 5200);
+  }
+
+  // 🐟 Poisson qui nage — rappel d'activité aquatique (plongée, snorkeling, baignade)
+  function fish() {
+    const svg = `<div class="anim-fish"><svg viewBox="0 0 60 34" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="fishG" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#f4b942"/><stop offset="1" stop-color="#ef6a7c"/></linearGradient></defs>
+      <path d="M6 17 C6 9 16 4 30 4 C42 4 50 10 54 17 C50 24 42 30 30 30 C16 30 6 25 6 17 Z" fill="url(#fishG)"/>
+      <path d="M6 17 L0 8 L2 17 L0 26 Z" fill="#c9821f"/>
+      <circle cx="38" cy="13" r="2.4" fill="#0c2f3a"/>
+    </svg></div>`;
+    spawn(svg, 4200);
+  }
+
+  return { dolphin, seagull, boat, plane, fish, confetti, prefersReduced };
 })();
 
 // ✅ Point d'entrée global court, appelé depuis les complétions de corvées,
@@ -118,8 +138,9 @@ function checkUpcomingActivityReminders() {
   if (MedAnim.prefersReduced) return;
   if (typeof planningData === 'undefined' || !Array.isArray(planningData)) return;
   const now = new Date();
-  const homeVisible = document.getElementById('home') && document.getElementById('home').classList.contains('active');
-  if (!homeVisible) return; // rappels visuels seulement quand on est sur l'accueil
+  // ✅ Corrigé : la couche d'animation (#anim-layer) est un calque persistant
+  // au-dessus de toute l'app, pas seulement de l'accueil — cette restriction
+  // empêchait les rappels de se déclencher dans 99% des cas.
 
   planningData.forEach((day, dayIdx) => {
     (day.activities || []).forEach((act, actIdx) => {
@@ -127,13 +148,17 @@ function checkUpcomingActivityReminders() {
       if (!dt) return;
       const diffMin = (dt - now) / 60000;
       const key = `${dayIdx}-${actIdx}-${dt.toDateString()}`;
-      // Fenêtre : entre 55 et 60 min avant → mouette de rappel (une seule fois)
-      if (diffMin <= 60 && diffMin > 55 && !_remindedActivities.has(key)) {
+      // Fenêtre élargie : entre 50 et 60 min avant → mouette de rappel (une seule fois)
+      if (diffMin <= 60 && diffMin > 50 && !_remindedActivities.has(key)) {
         _remindedActivities.add(key);
         MedAnim.seagull(`${act.nom} dans 1h`);
-        // Si l'activité est en mer, on ajoute un petit bateau
-        const lieu = (act.lieu || '').toLowerCase();
-        if (lieu.includes('mer') || lieu.includes('calanque') || lieu.includes('bateau') || lieu.includes('plage') || lieu.includes('anse')) {
+        // Activité en mer/nautique → bateau ou poisson selon le type
+        const texte = `${act.lieu || ''} ${act.nom || ''}`.toLowerCase();
+        const isDiving = texte.includes('plong') || texte.includes('snorkel') || texte.includes('baignade') || texte.includes('nage');
+        const isBoat = texte.includes('bateau') || texte.includes('voile') || texte.includes('mer') || texte.includes('calanque') || texte.includes('anse');
+        if (isDiving) {
+          setTimeout(() => MedAnim.fish(), 1500);
+        } else if (isBoat) {
           setTimeout(() => MedAnim.boat(), 1500);
         }
       }
@@ -141,8 +166,25 @@ function checkUpcomingActivityReminders() {
   });
 }
 
+// ✅ Avion : une fois le jour du départ, une fois le jour du retour
+function checkPlaneAnimationDue() {
+  if (MedAnim.prefersReduced) return;
+  if (typeof getTripDayIndex !== 'function' || typeof planningData === 'undefined') return;
+  const dayIdx = getTripDayIndex(new Date());
+  if (dayIdx === null) return;
+  const isDepartureOrReturn = dayIdx === 0 || dayIdx === planningData.length - 1;
+  if (!isDepartureOrReturn) return;
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const flagKey = 'saraillon_plane_anim_shown';
+  if (localStorage.getItem(flagKey) === todayKey) return;
+  localStorage.setItem(flagKey, todayKey);
+  setTimeout(() => MedAnim.plane(), 800);
+}
+
 // Vérifie toutes les minutes (léger) + une fois au chargement
 setInterval(checkUpcomingActivityReminders, 60000);
+checkPlaneAnimationDue();
 
 // Petites vaguelettes décoratives dans le hero d'accueil (ajoutées au DOM une seule fois)
 function injectHeroWaves() {
@@ -156,4 +198,3 @@ function injectHeroWaves() {
     <svg class="wv1" viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0 38 Q150 20 300 38 T600 38 T900 38 T1200 38 V60 H0 Z" fill="#7fdce4"/></svg>`;
   hero.appendChild(waves);
 }
-
