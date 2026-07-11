@@ -874,8 +874,9 @@ async function uploadChallengeVideo(challengeId, inputEl) {
     renderChallenges();
   } catch (err) {
     console.error('Échec upload vidéo challenge:', err);
-    if (progressEl) progressEl.textContent = '❌ Échec de l\'envoi, réessaie.';
-    showNotification('❌ Échec de l\'upload vidéo', 'error');
+    const detail = (err && err.message) ? err.message : 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
   }
 }
 

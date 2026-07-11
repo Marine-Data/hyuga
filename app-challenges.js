@@ -144,19 +144,39 @@ function renderHomeLeaderboard() {
 
   const ranking = computeXpLeaderboard();
   const medals = ['🥇', '🥈', '🥉'];
-  const rows = ranking.map((r, i) => `
+  const renderRow = (r, i) => `
     <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; ${i < ranking.length - 1 ? 'box-shadow: 0 1px 0 var(--border);' : ''}">
       <span style="width: 22px; text-align: center; font-size: 15px;">${medals[i] || (i + 1)}</span>
       <span style="flex: 1; font-weight: ${i < 3 ? '700' : '400'}; font-size: 13px;">${r.p.name}${r.p.id === currentUser.id ? ' (toi)' : ''}</span>
       <span style="font-weight: 800; font-size: 13px; color: var(--accent-gold);">${r.xp} XP</span>
     </div>
-  `).join('');
+  `;
+  const topRows = ranking.slice(0, 3).map(renderRow).join('');
+  const restRows = ranking.slice(3).map((r, i) => renderRow(r, i + 3)).join('');
+  const hasMore = ranking.length > 3;
+
   container.innerHTML = `
     <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px;">
       <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; letter-spacing: 0.5px;">🏆 CLASSEMENT XP</div>
-      ${rows}
+      ${topRows}
+      ${hasMore ? `
+        <div id="leaderboard-rest" style="display: none;">${restRows}</div>
+        <div onclick="toggleLeaderboardExpand()" style="text-align: center; margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-gold); cursor: pointer;">
+          <span id="leaderboard-toggle-label">Voir tout le classement (${ranking.length - 3} de plus) ▾</span>
+        </div>
+      ` : ''}
     </div>
   `;
+}
+
+function toggleLeaderboardExpand() {
+  const rest = document.getElementById('leaderboard-rest');
+  const label = document.getElementById('leaderboard-toggle-label');
+  if (!rest || !label) return;
+  const isOpen = rest.style.display !== 'none';
+  rest.style.display = isOpen ? 'none' : 'block';
+  const count = rest.querySelectorAll(':scope > div').length;
+  label.textContent = isOpen ? `Voir tout le classement (${count} de plus) ▾` : 'Réduire ▴';
 }
 
 function showCreateChallenge() {

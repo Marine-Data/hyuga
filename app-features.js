@@ -340,8 +340,9 @@ async function uploadTresorPhoto(id, inputEl) {
     renderTresor();
   } catch (err) {
     console.error('Échec upload photo trésor:', err);
-    if (progressEl) progressEl.textContent = '❌ Échec de l\'envoi, réessaie.';
-    showNotification('❌ Échec de l\'upload photo', 'error');
+    const detail = (err && err.message) ? err.message : 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
   }
 }
 
