@@ -75,7 +75,37 @@ function renderCountdownBanner() {
   const container = document.getElementById('home-countdown');
   if (!container) return;
 
+  const tripStart = new Date(2026, 7, 21);
+  tripStart.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysUntilStart = Math.round((tripStart - today) / 86400000);
+
   const dayIdx = getTripDayIndex(new Date());
+
+  // ✅ Décompte AVANT le séjour, à partir de J-15
+  if (dayIdx === null && daysUntilStart > 0) {
+    if (daysUntilStart > 15) { container.innerHTML = ''; return; }
+    let message, color;
+    if (daysUntilStart > 7) {
+      message = "L'excitation monte, préparez vos valises ✨";
+      color = 'var(--accent-gold)';
+    } else if (daysUntilStart > 1) {
+      message = 'Plus que quelques dodos avant le grand départ 🧳';
+      color = 'var(--accent-cyan)';
+    } else {
+      message = 'Demain, le séjour commence ! 🎉';
+      color = 'var(--accent-pink)';
+    }
+    container.innerHTML = `
+      <div style="border-radius: 14px; padding: 12px 16px; text-align: center; border: 1.5px solid ${color}; background: var(--bg-raised);">
+        <div style="font-size: 13px; font-weight: 800; color: ${color}; font-family: 'Bricolage Grotesque', sans-serif;">🧳 J-${daysUntilStart} avant le départ</div>
+        <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 3px;">${message}</div>
+      </div>
+    `;
+    return;
+  }
+
   if (dayIdx === null) { container.innerHTML = ''; return; }
 
   const daysLeft = planningData.length - 1 - dayIdx;
@@ -127,11 +157,24 @@ function getMysteryOfTheDay(dayIdx) {
 }
 
 function renderMysteryPhoto() {
-  const container = document.getElementById('home-mystery-photo');
+  const container = document.getElementById('mystery-photo-content');
   if (!container) return;
 
   const dayIdx = getTripDayIndex(new Date());
-  if (dayIdx === null) { container.innerHTML = ''; return; }
+
+  // ✅ Avant le séjour : aperçu du thème du jour 1, pour vérifier que ça fonctionne
+  // sans attendre le départ (l'affichage change automatiquement une fois sur place).
+  if (dayIdx === null) {
+    const { person, theme } = getMysteryOfTheDay(0);
+    container.innerHTML = `
+      <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 14px; padding: 16px; color: white; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); opacity: 0.7;">
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.3px;">🎲 Photo mystère du jour · aperçu</div>
+        <div style="font-size: 12.5px; margin-top: 6px; opacity: 0.95;">Jour 1 : <strong>${escapeHtml(person.name)}</strong> devra poster une photo sur le thème « ${theme} »</div>
+        <div style="font-size: 10.5px; margin-top: 6px; opacity: 0.8;">S'activera automatiquement le premier jour du séjour</div>
+      </div>
+    `;
+    return;
+  }
 
   const { person, theme } = getMysteryOfTheDay(dayIdx);
 

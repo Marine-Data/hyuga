@@ -255,6 +255,7 @@ async function enterMainApp() {
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
   renderChallenges();
+  renderMysteryPhoto();
   renderInscriptions();
   renderPolls();
   renderExpenses();
@@ -901,7 +902,7 @@ function switchTab(tab) {
   // Render approprié selon l'onglet
   if (tab === 'home') renderHome();
   if (tab === 'planning') renderPlanning();
-  if (tab === 'challenges') { renderChallenges(); renderTresor(); }
+  if (tab === 'challenges') { renderChallenges(); renderTresor(); renderMysteryPhoto(); }
   if (tab === 'inscriptions') renderInscriptions();
   if (tab === 'gallery') renderGallery();
   if (tab === 'polls') renderPolls();
@@ -1011,7 +1012,6 @@ function renderHome() {
   renderHomeGroupSpirit();
   renderWeatherBanner();
   renderCountdownBanner();
-  renderMysteryPhoto();
   renderTripRecap();
   renderHomeMemoryOfDay();
   renderHomePackingProgress();
