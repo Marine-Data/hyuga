@@ -96,7 +96,12 @@ const MedAnim = (() => {
     spawn(svg, 4200);
   }
 
-  return { dolphin, seagull, boat, plane, fish, confetti, prefersReduced };
+  // 🌠 Étoile filante — appelée depuis l'extérieur de la fermeture MedAnim
+  function shootingStar(topPct, leftPct) {
+    spawn(`<div class="anim-shootingstar" style="top:${topPct}%; left:${leftPct}%;"></div>`, 1800);
+  }
+
+  return { dolphin, seagull, boat, plane, fish, confetti, shootingStar, prefersReduced };
 })();
 
 // ✅ Point d'entrée global court, appelé depuis les complétions de corvées,
@@ -237,7 +242,7 @@ function maybeSpawnShootingStar() {
   const isNight = nightGroup && nightGroup.style.opacity === '1';
   if (!isNight || MedAnim.prefersReduced) return;
   if (Math.random() < 0.18) {
-    spawn(`<div class="anim-shootingstar" style="top:${10 + Math.random() * 20}%; left:${Math.random() * 20}%;"></div>`, 1800);
+    MedAnim.shootingStar(10 + Math.random() * 20, Math.random() * 20);
   }
 }
 setInterval(maybeSpawnShootingStar, 8000);
@@ -288,4 +293,3 @@ function lanterns() {
   spawn(html, 6300);
 }
 MedAnim.lanterns = lanterns;
-
