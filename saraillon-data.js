@@ -7,15 +7,15 @@
 
 // ---- Participants ----
 const PARTICIPANTS = [
-  { id: 1, name: "Delphine", pseudo: "", bio: "Passionnée et aventurière, cuisinière généreuse, détentrice de tous les bons plans, possède un carnet d'adresse et un planning plus remplie que la princesse de galle, toujours avec une énergie débortante dès le réveil🔥", avatar: null, email: "delphine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
+  { id: 1, name: "Delphine", pseudo: "", bio: "Passionnée et aventurière, cuisinière hors pair, énergie débordante 🔥", avatar: null, email: "delphine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 2, name: "Chunfei", pseudo: "", bio: "Intense et franche, n'a pas la langue dans sa poche. Danseuse professionnelle et comédienne diplômée du Cours Florent 🎭", avatar: null, email: "chunfei@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 3, name: "Mathilde", pseudo: "", bio: "Aventurière de l'extrême ⛵ navigatrice et exploratrice, féministe et bosseuse incroyable 💪", avatar: null, email: "mathilde@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
   { id: 4, name: "Nawaelle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
-  { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ aux mille carrières", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
+  { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 6, name: "Inès", pseudo: "", bio: "Pétillante et attachante, toujours partante pour un cocktail 🍹 drôle, curieuse des autres, voit toujours le verre à moitié plein", avatar: null, email: "ines@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 7, name: "Mathieu", pseudo: "", bio: "Le meilleur — dans le top 3 de mes petits frères préférés 💙", avatar: null, email: "mathieu@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
   { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "marine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
-  { id: 9, name: "Audrey", pseudo: "", bio: "Une amie en or 🪙 toujours prête à rendre service, possède une garde robe discriminante. Danse comme une queen et chante tous les styles, partante pour toutes les nouvelles aventures 👩‍🎤", avatar: null, email: "audrey@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true }
+  { id: 9, name: "Audrey", pseudo: "", bio: "Une amie en or 🪙 toujours prête à rendre service, drôle, un style vestimentaire qui détrône tout le monde. Danse comme une queen et chante tous les styles, partante pour toute nouvelle aventure 👩‍🎤", avatar: null, email: "audrey@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true }
 ];
 
 // ---- Corvées (roue des corvées) ----
@@ -39,8 +39,8 @@ const PLANNING_VERSION = 3;
 const planningData = [
   { jour: "Vendredi", date: "21 août 2026", activities: [
     { nom: "Gare de Toulon", emoji: "🚉", horaires: "22h00", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: ["Tenue de soirée (pour le Mourillon)"], comments: [], notes: "" },
-    { nom: "L'Oasis ou la Source", emoji: "🍹", horaires: "22h15", lieu: "La plage du Mourillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Le grand débat existentiel : l'Oasis ou la Source ? 😄" },
-    { nom: "Retour à Saraillon", emoji: "🏠", horaires: "00h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" }
+    { nom: "L'Oasis ou la Source", emoji: "🍹", horaires: "22h15", lieu: "Le Mourillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Le grand débat existentiel : l'Oasis ou la Source ? 😄" },
+    { nom: "Retour à Saraillon", emoji: "🏠", horaires: "00h00", lieu: "Saraillon (la maison)", inscription: false, repas: "", apporter: [], comments: [], notes: "" }
   ]},
   { jour: "Samedi", date: "22 août 2026", activities: [
     { nom: "Aéroport de Marseille", emoji: "✈️", horaires: "", lieu: "Aéroport Marseille-Provence", inscription: false, repas: "", apporter: [], comments: [], notes: "Horaire à confirmer" },
@@ -48,31 +48,31 @@ const planningData = [
     { nom: "Soirée à la Friche", emoji: "🎉", horaires: "21h00", lieu: "La Friche la Belle de Mai", inscription: false, repas: "Dîner", apporter: ["Sac de soirée", "Tenue de soirée", "Chaussures confortables (ascenseur en panne)", "Veste légère pour la nuit", "Maquillage", "Brosse à cheveux", "Batterie externe", "Cash / carte"], comments: [], notes: "Soirée Constellations — Yaguara dj set, afro house, tropical bass, township funk + guest & performances dansées. ⚠️ L'ascenseur est en panne." }
   ]},
   { jour: "Dimanche", date: "23 août 2026", activities: [
-    { nom: "Surprises", emoji: "💎", horaires: "10h30", lieu: "Saraillon", inscription: false, repas: false, apporter: ["Son âme d'enfant 🧒"], comments: [], notes: "Vous n'êtes pas prêtes !" }
+    { nom: "Surprises", emoji: "💎", horaires: "10h30", lieu: "Saraillon", inscription: false, repas: "Déjeuner + Dîner", apporter: ["Son âme d'enfant 🧒"], comments: [], notes: "Vous n'êtes pas prêtes !" }
   ]},
   { jour: "Lundi", date: "24 août 2026", activities: [
-    { nom: "Plongée", emoji: "🤿", horaires: "À définir", lieu: "Mer", inscription: true, link: "https://forms.gle/PMACZkefBwXW4EYf6", apporter: ["Maillot de bain (sous la combinaison)", "Serviette", "Tenue de rechange", "Crème solaire (visage/cou)", "Chapeau", "Grande bouteille d'eau", "Élastique à cheveux", "Sac étanche pour le téléphone"], comments: [], notes: "Masque, tuba et palmes fournis — pas besoin des tiens !" }
+    { nom: "Plongée", emoji: "🤿", horaires: "À définir", lieu: "Mer", inscription: true, link: "https://forms.gle/PMACZkefBwXW4EYf6", repas: "Déjeuner", apporter: ["Maillot de bain (sous la combinaison)", "Serviette", "Tenue de rechange", "Crème solaire (visage/cou)", "Chapeau", "Grande bouteille d'eau", "Élastique à cheveux", "Sac étanche pour le téléphone"], comments: [], notes: "Masque, tuba et palmes fournis — pas besoin des tiens !" }
   ]},
   { jour: "Mardi", date: "25 août 2026", activities: [
     { nom: "Balade en bateau", emoji: "⛵", horaires: "Matin", lieu: "Mer", inscription: true, link: "https://forms.gle/7F35tvEUbPNTLvh5A", repas: "Pique-nique partagé", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil", "Chapeau / casquette", "Coupe-vent léger", "Anti-mal de mer (si besoin)", "Masque, tuba et palmes", "Crudités pour le pique-nique", "Une bouteille de champagne 🍾"], comments: [], notes: "Pique-nique à partager entre tous à bord !" }
   ]},
   { jour: "Mercredi", date: "26 août 2026", activities: [
-    { nom: "Stand-up paddle", emoji: "🏄", horaires: "Journée", lieu: "Anse Méjean", inscription: false, apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire waterproof", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "Sac étanche pour le téléphone", "Masque, tuba et palmes"], comments: [], notes: "" }
+    { nom: "Stand-up paddle", emoji: "🏄", horaires: "Journée", lieu: "Anse Méjean", inscription: false, repas: "Déjeuner", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire waterproof", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "Sac étanche pour le téléphone", "Masque, tuba et palmes"], comments: [], notes: "" }
   ]},
   { jour: "Jeudi", date: "27 août 2026", activities: [
-    { nom: "Via Ferrata", emoji: "🧗", horaires: "Matin", lieu: "Mont Faron", inscription: true, link: "https://forms.gle/TjtfUzamMA5pKdfv9", apporter: ["Chaussures de sport fermées", "Tenue de sport", "Gants légers (grip)", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "En-cas / barre énergétique", "Pansements", "Élastique à cheveux"], comments: [], notes: "Baudrier, longe et casque fournis — matériel de sécurité sur place." }
+    { nom: "Via Ferrata", emoji: "🧗", horaires: "Matin", lieu: "Mont Faron", inscription: true, link: "https://forms.gle/TjtfUzamMA5pKdfv9", repas: "Déjeuner", apporter: ["Chaussures de sport fermées", "Tenue de sport", "Gants légers (grip)", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "En-cas / barre énergétique", "Pansements", "Élastique à cheveux"], comments: [], notes: "Baudrier, longe et casque fournis — matériel de sécurité sur place." }
   ]},
   { jour: "Vendredi (J8)", date: "28 août 2026", activities: [
-    { nom: "Show Your Talent — Répétitions", emoji: "🎤", horaires: "Journée", lieu: "Saraillon", inscription: false, apporter: ["Tenue confortable pour répéter", "Accessoires de scène", "Playlist / musiques sur clé USB", "Câble AUX / adaptateur", "Notes ou paroles imprimées"], comments: [], notes: "" },
-    { nom: "Show Your Talent — Soirée", emoji: "🌟", horaires: "21h00", lieu: "Saraillon", inscription: false, repas: "Dîner à la maison", apporter: ["Tenue de soirée / costume de scène", "Accessoires de scène", "Micro", "Enceinte", "Câble AUX / adaptateur", "Spot de lumière / guirlandes", "Rallonge électrique", "Caméra", "Appareil photo", "Batterie externe", "Maquillage", "Décorations", "Playlist prête"], comments: [], notes: "" }
+    { nom: "Show Your Talent — Répétitions", emoji: "🎤", horaires: "Journée", lieu: "Saraillon", inscription: false, repas: "Déjeuner", apporter: ["Tenue confortable pour répéter", "Accessoires de scène", "Playlist / musiques sur clé USB", "Câble AUX / adaptateur", "Notes ou paroles imprimées"], comments: [], notes: "" },
+    { nom: "Show Your Talent — Soirée", emoji: "🌟", horaires: "21h00", lieu: "Saraillon", inscription: false, repas: "Dîner", apporter: ["Tenue de soirée / costume de scène", "Accessoires de scène", "Micro", "Enceinte", "Câble AUX / adaptateur", "Spot de lumière / guirlandes", "Rallonge électrique", "Caméra", "Appareil photo", "Batterie externe", "Maquillage", "Décorations", "Playlist prête"], comments: [], notes: "" }
   ]},
   { jour: "Samedi (J9)", date: "29 août 2026", activities: [
-    { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine", inscription: false, apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil"], comments: [], notes: "" },
-    { nom: "Déjeuner à la maison", emoji: "🍽️", horaires: "Midi", lieu: "Saraillon", inscription: false, apporter: [], comments: [], notes: "" },
-    { nom: "Après-midi plage", emoji: "🏖️", horaires: "Après-midi", lieu: "Anse Magaud", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "Livre / enceinte"], comments: [], notes: "" }
+    { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine", inscription: false, repas: "", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil"], comments: [], notes: "" },
+    { nom: "Déjeuner à la maison", emoji: "🍽️", horaires: "Midi", lieu: "Saraillon", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "" },
+    { nom: "Après-midi plage", emoji: "🏖️", horaires: "Après-midi", lieu: "Anse Magaut", inscription: false, repas: "", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "Livre / enceinte"], comments: [], notes: "" }
   ]},
   { jour: "Dimanche (J10)", date: "30 août 2026", activities: [
-    { nom: "Laver les draps et les étendre", emoji: "🧺", horaires: "09h00", lieu: "Saraillon" },
+    { nom: "Laver les draps et les étendre", emoji: "🧺", horaires: "09h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
     { nom: "Petit-déjeuner", emoji: "☕", horaires: "09h15", lieu: "Saraillon", inscription: false, repas: "Petit-déj", apporter: [], comments: [], notes: "" },
     { nom: "Ranger et laver la cuisine", emoji: "🧽", horaires: "09h45", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
     { nom: "Valise + ménage chambre & parties communes", emoji: "🧹", horaires: "10h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Salle de bain, toilettes, salle à manger, salon" },
@@ -105,25 +105,13 @@ let personalsData = {
 const CHALLENGES_VERSION = 5;
 
 let challenges = [
-    {
+  {
     id: 1,
     isQuest: true,
     questLabel: "LE MIROIR DU TEMPS",
     xp: 30,
     completedBy: [],
-    description: "📸 LE MIROIR DU TEMPS — Retrouvez une photo d'un séjour précédent et reproduisez-la à l'identique ici : même pose, même cadrage, même esprit !\n📜 Objectif : reproduire 1 photo d'un séjour précédent.\n🏆 Récompense : +30 XP Nostalgie, voyage dans le temps garanti.",
-    media: null,
-    likes: [],
-    comments: [],
-    timestamp: new Date()
-   },
-    {
-    id: 2,
-    isQuest: true,
-    questLabel: "MESSAGE POUR LE FUTUR",
-    xp: 50,
-    completedBy: [],
-    description: "🗺️ LE MESSAGER DU TEMPS — Durant le séjour trouve une carte postale... avant jeudi ! Une fois trouvée, rédige-la à l'attention de l'Hôte du séjour et met là dans la boîte aux lettres. Ramassage des cartes et lecture commune jeudi soir ! \n📜 Objectif : trouver + rédiger 1 carte postale pour l'Hôte.\n⏳ Délai : avant jeudi soir.\n🏆 Récompense : +50 XP Amitié.",
+    description: "\ud83d\udcf8 LE MIROIR DU TEMPS \u2014 Retrouvez une photo d'un s\u00e9jour pr\u00e9c\u00e9dent et reproduisez-la \u00e0 l'identique ici : m\u00eame pose, m\u00eame cadrage, m\u00eame esprit !\n\ud83d\udcdc Objectif : reproduire 1 photo d'un s\u00e9jour pr\u00e9c\u00e9dent.\n\ud83c\udfc6 R\u00e9compense : +30 XP Nostalgie, voyage dans le temps garanti.",
     media: null,
     likes: [],
     comments: [],
@@ -131,6 +119,18 @@ let challenges = [
   },
   {
     id: 2,
+    isQuest: true,
+    questLabel: "MESSAGE POUR LE FUTUR",
+    xp: 50,
+    completedBy: [],
+    description: "\ud83d\uddfa\ufe0f LE MESSAGER DU TEMPS \u2014 Durant le s\u00e9jour trouve une carte postale... avant jeudi ! Une fois trouv\u00e9e, r\u00e9dige-la \u00e0 l'attention de l'H\u00f4te du s\u00e9jour et met l\u00e0 dans la bo\u00eete aux lettres. Ramassage des cartes et lecture commune jeudi soir !\n\ud83d\udcdc Objectif : trouver + r\u00e9diger 1 carte postale pour l'H\u00f4te.\n\u23f3 D\u00e9lai : avant jeudi soir.\n\ud83c\udfc6 R\u00e9compense : +50 XP Amiti\u00e9.",
+    media: null,
+    likes: [],
+    comments: [],
+    timestamp: new Date()
+  },
+  {
+    id: 3,
     creator: "CHALLENGE 1",
     xp: 20,
     completedBy: [],
@@ -141,7 +141,7 @@ let challenges = [
     timestamp: new Date()
   },
   {
-    id: 3,
+    id: 4,
     creator: "CHALLENGE 2",
     xp: 20,
     completedBy: [],
@@ -152,7 +152,7 @@ let challenges = [
     timestamp: new Date()
   },
   {
-    id: 4,
+    id: 5,
     creator: "CHALLENGE 3",
     xp: 20,
     completedBy: [],
@@ -163,7 +163,7 @@ let challenges = [
     timestamp: new Date()
   },
   {
-    id: 5,
+    id: 6,
     creator: "CHALLENGE 4",
     xp: 20,
     completedBy: [],
@@ -173,5 +173,4 @@ let challenges = [
     comments: [],
     timestamp: new Date()
   },
-
 ];
