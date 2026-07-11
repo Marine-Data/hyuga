@@ -1130,8 +1130,8 @@ function renderHomeMenuTiles() {
 
   container.innerHTML = tiles.map(t => `
     <div onclick="switchTab('${t.tab}')" style="cursor: pointer; text-align: center;">
-      <div class="explore-ic" style="width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);" onmouseover="this.style.transform='translateY(-6px) scale(1.06)'" onmouseout="this.style.transform='translateY(0)'">${EXPLORE_ICONS_3D[t.icon]}</div>
-      <div style="font-size: 11px; font-weight: 600; color: var(--primary);">${t.label}</div>
+      <div style="width: 100%; aspect-ratio: 1; border-radius: 16px; background: var(--bg-raised); border: 1px solid var(--accent-sand); box-shadow: 0 4px 14px rgba(12, 47, 58, 0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; padding: 14%; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(201, 154, 63, 0.25)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 14px rgba(12, 47, 58, 0.08)';">${EXPLORE_ICONS_3D[t.icon]}</div>
+      <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-sand);">${t.label}</div>
     </div>
   `).join('');
 }
@@ -1473,4 +1473,3 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
-
