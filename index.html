@@ -2087,9 +2087,29 @@ async function enterMainApp() {
 
   if (!window.__choreCloudPollStarted) {
     window.__choreCloudPollStarted = true;
-    // ✅ Repasse chercher les corvées du groupe toutes les 25s (assignations et
-    // complétions faites par d'autres depuis leur téléphone pendant le séjour).
-    setInterval(() => { loadChoreAssignmentsCloud(); }, 25000);
+    // ✅ Repasse chercher TOUTES les données partagées toutes les 25s : corvées,
+    // fil d'actualité, inscriptions, notifications, galerie, sondages, dépenses...
+    // Avant ce correctif, chaque téléphone ne relisait Supabase qu'une fois, à
+    // l'ouverture de l'app — du coup deux personnes connectées en même temps
+    // voyaient des versions figées et différentes de l'app (le cas Marine/Mathieu).
+    setInterval(async () => {
+      await loadChoreAssignmentsCloud();
+      await loadFromSupabaseCloud();
+      // ✅ Chaque appel est isolé : si l'onglet correspondant n'est pas monté dans
+      // le DOM (utilisateur sur un autre écran), certaines fonctions de rendu
+      // plantent sur un élément introuvable — ça ne doit pas empêcher les autres
+      // écrans de se rafraîchir dans le même cycle.
+      const safe = (fn) => { try { fn(); } catch (e) { /* écran non actif, ignoré */ } };
+      safe(renderFeed);
+      safe(renderGallery);
+      safe(renderInscriptions);
+      safe(renderPolls);
+      safe(renderExpenses);
+      safe(renderShopping);
+      safe(renderNotifications);
+      safe(updateNotifBadge);
+      safe(renderHomeGroupSpirit);
+    }, 25000);
   }
 
   if (!localStorage.getItem('saraillon_onboarding_seen')) {
