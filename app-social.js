@@ -1,0 +1,459 @@
+// ============== FEED ==============
+
+// ============== PROFILE MANAGEMENT ==============
+function showMyProfile() {
+  document.getElementById('my-profile-content').style.display = 'block';
+  document.getElementById('all-profiles-content').style.display = 'none';
+  renderMyProfile();
+}
+
+function showGroupProfiles() {
+  showAllProfiles();
+}
+
+function showAllProfiles() {
+  document.getElementById('my-profile-content').style.display = 'none';
+  document.getElementById('all-profiles-content').style.display = 'block';
+  renderAllProfiles();
+}
+
+function renderMyProfile() {
+  const user = currentUser;
+  const personalData = personalsData[user.id] || {};
+  // ✅ La bio personnalisée en app (personalData.bio) gagne toujours sur la bio par défaut (user.bio)
+  const officialBio = (personalData.bio && personalData.bio.trim()) ? personalData.bio : (user.bio || '');
+  
+  // Déterminer comment afficher l'avatar
+  let avatarHTML = '';
+  if (personalData.avatar && personalData.avatar.startsWith('data:image')) {
+    // C'est une image compressée
+    avatarHTML = `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+  } else {
+    // C'est un emoji ou vide
+    avatarHTML = personalData.avatar || '👤';
+  }
+  
+  const html = `
+    <div class="card" style="text-align: center; padding: 24px;">
+      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2);">${avatarHTML}</div>
+      <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
+      <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
+        "${officialBio || 'Aventurier(e) du groupe'}"
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+        <button class="btn btn-primary" onclick="showMyProfileTab('infos')" id="btn-infos" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.2);">📋 Infos</button>
+        <button class="btn" onclick="showMyProfileTab('valise')" id="btn-valise" style="background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">🎒 Valise</button>
+      </div>
+      
+      <div id="my-profile-tab-content"></div>
+      
+      <div style="margin-top: 16px;">
+        <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderMyProfile, 300);" style="width: 100%; background: ${localStorage.getItem('pushActivated') ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)'}; color: ${localStorage.getItem('pushActivated') ? 'var(--primary)' : 'white'}; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          ${localStorage.getItem('pushActivated') ? '🔕 Désactiver les notifs push' : '🔔 Activer les notifs push'}
+        </button>
+      </div>
+      
+      <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
+        <button class="btn btn-primary" onclick="showAllProfiles()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">👥 Voir les autres</button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('my-profile-content').innerHTML = html;
+  showMyProfileTab('infos');
+}
+
+function showMyProfileTab(tab) {
+  const content = document.getElementById('my-profile-tab-content');
+  
+  // Update buttons
+  document.getElementById('btn-infos').style.background = tab === 'infos' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-infos').style.color = tab === 'infos' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-infos').style.boxShadow = tab === 'infos' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-valise').style.background = tab === 'valise' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-valise').style.color = tab === 'valise' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-valise').style.boxShadow = tab === 'valise' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  
+  if (tab === 'infos') {
+    content.innerHTML = `
+      <div style="text-align: left;">
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📸 Changer ta photo</label>
+        <input type="file" id="avatarInput" accept="image/*" style="width: 100%; padding: 8px; border: none; border-radius: 6px; background: white; cursor: pointer; margin-bottom: 16px;" onchange="previewAvatar(event)">
+        
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📝 Pseudo</label>
+        <input type="text" id="pseudoInput" placeholder="Ton pseudo..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;" value="${escapeHtml(currentUser.pseudo || '')}">
+        
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">💬 Bio</label>
+        <textarea id="bioInput" style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;">${personalsData[currentUser.id]?.bio || ''}</textarea>
+        
+        <button class="btn btn-primary" onclick="saveMyProfile()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15); background: linear-gradient(135deg, var(--accent-cyan) 0%, #00d9d9 100%); color: white; font-weight: 700;">💾 Sauvegarder mon profil</button>
+      </div>
+    `;
+  } else if (tab === 'valise') {
+    renderChecklistValise();
+  }
+}
+
+function renderChecklistValise() {
+  const content = document.getElementById('my-profile-tab-content');
+
+  // ✅ On regroupe par nom d'objet normalisé (insensible à la casse/espaces) pour éviter
+  // qu'un même objet ("Maillot de bain") apparaisse en double/triple s'il est demandé
+  // par plusieurs activités différentes. La clé de la valise est basée sur ce nom normalisé
+  // (préfixe "pack:" pour ne pas entrer en collision avec les clés par activité utilisées
+  // dans l'onglet Planning, qui restent indépendantes).
+  const grouped = {};
+  planningData.forEach((day, dayIdx) => {
+    day.activities.forEach((activity, actIdx) => {
+      const list = Array.isArray(activity.apporter) ? activity.apporter : [];
+      list.forEach((itemName) => {
+        const norm = String(itemName || '').trim().toLowerCase();
+        if (!norm) return;
+        if (!grouped[norm]) {
+          grouped[norm] = { key: `pack:${norm}`, name: itemName.trim(), sources: [] };
+        }
+        const sourceLabel = `${activity.nom} · ${day.jour}`;
+        if (!grouped[norm].sources.includes(sourceLabel)) {
+          grouped[norm].sources.push(sourceLabel);
+        }
+      });
+    });
+  });
+
+  const items = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+  if (items.length === 0) {
+    content.innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📭 Aucun objet à préparer pour l\'instant</div>';
+    return;
+  }
+
+  const packedCount = items.filter(i => checklistValise[i.key]).length;
+  const pct = Math.round((packedCount / items.length) * 100);
+
+  let html = `
+    <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.14) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px; margin-bottom: 16px; text-align: center;">
+      <div style="font-weight: 800; font-size: 17px; margin-bottom: 6px;">🎒 ${packedCount} / ${items.length} dans la valise</div>
+      <div style="height: 8px; border-radius: 4px; background: var(--bg-sunken); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+  `;
+
+  html += items.map(i => {
+    const packed = checklistValise[i.key] || false;
+    const sourceLabel = i.sources.length > 1 ? `${i.sources.length} activités` : i.sources[0];
+    return `
+      <div onclick="toggleApporterItem('${i.key}'); renderChecklistValise();" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-raised); border-radius: 10px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(12, 47, 58, 0.06);">
+        <input type="checkbox" ${packed ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan); flex-shrink: 0;" onclick="event.stopPropagation();">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">${escapeHtml(i.name)}</div>
+          <div style="font-size: 10px; color: var(--primary-light);" title="${escapeHtml(i.sources.join(', '))}">${escapeHtml(sourceLabel)}</div>
+        </div>
+        <span style="font-size: 12px; flex-shrink: 0;">${packed ? '✅' : '⬜'}</span>
+      </div>
+    `;
+  }).join('');
+
+  content.innerHTML = html;
+}
+
+function saveMyProfile() {
+  const newBio = document.getElementById('bioInput').value;
+  const newPseudo = document.getElementById('pseudoInput').value;
+  
+  // Sauvegarder les données personnelles
+  personalsData[currentUser.id] = personalsData[currentUser.id] || {};
+  personalsData[currentUser.id].bio = newBio;
+  
+  // Sauvegarder le pseudo dans currentUser
+  currentUser.pseudo = newPseudo;
+  
+  // Sauvegarder aussi dans PARTICIPANTS
+  const participant = PARTICIPANTS.find(p => p.id === currentUser.id);
+  if (participant) {
+    participant.pseudo = newPseudo;
+  }
+  
+  saveAllData();
+  showNotification('✅ Profil mis à jour !', 'success');
+  addFeedEntry(`👤 ${currentUser.name} a mis à jour son profil`, '✨');
+  renderMyProfile();
+}
+
+// Upload de photo de profil
+function previewAvatar(event) {
+  const file = event.target.files[0];
+  if (file) {
+    // Limiter la taille (max 2MB)
+    if (file.size > 2000000) {
+      showNotification('⚠️ Image trop grande (max 2MB)', 'error');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // Compresser l'image
+      compressImage(e.target.result, (compressedImage) => {
+        // Sauvegarder l'image compressée
+        personalsData[currentUser.id] = personalsData[currentUser.id] || {};
+        personalsData[currentUser.id].avatar = compressedImage;
+        
+        // Mettre à jour l'affichage du profil immédiatement
+        renderMyProfile();
+        
+        saveAllData();
+        showNotification('📸 Photo mise à jour !', 'success');
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Compresser l'image (redimensionner + réduire qualité)
+function compressImage(imageSource, callback, maxSize = 300, quality = 0.7) {
+  const img = new Image();
+  img.src = imageSource;
+  
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Redimensionner à maxSize max (300 pour avatars, 1080 pour galerie)
+    let width = img.width;
+    let height = img.height;
+    
+    if (width > height) {
+      if (width > maxSize) {
+        height = (height * maxSize) / width;
+        width = maxSize;
+      }
+    } else {
+      if (height > maxSize) {
+        width = (width * maxSize) / height;
+        height = maxSize;
+      }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    // Convertir en JPEG avec qualité réduite
+    const compressedImage = canvas.toDataURL('image/jpeg', quality);
+    callback(compressedImage);
+  };
+  
+  img.onerror = () => {
+    showNotification('⚠️ Erreur lors du chargement de l\'image', 'error');
+    callback(imageSource); // Fallback
+  };
+}
+
+function renderAllProfiles() {
+  const section = document.getElementById('all-profiles-content');
+  section.innerHTML = `<div style="margin-bottom: 15px; font-size: 12px; color: var(--primary-light); font-weight: 600;">👥 Les participants</div>` + PARTICIPANTS.map(user => {
+    const personalData = personalsData[user.id] || {};
+    const avatarHTML = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+      ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+      : (personalData.avatar || '👤');
+    return `
+      <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="showPublicProfile(${user.id})">
+        <div style="display: flex; gap: 12px;">
+          <div style="width: 50px; height: 50px; font-size: 50px; border-radius: 50%; overflow: hidden; flex-shrink: 0;">${avatarHTML}</div>
+          <div style="flex: 1;">
+            <div class="card-title" style="margin-bottom: 4px;">${user.name}</div>
+            <div style="font-size: 12px; color: var(--primary-light); margin-bottom: 6px; font-style: italic;">${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}</div>
+            <div style="font-size: 11px; color: var(--accent-cyan); margin-top: 8px;">▶ Voir profil</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showPublicProfile(userId) {
+  currentViewingProfileId = userId;
+  const section = document.getElementById('all-profiles-content');
+  const user = PARTICIPANTS.find(u => u.id === userId);
+  const personalData = personalsData[userId] || {};
+  const avatarHTML = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+    ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+    : (personalData.avatar || '👤');
+  
+  const html = `
+    <div class="card" style="text-align: center; padding: 24px;">
+      <button class="btn" onclick="showAllProfiles()" style="width: 100%; margin-bottom: 18px; background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">← Retour aux participants</button>
+      
+      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); overflow: hidden;">${avatarHTML}</div>
+      <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
+      <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
+        "${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}"
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+        <button class="btn btn-primary" onclick="showPublicProfileTab(${userId}, 'feed')" id="btn-feed-pub" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.2);">📝 Feed</button>
+        <button class="btn" onclick="showPublicProfileTab(${userId}, 'photos')" id="btn-photos-pub" style="background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">🖼️ Photos</button>
+      </div>
+      
+      <div id="public-profile-tab-content"></div>
+    </div>
+  `;
+  
+  section.innerHTML = html;
+  showPublicProfileTab(userId, 'feed');
+}
+
+function showPublicProfileTab(userId, tab) {
+  const content = document.getElementById('public-profile-tab-content');
+  
+  // Update buttons
+  document.getElementById('btn-feed-pub').style.background = tab === 'feed' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-feed-pub').style.color = tab === 'feed' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-feed-pub').style.boxShadow = tab === 'feed' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-photos-pub').style.background = tab === 'photos' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-photos-pub').style.color = tab === 'photos' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-photos-pub').style.boxShadow = tab === 'photos' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  
+  if (tab === 'feed') {
+    const userFeed = feed.filter(e => e.userId === userId);
+    if (userFeed.length === 0) {
+      content.innerHTML = '<div style="text-align: center; color: var(--primary-light); margin-top: 28px; padding: 20px;">📭 Aucune activité pour le moment</div>';
+    } else {
+      content.innerHTML = '<div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">' + userFeed.slice(0, 5).map(entry => `
+        <div style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 14px; border-radius: 8px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 2px 6px rgba(111, 184, 176, 0.1);">
+          <div style="font-weight: 700; font-size: 13px; color: var(--primary);">${entry.emoji} ${escapeHtml(entry.message)}</div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 6px;">Il y a peu</div>
+        </div>
+      `).join('') + '</div>';
+    }
+  } else if (tab === 'photos') {
+    const userName = PARTICIPANTS.find(u => u.id === userId)?.name;
+    const userPhotos = galleryItems.filter(p => p.creator === userName);
+    if (userPhotos.length === 0) {
+      content.innerHTML = '<div style="text-align: center; color: var(--primary-light); margin-top: 20px;">Aucune photo 📸</div>';
+    } else {
+      content.innerHTML = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px;">' + userPhotos.slice(0, 9).map(p => `
+        <div style="aspect-ratio: 1; background: linear-gradient(45deg, var(--accent-purple), var(--accent-pink)); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 24px;">📷</div>
+      `).join('') + '</div>';
+    }
+  }
+}
+
+// Helper: Clic sur créateur dans Galerie → Ouvre profil public
+function showPublicProfileFromGallery(creatorName) {
+  const user = PARTICIPANTS.find(u => u.name === creatorName);
+  if (user) {
+    previousTab = 'gallery';
+    switchTab('profile');
+    showAllProfiles();
+    showPublicProfile(user.id);
+  }
+}
+
+// Helper: Clic sur auteur dans Feed → Ouvre profil public
+function showPublicProfileFromFeed(userId) {
+  previousTab = 'feed';
+  switchTab('profile');
+  showAllProfiles();
+  showPublicProfile(userId);
+}
+
+// ============== ENHANCED FEED ==============
+function addFeedEntry(message, emoji = '📌') {
+  const entry = {
+    id: Date.now(),
+    message,
+    user: currentUser.name,
+    userId: currentUser.id,
+    emoji,
+    timestamp: new Date(),
+    likes: [],
+    comments: []
+  };
+  feed.unshift(entry);
+  if (feed.length > 100) feed.pop();
+  saveAllData();
+  renderFeed();
+  return entry;
+}
+
+function renderFeed() {
+  const content = document.getElementById('feed-content');
+  if (!content) return; // ✅ Évite de planter si l'élément n'existe pas encore
+
+  try {
+    if (feed.length === 0) {
+      content.innerHTML = '<div style="padding: 40px 20px; text-align: center;"><p style="color: var(--primary-light); font-size: 14px;">📭 Aucune activité pour le moment</p></div>';
+      return;
+    }
+    content.innerHTML = feed.map(entry => {
+    const date = new Date(entry.timestamp);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    const timeStr = `${hours}:${mins}`;
+    const participant = PARTICIPANTS.find(p => p.id === entry.userId) || { name: entry.user };
+    const personalData = personalsData[participant.id] || {};
+    const avatarContent = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+      ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+      : (personalData.avatar || '👤');
+    const avatarImg = `<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.2); flex-shrink: 0; overflow: hidden;" onclick="showPublicProfileFromFeed(${participant.id})">${avatarContent}</div>`;
+    const userLiked = entry.likes.includes(currentUser.id);
+    return `
+      <div class="card" style="margin-bottom: 14px; padding: 14px; transition: all 0.3s ease;" onmouseenter="this.style.boxShadow='0 6px 16px rgba(12, 47, 58, 0.15)'; this.style.transform='translateY(-2px)';" onmouseleave="this.style.boxShadow='0 2px 8px rgba(12, 47, 58, 0.08)'; this.style.transform='translateY(0)';">
+        <div style="display: flex; gap: 12px;">
+          <div>${avatarImg}</div>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-weight: 700; color: var(--primary); cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px;" onclick="showPublicProfileFromFeed(${participant.id})">${entry.emoji} <span>${participant.name}</span></div>
+              <div style="font-size: 11px; background: var(--bg-sunken); padding: 4px 8px; border-radius: 4px; color: var(--primary-light); font-weight: 500;">${timeStr}</div>
+            </div>
+            <div style="font-size: 13px; color: var(--primary); margin-bottom: 10px; line-height: 1.4;">${escapeHtml(entry.message)}</div>
+            <div style="display: flex; gap: 12px;">
+              <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️ ${entry.likes.length}</button>
+              <button onclick="commentFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); font-weight: 500; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)'; this.style.color='var(--primary)';" onmouseout="this.style.transform='scale(1)'; this.style.color='var(--primary-light)';">💬 ${entry.comments.length}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  } catch (err) {
+    console.error('Erreur renderFeed:', err);
+  }
+}
+
+function likeFeedEntry(entryId) {
+  const entry = feed.find(e => e.id === entryId);
+  if (entry) {
+    const idx = entry.likes.indexOf(currentUser.id);
+    if (idx > -1) {
+      entry.likes.splice(idx, 1);
+    } else {
+      entry.likes.push(currentUser.id);
+      addNotification(`❤️ ${currentUser.name} a aimé`, '❤️', 'feed');
+    }
+    saveAllData();
+    renderFeed();
+  }
+}
+
+function commentFeedEntry(entryId) {
+  const comment = prompt('💬 Ajouter un commentaire:');
+  if (comment && comment.trim()) {
+    const entry = feed.find(e => e.id === entryId);
+    if (entry) {
+      entry.comments.push({
+        id: Date.now(),
+        user: currentUser.name,
+        userId: currentUser.id,
+        text: comment,
+        timestamp: new Date()
+      });
+      saveAllData();
+      renderFeed();
+      addNotification(`💬 ${currentUser.name} a commenté`, '💬', 'feed');
+    }
+  }
+}
+
