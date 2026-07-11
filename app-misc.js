@@ -15,7 +15,6 @@ const SECRET_MISSION_TEMPLATES = {
     "Fais un compliment sincère et discret à {target} aujourd'hui.",
     "Trouve un petit geste pour rendre la journée de {target} plus douce.",
     "Laisse un petit mot gentil quelque part pour {target}.",
-    "Propose ton aide à {target} pour une tâche, sans qu'elle ait eu à demander.",
     "Trouve un moyen de faire rire {target} aujourd'hui."
   ]
 };
@@ -399,6 +398,12 @@ function revealSurprise() {
           <span style="opacity: 0.85; font-size: 11.5px;">Ballon 7 rebonds pieds/genoux + Pierre-Feuille-Ciseaux inversé. Équipe perdante dresse la table.</span><br><br>
           <strong>Ⅳ. Épreuve finale — Karaoké</strong><br>
           <span style="opacity: 0.85; font-size: 11.5px;">Artiste, titre, paroles, suite inventée, funfact, backs, choré — 1 point chacun. Équipe perdante gère les inscriptions aux activités.</span>
+        </div>
+        <div style="margin-top: 16px;">
+          <div style="border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.2); background: #fff;">
+            <iframe loading="lazy" style="width: 100%; aspect-ratio: 16/9; border: none; display: block;" src="https://www.canva.com/design/DAHJ270_OqQ/view?embed" allowfullscreen allow="fullscreen"></iframe>
+          </div>
+          <a href="https://www.canva.com/d/vtjIiXCFg_OPhF6" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
         </div>
       </div>
     `;
