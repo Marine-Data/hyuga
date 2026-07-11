@@ -48,7 +48,7 @@
 
     /* Carte "signature" : fond clair, liséré or fin plutôt qu'ombre colorée épaisse */
     .card-luxe {
-      background: var(--bg-raised);
+      background: var(--bg-raised) url('https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/texture-paper.jpg') center/cover;
       border: 1px solid var(--accent-sand);
       border-radius: 16px;
       padding: 20px;

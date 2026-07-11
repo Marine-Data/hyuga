@@ -47,6 +47,43 @@ async function uploadHeroBackgroundNight(inputEl) {
   }
 }
 
+// ✅ Texture papier de fond des cartes "luxe" — appliquée via CSS background-image
+async function uploadTexturePaper(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('texture-paper-upload-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+  try {
+    await uploadFileToStorage('app-assets', 'texture-paper.jpg', file);
+    if (progressEl) progressEl.textContent = '✅ Mise en ligne ! (rafraîchis la page pour la voir)';
+    showNotification('🎨 Texture mise à jour !', 'success');
+  } catch (err) {
+    console.error('Échec upload texture:', err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
+// ✅ Photo détail (bandeau derrière le titre "Explorer" de l'accueil)
+async function uploadDetailWater(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('detail-water-upload-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+  try {
+    const publicUrl = await uploadFileToStorage('app-assets', 'detail-water.jpg', file);
+    document.querySelectorAll('img[src*="detail-water.jpg"]').forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
+    if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
+    showNotification('🌊 Bandeau mis à jour !', 'success');
+  } catch (err) {
+    console.error('Échec upload détail eau:', err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
 
 // 🔧 Chaque matin, chaque personne reçoit UNE mission privée, visible d'elle
 // seule dans l'app. {target} est remplacé par le prénom de la personne visée.
