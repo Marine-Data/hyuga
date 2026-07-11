@@ -35,6 +35,15 @@ function renderChallenges() {
         `}
       </div>
       ${ch.media ? `<div style="margin-bottom: 14px; border-radius: 8px; overflow: hidden; max-height: 300px; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.1);">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
+      ${/^CHALLENGE \d+$/.test(ch.creator) ? `
+      <div style="margin-bottom: 14px;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
+          🎥 ${ch.media ? 'Remplacer' : 'Uploader'} la vidéo
+          <input type="file" accept="video/mp4,video/quicktime,video/*" style="display: none;" onchange="uploadChallengeVideo(${ch.id}, this)">
+        </label>
+        <span id="upload-progress-${ch.id}" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
+      </div>
+      ` : ''}
       <div style="margin-bottom: 14px; font-size: 13px; line-height: 1.5; white-space: pre-line;">${escapeHtml(ch.description)}</div>
       <div style="margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">

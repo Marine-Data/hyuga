@@ -221,10 +221,10 @@ async function loadTresorFromCloud() {
     treasureHuntItems = rows.sort((a, b) => a.id - b.id);
   } else {
     // Rien en base encore : on initialise avec la liste par défaut et on synchronise
-    treasureHuntItems = DEFAULT_TREASURE_HUNT_ITEMS.map(i => ({ ...i, found: false, found_by: null }));
+    treasureHuntItems = DEFAULT_TREASURE_HUNT_ITEMS.map(i => ({ ...i, found: false, found_by: null, photo_url: null }));
     treasureHuntItems.forEach(i => {
       window.syncToSupabase('treasure_hunt_items', {
-        id: i.id, item: i.item, emoji: i.emoji, xp: i.xp, found: false, found_by: null
+        id: i.id, item: i.item, emoji: i.emoji, xp: i.xp, found: false, found_by: null, photo_url: null
       }).catch(err => console.error('Sync trésor échouée:', err));
     });
   }
@@ -246,7 +246,8 @@ function toggleTresorItem(id) {
     xp: item.xp,
     found: nowFound,
     found_by: item.found_by,
-    found_at: nowFound ? new Date().toISOString() : null
+    found_at: nowFound ? new Date().toISOString() : null,
+    photo_url: item.photo_url || null
   }).catch(err => console.error('Sync trésor échouée:', err));
 
   if (nowFound) {
@@ -256,6 +257,49 @@ function toggleTresorItem(id) {
   }
 
   renderTresor();
+}
+
+// ✅ Upload direct de la photo-preuve d'un trésor, vers Supabase Storage (même
+// mécanisme que la vidéo des challenges) — coche automatiquement l'objet comme trouvé.
+async function uploadTresorPhoto(id, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+
+  const item = treasureHuntItems.find(i => i.id === id);
+  if (!item) return;
+
+  const progressEl = document.getElementById(`tresor-progress-${id}`);
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    const path = `item-${id}-${Date.now()}.jpg`;
+    const publicUrl = await uploadFileToStorage('treasure-photos', path, file);
+
+    item.photo_url = publicUrl;
+    item.found = true;
+    item.found_by = currentUser.name;
+
+    window.syncToSupabase('treasure_hunt_items', {
+      id: item.id,
+      item: item.item,
+      emoji: item.emoji,
+      xp: item.xp,
+      found: true,
+      found_by: item.found_by,
+      found_at: new Date().toISOString(),
+      photo_url: publicUrl
+    }).catch(err => console.error('Sync trésor échouée:', err));
+
+    addNotification(`🗺️📸 ${currentUser.name} a trouvé "${item.item}" avec une photo à l'appui (+${item.xp} XP) !`, '🗺️', 'tresor');
+    addFeedEntry(`a trouvé un trésor avec une photo : "${item.item}" (+${item.xp} XP) !`, '🗺️');
+    if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
+
+    renderTresor();
+  } catch (err) {
+    console.error('Échec upload photo trésor:', err);
+    if (progressEl) progressEl.textContent = '❌ Échec de l\'envoi, réessaie.';
+    showNotification('❌ Échec de l\'upload photo', 'error');
+  }
 }
 
 function renderTresor() {
@@ -282,14 +326,29 @@ function renderTresor() {
 
   treasureHuntItems.forEach(item => {
     html += `
-      <div class="card" style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px; padding: 12px; background: ${item.found ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%)' : 'var(--bg-sunken)'}; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); opacity: ${item.found ? 0.75 : 1};">
-        <input type="checkbox" ${item.found ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
-        <span style="font-size: 20px;">${item.emoji || '🗺️'}</span>
-        <div style="flex: 1;">
-          <div style="font-size: 13px; font-weight: 500; color: var(--primary); ${item.found ? 'text-decoration: line-through;' : ''}">${escapeHtml(item.item)}</div>
-          ${item.found ? `<div style="font-size: 11px; color: var(--primary-light);">Trouvé par ${escapeHtml(item.found_by || '?')}</div>` : ''}
+      <div class="card" style="padding: 12px; margin-bottom: 10px; background: ${item.found ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%)' : 'var(--bg-sunken)'}; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); opacity: ${item.found ? 0.9 : 1};">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <input type="checkbox" ${item.found ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
+          <span style="font-size: 20px;">${item.emoji || '🗺️'}</span>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: var(--primary); ${item.found ? 'text-decoration: line-through;' : ''}">${escapeHtml(item.item)}</div>
+            ${item.found_by ? `<div style="font-size: 11px; color: var(--primary-light);">Trouvé par ${escapeHtml(item.found_by)}</div>` : ''}
+          </div>
+          <span style="font-size: 11px; font-weight: 700; color: var(--accent-gold);">+${item.xp}</span>
         </div>
-        <span style="font-size: 11px; font-weight: 700; color: var(--accent-gold);">+${item.xp}</span>
+        ${item.photo_url ? `
+          <div style="margin-top: 10px; border-radius: 8px; overflow: hidden; max-height: 220px;">
+            <img src="${item.photo_url}" style="width: 100%; height: auto; display: block;">
+          </div>
+        ` : `
+          <div style="margin-top: 10px;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 6px 10px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
+              📷 Ajouter une photo-preuve
+              <input type="file" accept="image/*" capture="environment" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
+            </label>
+            <span id="tresor-progress-${item.id}" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
+          </div>
+        `}
       </div>
     `;
   });

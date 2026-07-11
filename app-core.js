@@ -834,6 +834,50 @@ function applyHistory(data) {
   renderChoreLogPanel();
 }
 
+// ✅ Upload direct vers Supabase Storage (contrairement aux photos de galerie qui
+// passent en base64 dans une ligne de table, ceci envoie le vrai fichier — seule
+// méthode viable pour des vidéos de plusieurs dizaines de Mo). Permet d'uploader
+// depuis le téléphone/ordinateur SANS passer par le dashboard Supabase.
+async function uploadFileToStorage(bucket, path, file, onProgress) {
+  if (!window.supabaseReady || !window.supabase) throw new Error('Supabase non prêt, réessaie dans quelques secondes.');
+  const { error } = await window.supabase.storage.from(bucket).upload(path, file, {
+    upsert: true,
+    contentType: file.type || 'application/octet-stream'
+  });
+  if (error) throw error;
+  const { data } = window.supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ✅ Upload direct de la vidéo d'un challenge CHALLENGE 1-4, au bon nom de fichier
+// dans le bucket 'challenge-videos' — le chemin correspond exactement à l'URL déjà
+// codée dans saraillon-data.js, donc dès l'upload terminé, tout le monde voit la
+// vidéo sans qu'aucune autre donnée n'ait besoin d'être synchronisée.
+async function uploadChallengeVideo(challengeId, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+
+  const ch = challenges.find(c => c.id === challengeId);
+  if (!ch) return;
+
+  const num = (ch.creator.match(/\d+/) || ['?'])[0];
+  const path = `challenge-${num}.mp4`;
+  const progressEl = document.getElementById(`upload-progress-${challengeId}`);
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    const publicUrl = await uploadFileToStorage('challenge-videos', path, file);
+    ch.media = { type: 'video', src: `${publicUrl}?t=${Date.now()}` }; // cache-buster
+    if (progressEl) progressEl.textContent = '✅ Vidéo envoyée !';
+    showNotification('🎥 Vidéo uploadée avec succès !', 'success');
+    renderChallenges();
+  } catch (err) {
+    console.error('Échec upload vidéo challenge:', err);
+    if (progressEl) progressEl.textContent = '❌ Échec de l\'envoi, réessaie.';
+    showNotification('❌ Échec de l\'upload vidéo', 'error');
+  }
+}
+
 function switchTab(tab) {
   // Sauvegarder le tab COURANT comme previousTab AVANT de changer
   if (document.querySelector('.tab-content.active')) {
