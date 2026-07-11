@@ -1117,23 +1117,67 @@ function renderHomeMenuTiles() {
   const container = document.getElementById('home-menu-tiles');
   if (!container) return;
 
-  const tiles = [
-    { tab: 'planning', icon: 'planning', label: 'Planning' },
-    { tab: 'challenges', icon: 'quetes', label: 'Quêtes' },
-    { tab: 'shopping', icon: 'courses', label: 'Courses' },
-    { tab: 'corvees', icon: 'corvees', label: 'Corvées' },
-    { tab: 'surprises', icon: 'surprises', label: 'Surprises' },
-    { tab: 'gallery', icon: 'galerie', label: 'Galerie' },
-    { tab: 'polls', icon: 'sondages', label: 'Sondages' },
-    { tab: 'expenses', icon: 'depenses', label: 'Dépenses' },
+  const items = [
+    { type: 'link', tab: 'planning', label: 'Planning du séjour' },
+    { type: 'link', tab: 'challenges', label: 'Quêtes et trésor' },
+    { type: 'link', tab: 'gallery', label: 'Galerie de souvenirs' },
+    { type: 'link', tab: 'surprises', label: 'Surprises' },
+    {
+      type: 'group',
+      label: 'Vie pratique',
+      children: [
+        { tab: 'corvees', label: 'Corvées du foyer' },
+        { tab: 'shopping', label: 'Courses' },
+        { tab: 'polls', label: 'Sondages' },
+        { tab: 'expenses', label: 'Dépenses' },
+      ]
+    },
   ];
 
-  container.innerHTML = tiles.map(t => `
-    <div onclick="switchTab('${t.tab}')" style="cursor: pointer; text-align: center;">
-      <div style="width: 100%; aspect-ratio: 1; border-radius: 16px; background: var(--bg-raised); border: 1px solid var(--accent-sand); box-shadow: 0 4px 14px rgba(12, 47, 58, 0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; padding: 14%; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 20px rgba(201, 154, 63, 0.25)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 14px rgba(12, 47, 58, 0.08)';">${EXPLORE_ICONS_3D[t.icon]}</div>
-      <div style="font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-sand);">${t.label}</div>
+  const roman = ['I', 'II', 'III', 'IV', 'V'];
+
+  container.innerHTML = `
+    <div style="background: var(--bg-raised); border-radius: 16px; border: 1px solid var(--accent-sand); overflow: hidden;">
+      ${items.map((it, i) => {
+        if (it.type === 'link') {
+          return `
+            <div onclick="switchTab('${it.tab}')" style="display: flex; align-items: center; gap: 14px; padding: 15px 16px; cursor: pointer; ${i < items.length - 1 ? 'box-shadow: 0 1px 0 var(--border);' : ''}">
+              <div class="title-serif" style="font-size: 13px; color: var(--accent-sand); width: 22px; flex-shrink: 0;">${roman[i]}</div>
+              <div class="title-serif" style="flex: 1; font-size: 15px;">${it.label}</div>
+              <div style="color: var(--accent-sand); font-size: 13px;">→</div>
+            </div>
+          `;
+        }
+        return `
+          <div>
+            <div onclick="toggleExploreGroup('practical')" style="display: flex; align-items: center; gap: 14px; padding: 15px 16px; cursor: pointer;">
+              <div class="title-serif" style="font-size: 13px; color: var(--accent-sand); width: 22px; flex-shrink: 0;">${roman[i]}</div>
+              <div class="title-serif" style="flex: 1; font-size: 15px;">${it.label}</div>
+              <span id="explore-group-chevron-practical" style="color: var(--accent-sand); font-size: 12px; transition: transform 0.2s ease;">▾</span>
+            </div>
+            <div id="explore-group-practical" style="display: none; background: var(--bg-sunken);">
+              ${it.children.map((c, j) => `
+                <div onclick="switchTab('${c.tab}')" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 46px; cursor: pointer; ${j < it.children.length - 1 ? 'box-shadow: 0 1px 0 var(--border);' : ''}">
+                  <div style="flex: 1; font-size: 13.5px; color: var(--primary);">${c.label}</div>
+                  <div style="color: var(--accent-sand); font-size: 12px;">→</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
-  `).join('');
+  `;
+}
+
+// ✅ Déplie/replie le sous-groupe "Vie pratique" de la navigation Explorer
+function toggleExploreGroup(name) {
+  const panel = document.getElementById(`explore-group-${name}`);
+  const chevron = document.getElementById(`explore-group-chevron-${name}`);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
 function renderHomeFeaturedRow() {
