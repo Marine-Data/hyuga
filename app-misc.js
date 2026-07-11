@@ -17,7 +17,9 @@ async function uploadHeroBackground(inputEl) {
     showNotification('🖼️ Fond d\'accueil mis à jour !', 'success');
   } catch (err) {
     console.error('Échec upload fond accueil:', err);
-    if (progressEl) progressEl.textContent = '❌ Échec, réessaie.';
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
   }
 }
 
