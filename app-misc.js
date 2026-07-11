@@ -84,6 +84,26 @@ async function uploadDetailWater(inputEl) {
   }
 }
 
+// ✅ Upload générique pour les bandeaux d'en-tête (Quêtes, Trésor, Profils, Galerie)
+async function uploadBandPhoto(key, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById(`band-${key}-upload-progress`);
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+  try {
+    const path = `band-${key}.jpg`;
+    const publicUrl = await uploadFileToStorage('app-assets', path, file);
+    document.querySelectorAll(`img[src*="${path}"]`).forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
+    if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
+    showNotification('🖼️ Bandeau mis à jour !', 'success');
+  } catch (err) {
+    console.error(`Échec upload bandeau ${key}:`, err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
 
 // 🔧 Chaque matin, chaque personne reçoit UNE mission privée, visible d'elle
 // seule dans l'app. {target} est remplacé par le prénom de la personne visée.

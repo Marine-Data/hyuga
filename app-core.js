@@ -916,6 +916,15 @@ function switchQuestPanel(panel) {
   btnT.style.background = isQuetes ? 'transparent' : 'var(--bg-raised)';
   btnT.style.color = isQuetes ? 'var(--primary-light)' : 'var(--primary)';
   btnT.style.boxShadow = isQuetes ? 'none' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+
+  const bandPhoto = document.getElementById('quest-band-photo');
+  const bandEyebrow = document.getElementById('quest-band-eyebrow');
+  const bandTitle = document.getElementById('quest-band-title');
+  if (bandPhoto) bandPhoto.src = isQuetes
+    ? 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg'
+    : 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-tresor.jpg';
+  if (bandEyebrow) bandEyebrow.textContent = isQuetes ? 'Aventure' : 'Exploration';
+  if (bandTitle) bandTitle.textContent = isQuetes ? 'Quêtes' : 'Chasse au trésor';
 }
 
 function switchTab(tab) {

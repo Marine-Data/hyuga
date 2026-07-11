@@ -412,9 +412,16 @@
       <div id="challenges" class="tab-content">
         <div class="tab-nav">
           <button class="tab-btn active" onclick="switchTab('challenges')">🏁 Challenges</button>
-          <button class="tab-btn" onclick="showCreateChallenge()" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(153, 51, 255, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Créer</button>
+          <button class="tab-btn" onclick="showCreateChallenge()" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(29, 95, 168, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Créer</button>
         </div>
         <div class="content" id="challenges-content-wrap">
+          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
+            <img id="quest-band-photo" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.3s ease;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
+              <span class="eyebrow" id="quest-band-eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Aventure</span>
+              <div class="title-serif" id="quest-band-title" style="font-size: 19px; color: #fff;">Quêtes</div>
+            </div>
+          </div>
           <div id="mystery-photo-content" style="margin-bottom: 18px;"></div>
 
           <div style="display: flex; gap: 4px; background: var(--bg-sunken); border-radius: 10px; padding: 3px; margin-bottom: 16px;">
@@ -482,9 +489,16 @@
       <div id="gallery" class="tab-content">
         <div class="tab-nav">
           <button class="tab-btn active">📸 Galerie</button>
-          <button class="tab-btn" onclick="showUploadForm()" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(153, 51, 255, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Uploader</button>
+          <button class="tab-btn" onclick="showUploadForm()" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(29, 95, 168, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Uploader</button>
         </div>
         <div class="content">
+          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-galerie.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
+              <span class="eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Souvenirs</span>
+              <div class="title-serif" style="font-size: 19px; color: #fff;">Galerie</div>
+            </div>
+          </div>
           <div id="upload-form" style="display: none;">
             <div class="card">
               <input type="text" id="gallery-location" placeholder="Lieu?">
@@ -520,9 +534,16 @@
       <!-- PROFILE -->
       <div id="profile" class="tab-content">
         <div class="content">
+          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-profil.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
+              <span class="eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Le groupe</span>
+              <div class="title-serif" style="font-size: 19px; color: #fff;">Profils</div>
+            </div>
+          </div>
           <!-- MON PROFIL TAB -->
           <div style="display: flex; gap: 8px; margin-bottom: 16px; box-shadow: 0 2px 0 var(--border); padding-bottom: 12px;">
-            <button class="tab-btn active" onclick="showMyProfile()" style="box-shadow: inset 0 -3px 0 var(--accent-purple); margin-bottom: -14px;">👤 Mon Profil</button>
+            <button class="tab-btn active" onclick="showMyProfile()" style="box-shadow: inset 0 -3px 0 var(--accent-sand); margin-bottom: -14px;">👤 Mon Profil</button>
             <button class="tab-btn" onclick="showGroupProfiles()" style="box-shadow: inset 0 -3px 0 transparent; margin-bottom: -14px;">👥 Groupe</button>
           </div>
           <div id="my-profile-content"></div>
@@ -583,6 +604,29 @@
               <input type="file" accept="image/*" style="display: none;" onchange="uploadDetailWater(this)">
             </label>
             <span id="detail-water-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+          </div>
+          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">🖼️ Bandeaux d'en-tête</div>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🏁 Quêtes
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('quete', this)">
+            </label>
+            <span id="band-quete-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🗺️ Trésor
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('tresor', this)">
+            </label>
+            <span id="band-tresor-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              👥 Profils
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('profil', this)">
+            </label>
+            <span id="band-profil-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
+              📸 Galerie
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('galerie', this)">
+            </label>
+            <span id="band-galerie-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">💾 Données</div>
