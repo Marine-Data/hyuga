@@ -1,4 +1,4 @@
-:root {
+    :root {
       /* SARAILLON — AMBIANCE MÉDITERRANÉE (refonte) */
       --primary: #0c2f3a;           /* Encre marine profonde, texte principal */
       --primary-soft: #0e7a90;      /* Eau profonde, texte secondaire */
@@ -1149,7 +1149,7 @@
       0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
       100% { transform: translateY(70vh) rotate(340deg); opacity: 0; }
     }
-    /* 🌊 VAGUELETTES décoratives dans le hero */
+    /* 🌙 VAGUELETTES décoratives dans le hero */
     .hero-waves {
       position: absolute;
       left: 0; right: 0; bottom: 0;
@@ -1166,10 +1166,101 @@
       100% { transform: translateX(-50%); }
     }
 
+    /* ✨ LUCIOLES nocturnes — clignotement doux et décalé */
+    .firefly {
+      animation: fireflyTwinkle 3.4s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .firefly:nth-child(1) { animation-delay: 0s; }
+    .firefly:nth-child(2) { animation-delay: 0.9s; }
+    .firefly:nth-child(3) { animation-delay: 1.8s; }
+    .firefly:nth-child(4) { animation-delay: 2.5s; }
+    @keyframes fireflyTwinkle {
+      0%, 100% { opacity: 0.15; transform: scale(0.8) translateY(0); }
+      50%      { opacity: 0.95; transform: scale(1.3) translateY(-6px); }
+    }
+
+    /* 🌠 Étoile filante occasionnelle (nuit uniquement) */
+    .anim-shootingstar {
+      position: absolute;
+      top: 20%;
+      left: -10%;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 6px 2px rgba(255,255,255,0.8);
+      animation: shootingStarMove 1.6s linear forwards;
+    }
+    .anim-shootingstar::after {
+      content: '';
+      position: absolute;
+      top: 1px;
+      right: 2px;
+      width: 70px;
+      height: 1.5px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+      transform: rotate(180deg);
+    }
+    @keyframes shootingStarMove {
+      0%   { transform: translate(0, 0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translate(220px, 130px); opacity: 0; }
+    }
+
+    /* 🌧️ Pluie légère en overlay (bannière météo pluvieuse) */
+    .anim-rain-drop {
+      position: absolute;
+      top: -20px;
+      width: 1.5px;
+      height: 16px;
+      background: linear-gradient(180deg, rgba(126,182,199,0), rgba(126,182,199,0.55));
+      animation-name: rainFall;
+      animation-timing-function: linear;
+      animation-fill-mode: forwards;
+    }
+    @keyframes rainFall {
+      0%   { transform: translateY(0); opacity: 0.8; }
+      100% { transform: translateY(65vh); opacity: 0; }
+    }
+
+    /* 🏆 Éclat doré "montée au classement" */
+    .anim-rankflash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 20%, rgba(244, 185, 66, 0.35), transparent 60%);
+      animation: rankFlashPulse 1.4s ease-out forwards;
+      z-index: 998;
+    }
+    @keyframes rankFlashPulse {
+      0%   { opacity: 0; }
+      30%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* 🎈 Lanternes qui montent (surprise débloquée) */
+    .anim-lantern {
+      position: absolute;
+      bottom: -60px;
+      width: 34px;
+      height: 44px;
+      animation-name: lanternRise;
+      animation-timing-function: ease-out;
+      animation-fill-mode: forwards;
+    }
+    @keyframes lanternRise {
+      0%   { transform: translateY(0) translateX(0); opacity: 0; }
+      10%  { opacity: 1; }
+      100% { transform: translateY(-115vh) translateX(var(--drift, 20px)); opacity: 0; }
+    }
+
     /* ♿ Respect du réglage système : on coupe tout si l'utilisateur préfère moins d'animations */
     @media (prefers-reduced-motion: reduce) {
       .anim-dolphin, .anim-splash, .anim-gull, .anim-gull-label, .anim-boat,
       .anim-plane, .anim-fish,
+      .anim-shootingstar, .anim-rain-drop, .anim-rankflash, .anim-lantern, .firefly,
       .hero-waves .wv1, .hero-waves .wv2, .anim-gull .wing {
         animation: none !important;
       }

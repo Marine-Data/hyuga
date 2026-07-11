@@ -198,3 +198,94 @@ function injectHeroWaves() {
     <svg class="wv1" viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0 38 Q150 20 300 38 T600 38 T900 38 T1200 38 V60 H0 Z" fill="#7fdce4"/></svg>`;
   hero.appendChild(waves);
 }
+
+// 🌅 BASCULE JOUR / NUIT DE LA SCÈNE D'ACCUEIL
+// 🔧 Heures approximatives de lever/coucher du soleil à Toulon fin août —
+// pas besoin d'un appel réseau dédié pour une simple ambiance visuelle.
+const HERO_SUNRISE_HOUR = 6.8;  // ~6h50
+const HERO_SUNSET_HOUR = 20.6;  // ~20h35
+
+function applyHeroDayNight() {
+  const skyEls = [document.getElementById('sky-stop-1'), document.getElementById('sky-stop-2'), document.getElementById('sky-stop-3')];
+  const seaEls = [document.getElementById('sea-stop-1'), document.getElementById('sea-stop-2'), document.getElementById('sea-stop-3')];
+  const sunGroup = document.getElementById('hero-sun-group');
+  const nightGroup = document.getElementById('hero-night-group');
+  if (!skyEls[0] || !nightGroup) return;
+
+  const now = new Date();
+  const hourDecimal = now.getHours() + now.getMinutes() / 60;
+  const isNight = hourDecimal < HERO_SUNRISE_HOUR || hourDecimal > HERO_SUNSET_HOUR;
+
+  const daySky = ['#bdeef2', '#7fdce4', '#f3e6c0'];
+  const nightSky = ['#3a3a68', '#2B2A4A', '#1c2340'];
+  const daySea = ['#5fd6df', '#1fb6c9', '#0e7a90'];
+  const nightSea = ['#1f5e78', '#164a63', '#0c2f3a'];
+
+  const sky = isNight ? nightSky : daySky;
+  const sea = isNight ? nightSea : daySea;
+  skyEls.forEach((el, i) => el && el.setAttribute('stop-color', sky[i]));
+  seaEls.forEach((el, i) => el && el.setAttribute('stop-color', sea[i]));
+  if (sunGroup) sunGroup.style.opacity = isNight ? '0' : '1';
+  nightGroup.style.opacity = isNight ? '1' : '0';
+
+  return isNight;
+}
+
+// ✨ Étoile filante occasionnelle, uniquement la nuit (probabiliste, vérifié toutes les 8s)
+function maybeSpawnShootingStar() {
+  const nightGroup = document.getElementById('hero-night-group');
+  const isNight = nightGroup && nightGroup.style.opacity === '1';
+  if (!isNight || MedAnim.prefersReduced) return;
+  if (Math.random() < 0.18) {
+    spawn(`<div class="anim-shootingstar" style="top:${10 + Math.random() * 20}%; left:${Math.random() * 20}%;"></div>`, 1800);
+  }
+}
+setInterval(maybeSpawnShootingStar, 8000);
+
+// Vérifie la bascule jour/nuit toutes les 5 min + une fois au chargement
+setInterval(applyHeroDayNight, 5 * 60000);
+applyHeroDayNight();
+
+// 🌧️ Pluie légère en overlay — appelée depuis la bannière météo si pluie prévue
+function rainOverlay() {
+  if (MedAnim.prefersReduced) return;
+  let drops = '';
+  for (let i = 0; i < 26; i++) {
+    const left = Math.round(Math.random() * 100);
+    const delay = (Math.random() * 1.2).toFixed(2);
+    const duration = (0.9 + Math.random() * 0.5).toFixed(2);
+    drops += `<div class="anim-rain-drop" style="left:${left}%; animation-delay:${delay}s; animation-duration:${duration}s;"></div>`;
+  }
+  spawn(drops, 2200);
+}
+MedAnim.rain = rainOverlay;
+
+// 🏆 Éclat doré quand l'utilisateur dépasse quelqu'un au classement XP
+function rankOvertakeFlash() {
+  if (MedAnim.prefersReduced) return;
+  spawn('<div class="anim-rankflash"></div>', 1500);
+}
+MedAnim.rankFlash = rankOvertakeFlash;
+
+// 🎈 Lanternes qui montent — surprise débloquée
+function lanterns() {
+  if (MedAnim.prefersReduced) return;
+  let html = '';
+  for (let i = 0; i < 5; i++) {
+    const left = 15 + i * 16 + Math.round(Math.random() * 8);
+    const delay = (i * 0.25).toFixed(2);
+    const drift = Math.round((Math.random() - 0.5) * 60);
+    const hue = ['#f4b942', '#ef6a7c', '#1690A3', '#2fae6e', '#c99a3f'][i % 5];
+    html += `<div class="anim-lantern" style="left:${left}%; animation-delay:${delay}s; animation-duration:6s; --drift:${drift}px;">
+      <svg viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="17" cy="22" rx="15" ry="19" fill="${hue}" opacity="0.9"/>
+        <rect x="13" y="2" width="8" height="5" rx="1.5" fill="#8a6a3a"/>
+        <rect x="13" y="38" width="8" height="5" rx="1.5" fill="#8a6a3a"/>
+        <ellipse cx="17" cy="22" rx="6" ry="10" fill="#fff2c9" opacity="0.55"/>
+      </svg>
+    </div>`;
+  }
+  spawn(html, 6300);
+}
+MedAnim.lanterns = lanterns;
+

@@ -138,11 +138,23 @@ function computeXpLeaderboard() {
 
 // ✅ Classement XP — affiché sur l'accueil (plus dans l'onglet Quêtes, pour ne
 // pas encombrer la liste des défis).
+let _lastKnownRank = null; // ✅ pour détecter un dépassement au classement XP
+
 function renderHomeLeaderboard() {
   const container = document.getElementById('home-leaderboard');
   if (!container) return;
 
   const ranking = computeXpLeaderboard();
+
+  // ✅ Éclat doré si l'utilisateur vient de dépasser quelqu'un (rang qui baisse numériquement)
+  const myRank = ranking.findIndex(r => r.p.id === currentUser.id);
+  if (myRank !== -1) {
+    if (_lastKnownRank !== null && myRank < _lastKnownRank && typeof MedAnim !== 'undefined' && MedAnim.rankFlash) {
+      MedAnim.rankFlash();
+    }
+    _lastKnownRank = myRank;
+  }
+
   const medals = ['🥇', '🥈', '🥉'];
   const renderRow = (r, i) => `
     <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; ${i < ranking.length - 1 ? 'box-shadow: 0 1px 0 var(--border);' : ''}">

@@ -57,6 +57,14 @@ function paintWeatherBanner(container, { code, tmax, tmin, uv, wind }) {
   if (uv >= 8) uvNote = ' · ☀️ UV très fort, crème solaire indispensable';
   else if (uv >= 6) uvNote = ' · 🧴 UV fort, pense à la crème';
   const isRainy = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code);
+  // ✅ Pluie visuelle en écho à la météo — une fois par jour seulement
+  if (isRainy && typeof MedAnim !== 'undefined' && MedAnim.rain) {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('saraillon_rain_anim_shown') !== todayKey) {
+      localStorage.setItem('saraillon_rain_anim_shown', todayKey);
+      setTimeout(() => MedAnim.rain(), 600);
+    }
+  }
   // ✅ Blague Mistral, validée avec Marine — s'affiche au-delà de 40 km/h de vent
   const mistralNote = (wind && wind >= 40) ? ' · 💨 Bulletin météo : Mistral annoncé, tenue discriminante recommandée' : '';
 
