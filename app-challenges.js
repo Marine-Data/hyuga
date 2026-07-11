@@ -70,7 +70,7 @@ function renderChallenges() {
   `;
   }).join('');
   
-  document.getElementById('challenges-content').innerHTML = renderChallengesLeaderboard() + (html || '<div style="text-align: center; color: var(--primary-light); padding: 50px 20px;"><div style="font-size: 40px; margin-bottom: 10px;">🏝️</div><p style="margin: 0; font-size: 14px;">Aucun défi pour le moment — lance le premier !</p></div>');
+  document.getElementById('challenges-content').innerHTML = html || '<div style="text-align: center; color: var(--primary-light); padding: 50px 20px;"><div style="font-size: 40px; margin-bottom: 10px;">🏝️</div><p style="margin: 0; font-size: 14px;">Aucun défi pour le moment — lance le premier !</p></div>';
 }
 
 // ✅ Déplie/replie le détail d'une quête (description, média, actions) — la ligne
@@ -115,6 +115,7 @@ function toggleChallengeCompletion(id) {
   saveAllData();
   renderChallenges();
   renderHomeGroupSpirit();
+  renderHomeLeaderboard();
 }
 
 function computeXpLeaderboard() {
@@ -135,7 +136,12 @@ function computeXpLeaderboard() {
     .sort((a, b) => b.xp - a.xp);
 }
 
-function renderChallengesLeaderboard() {
+// ✅ Classement XP — affiché sur l'accueil (plus dans l'onglet Quêtes, pour ne
+// pas encombrer la liste des défis).
+function renderHomeLeaderboard() {
+  const container = document.getElementById('home-leaderboard');
+  if (!container) return;
+
   const ranking = computeXpLeaderboard();
   const medals = ['🥇', '🥈', '🥉'];
   const rows = ranking.map((r, i) => `
@@ -145,8 +151,8 @@ function renderChallengesLeaderboard() {
       <span style="font-weight: 800; font-size: 13px; color: var(--accent-gold);">${r.xp} XP</span>
     </div>
   `).join('');
-  return `
-    <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px; margin-bottom: 16px;">
+  container.innerHTML = `
+    <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px;">
       <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; letter-spacing: 0.5px;">🏆 CLASSEMENT XP</div>
       ${rows}
     </div>

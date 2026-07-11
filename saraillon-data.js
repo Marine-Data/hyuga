@@ -101,7 +101,7 @@ let personalsData = {
 // Structure "à apporter" par activité avec checkboxes
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de challenges (quêtes),
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-const CHALLENGES_VERSION = 4;
+const CHALLENGES_VERSION = 5;
 
 let challenges = [
   {
@@ -201,10 +201,11 @@ let challenges = [
   },
   {
     id: 9,
-    creator: "PHOTO MIROIR",
+    isQuest: true,
+    questLabel: "QUÊTE V",
     xp: 30,
     completedBy: [],
-    description: "📸 Retrouvez une photo emblématique du groupe d'un séjour précédent et reproduisez-la à l'identique ici : même pose, même cadrage, même esprit !",
+    description: "📸 LE MIROIR DU TEMPS — Retrouvez une photo emblématique du groupe d'un séjour précédent et reproduisez-la à l'identique ici : même pose, même cadrage, même esprit !\n📜 Objectif : reproduire 1 photo emblématique d'un séjour précédent.\n🏆 Récompense : +30 XP Nostalgie, voyage dans le temps garanti.",
     media: null,
     likes: [],
     comments: [],

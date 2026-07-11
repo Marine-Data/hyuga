@@ -1029,6 +1029,7 @@ function renderHome() {
   renderWeatherBanner();
   renderCountdownBanner();
   renderTripRecap();
+  renderHomeLeaderboard();
   renderHomeMemoryOfDay();
   renderHomePackingProgress();
   renderHomeHud();
