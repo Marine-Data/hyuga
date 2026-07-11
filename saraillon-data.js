@@ -13,8 +13,8 @@ const PARTICIPANTS = [
   { id: 4, name: "Nawaëlle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
   { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 6, name: "Inès", pseudo: "", bio: "Pétillante et attachante, toujours partante pour un cocktail 🍹 drôle, curieuse des autres, voit toujours le verre à moitié plein", avatar: null, email: "ines@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
-  { id: 7, name: "Mathieu", pseudo: "", bio: "Le meilleur — dans le top 3 de mes petits frères préférés 💙", avatar: null, email: "mathieu@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
-  { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "marine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
+  { id: 7, name: "Mathieu", pseudo: "", bio: "Dans le top 3 de mes petits frères préférés 💙 que je n'oublierais jamais", avatar: null, email: "mathieu@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
+  { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "m.zinzen04@gmail.com", phone: "06 51 12 95 98", regimes: "Omnivore", chores: false },
   { id: 9, name: "Audrey", pseudo: "", bio: "Une amie en or 🪙 toujours prête à rendre service, drôle, un style vestimentaire qui détrône tout le monde. Danse comme une queen et chante tous les styles, partante pour toute nouvelle aventure 👩‍🎤", avatar: null, email: "audrey@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true }
 ];
 
