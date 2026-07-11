@@ -59,7 +59,7 @@ function paintWeatherBanner(container, { code, tmax, tmin, uv }) {
 
   container.innerHTML = `
     <div style="background: var(--bg-raised); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px;">
-      <div style="font-size: 30px;">${info.emoji}</div>
+      <div style="width: 40px; height: 40px; flex-shrink: 0;">${EXPLORE_ICONS_3D.meteo}</div>
       <div style="flex: 1;">
         <div style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif;">${info.label} à ${WEATHER_LOCATION.label} · ${tmin}°–${tmax}°C</div>
         <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 2px;">UV ${uv}${uvNote}${isRainy ? ' · pense aux activités indoor aujourd\'hui' : ''}</div>
@@ -271,6 +271,7 @@ function renderTresor() {
   const total = treasureHuntItems.length;
 
   let html = `
+    <div style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 10px;">🗺️ Chasse au trésor</div>
     <div style="margin-bottom: 16px; text-align: center;">
       <div style="font-size: 13px; font-weight: 700; color: var(--primary);">${foundCount} / ${total} trésors trouvés</div>
       <div style="height: 8px; border-radius: 5px; background: var(--bg-sunken); overflow: hidden; margin-top: 6px;">

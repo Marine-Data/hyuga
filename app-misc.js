@@ -33,6 +33,10 @@ function syncData() {
 
 // ============== SETTINGS ==============
 function renderSettings() {
+  // ✅ Icône engrenages personnalisée (remplace l'emoji ⚙️)
+  const iconSlot = document.getElementById('settings-tab-icon');
+  if (iconSlot && typeof EXPLORE_ICONS_3D !== 'undefined') iconSlot.innerHTML = EXPLORE_ICONS_3D.parametres;
+
   // Settings page has static HTML content - just show it
   const content = document.querySelector('#settings .content');
   if (content) {

@@ -365,7 +365,10 @@
           <button class="tab-btn active" onclick="switchTab('challenges')">🏁 Challenges</button>
           <button class="tab-btn" onclick="showCreateChallenge()" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(153, 51, 255, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Créer</button>
         </div>
-        <div class="content" id="challenges-content"></div>
+        <div class="content" id="challenges-content-wrap">
+          <div id="tresor-content" style="margin-bottom: 18px;"></div>
+          <div id="challenges-content"></div>
+        </div>
       </div>
 
       <!-- INSCRIPTIONS -->
@@ -400,16 +403,6 @@
         </div>
         <div class="content">
           <div id="polls-content"></div>
-        </div>
-      </div>
-
-      <!-- CHASSE AU TRÉSOR -->
-      <div id="tresor" class="tab-content">
-        <div class="tab-nav">
-          <button class="tab-btn active">🗺️ Chasse au trésor</button>
-        </div>
-        <div class="content">
-          <div id="tresor-content"></div>
         </div>
       </div>
 
@@ -497,7 +490,7 @@
       <!-- SETTINGS -->
       <div id="settings" class="tab-content">
         <div class="tab-nav">
-          <button class="tab-btn active">⚙️ Paramètres</button>
+          <button class="tab-btn active" style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 18px; display: inline-flex;" id="settings-tab-icon"></span> Paramètres</button>
         </div>
         <div class="content">
           <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.04) 100%); padding: 18px;">
