@@ -18,7 +18,7 @@ function renderChallenges() {
       <div onclick="toggleChallengeDetail(${ch.id})" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer;">
         ${rowIcon}
         <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 700; font-size: 13px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</div>
+          <div class="title-serif" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</div>
           <div style="font-size: 10.5px; color: var(--primary-light);">${completedBy.length}/${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''} · ${xp} XP</div>
         </div>
         ${userCompleted ? '<span style="font-size: 16px;">✅</span>' : ''}
@@ -156,12 +156,13 @@ function renderHomeLeaderboard() {
   const hasMore = ranking.length > 3;
 
   container.innerHTML = `
-    <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px;">
-      <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; letter-spacing: 0.5px;">🏆 CLASSEMENT XP</div>
+    <div class="card-luxe">
+      <span class="eyebrow">Classement</span>
+      <div class="title-serif" style="font-size: 17px; margin-bottom: 12px;">🏆 XP du groupe</div>
       ${topRows}
       ${hasMore ? `
         <div id="leaderboard-rest" style="display: none;">${restRows}</div>
-        <div onclick="toggleLeaderboardExpand()" style="text-align: center; margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-gold); cursor: pointer;">
+        <div onclick="toggleLeaderboardExpand()" style="text-align: center; margin-top: 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-sand); cursor: pointer;">
           <span id="leaderboard-toggle-label">Voir tout le classement (${ranking.length - 3} de plus) ▾</span>
         </div>
       ` : ''}

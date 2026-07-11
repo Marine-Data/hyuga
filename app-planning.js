@@ -375,9 +375,9 @@ function renderChoresDisplay() {
     return;
   }
   let html = `
-    <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.25);">
+    <div style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.25);">
       <div style="font-size: 26px; margin-bottom: 4px;">⚡</div>
-      <strong style="font-size: 15px; letter-spacing: 0.3px;">Corvées assignées !</strong>
+      <strong style="font-family: var(--font-display); font-weight: 500; font-size: 16px; letter-spacing: 0.3px;">Corvées assignées !</strong>
       <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 12px;">

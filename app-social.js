@@ -35,14 +35,14 @@ function renderMyProfile() {
   
   const html = `
     <div class="card" style="text-align: center; padding: 24px;">
-      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2);">${avatarHTML}</div>
+      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2);">${avatarHTML}</div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
       <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
         "${officialBio || 'Aventurier(e) du groupe'}"
       </div>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
-        <button class="btn btn-primary" onclick="showMyProfileTab('infos')" id="btn-infos" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.2);">📋 Infos</button>
+        <button class="btn btn-primary" onclick="showMyProfileTab('infos')" id="btn-infos" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2);">📋 Infos</button>
         <button class="btn" onclick="showMyProfileTab('valise')" id="btn-valise" style="background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">🎒 Valise</button>
       </div>
       
@@ -68,12 +68,12 @@ function showMyProfileTab(tab) {
   const content = document.getElementById('my-profile-tab-content');
   
   // Update buttons
-  document.getElementById('btn-infos').style.background = tab === 'infos' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-infos').style.background = tab === 'infos' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
   document.getElementById('btn-infos').style.color = tab === 'infos' ? 'white' : 'var(--primary)';
-  document.getElementById('btn-infos').style.boxShadow = tab === 'infos' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
-  document.getElementById('btn-valise').style.background = tab === 'valise' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-infos').style.boxShadow = tab === 'infos' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-valise').style.background = tab === 'valise' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
   document.getElementById('btn-valise').style.color = tab === 'valise' ? 'white' : 'var(--primary)';
-  document.getElementById('btn-valise').style.boxShadow = tab === 'valise' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-valise').style.boxShadow = tab === 'valise' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
   
   if (tab === 'infos') {
     content.innerHTML = `
@@ -260,7 +260,7 @@ function renderAllProfiles() {
     return `
       <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="showPublicProfile(${user.id})">
         <div style="display: flex; gap: 12px;">
-          <div style="width: 68px; height: 68px; font-size: 68px; border-radius: 50%; overflow: hidden; flex-shrink: 0;">${avatarHTML}</div>
+          <div class="avatar-ring" style="width: 68px; height: 68px; font-size: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${avatarHTML}</div>
           <div style="flex: 1;">
             <div class="card-title" style="margin-bottom: 4px;">${user.name}</div>
             <div style="font-size: 12px; color: var(--primary-light); margin-bottom: 6px; font-style: italic;">${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}</div>
@@ -282,21 +282,22 @@ function showPublicProfile(userId) {
     ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
     : (personalData.avatar || '👤');
   const avatarWrapStyle = hasRealPhoto
-    ? `font-size: 80px; margin-bottom: 20px; display: inline-flex; width: 140px; height: 140px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(12, 47, 58, 0.15); overflow: hidden;`
-    : `font-size: 80px; margin-bottom: 20px; display: inline-flex; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); overflow: hidden;`;
+    ? `margin-bottom: 20px; display: inline-flex; width: 140px; height: 140px; border-radius: 50%; align-items: center; justify-content: center; overflow: hidden; border: 3px solid var(--accent-sand); padding: 3px; background: var(--bg-raised); box-shadow: 0 8px 20px rgba(12, 47, 58, 0.12);`
+    : `font-size: 70px; margin-bottom: 20px; display: inline-flex; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2); overflow: hidden;`;
 
   const html = `
     <div class="card" style="text-align: center; padding: 24px;">
       <button class="btn" onclick="showAllProfiles()" style="width: 100%; margin-bottom: 18px; background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">← Retour aux participants</button>
       
       <div style="${avatarWrapStyle} cursor: pointer;" onclick="showPublicProfileTab(${userId}, 'feed')" title="Voir les activités">${avatarHTML}</div>
-      <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
-      <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
+      <div class="title-serif" style="font-size: 21px; margin-bottom: 8px;">${user.name}</div>
+      <div style="font-size: 13px; color: var(--primary-light); font-style: italic; margin-bottom: 16px;">
         "${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}"
       </div>
+      <div class="divider-gold" style="width: 60px; margin: 0 auto 20px;"></div>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
-        <button class="btn btn-primary" onclick="showPublicProfileTab(${userId}, 'feed')" id="btn-feed-pub" style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.2);">📝 Feed</button>
+        <button class="btn btn-primary" onclick="showPublicProfileTab(${userId}, 'feed')" id="btn-feed-pub" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2);">📝 Feed</button>
         <button class="btn" onclick="showPublicProfileTab(${userId}, 'photos')" id="btn-photos-pub" style="background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">🖼️ Photos</button>
       </div>
       
@@ -312,12 +313,12 @@ function showPublicProfileTab(userId, tab) {
   const content = document.getElementById('public-profile-tab-content');
   
   // Update buttons
-  document.getElementById('btn-feed-pub').style.background = tab === 'feed' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-feed-pub').style.background = tab === 'feed' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
   document.getElementById('btn-feed-pub').style.color = tab === 'feed' ? 'white' : 'var(--primary)';
-  document.getElementById('btn-feed-pub').style.boxShadow = tab === 'feed' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
-  document.getElementById('btn-photos-pub').style.background = tab === 'photos' ? 'linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-feed-pub').style.boxShadow = tab === 'feed' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-photos-pub').style.background = tab === 'photos' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
   document.getElementById('btn-photos-pub').style.color = tab === 'photos' ? 'white' : 'var(--primary)';
-  document.getElementById('btn-photos-pub').style.boxShadow = tab === 'photos' ? '0 4px 12px rgba(153, 51, 255, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-photos-pub').style.boxShadow = tab === 'photos' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
   
   if (tab === 'feed') {
     const userFeed = feed.filter(e => e.userId === userId);
@@ -338,10 +339,10 @@ function showPublicProfileTab(userId, tab) {
       content.innerHTML = '<div style="text-align: center; color: var(--primary-light); margin-top: 20px;">Aucune photo 📸</div>';
     } else {
       content.innerHTML = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px;">' + userPhotos.slice(0, 9).map(p => `
-        <div style="aspect-ratio: 1; border-radius: 6px; overflow: hidden; cursor: pointer;" onclick="switchTab('gallery')">
+        <div class="photo-frame" style="aspect-ratio: 1; cursor: pointer;" onclick="switchTab('gallery')">
           ${p.type === 'image'
-            ? `<img src="${p.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
-            : `<video src="${p.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
+            ? `<img src="${p.src}" alt="">`
+            : `<video src="${p.src}"></video>`}
         </div>
       `).join('') + '</div>';
     }
@@ -405,7 +406,7 @@ function renderFeed() {
     const avatarContent = (personalData.avatar && personalData.avatar.startsWith('data:image'))
       ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
       : (personalData.avatar || '👤');
-    const avatarImg = `<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.2); flex-shrink: 0; overflow: hidden;" onclick="showPublicProfileFromFeed(${participant.id})">${avatarContent}</div>`;
+    const avatarImg = `<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2); flex-shrink: 0; overflow: hidden;" onclick="showPublicProfileFromFeed(${participant.id})">${avatarContent}</div>`;
     const userLiked = entry.likes.includes(currentUser.id);
     return `
       <div class="card" style="margin-bottom: 14px; padding: 14px; transition: all 0.3s ease;" onmouseenter="this.style.boxShadow='0 6px 16px rgba(12, 47, 58, 0.15)'; this.style.transform='translateY(-2px)';" onmouseleave="this.style.boxShadow='0 2px 8px rgba(12, 47, 58, 0.08)'; this.style.transform='translateY(0)';">
@@ -464,3 +465,4 @@ function commentFeedEntry(entryId) {
     }
   }
 }
+

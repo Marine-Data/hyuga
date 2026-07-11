@@ -61,10 +61,10 @@ function paintWeatherBanner(container, { code, tmax, tmin, uv, wind }) {
   const mistralNote = (wind && wind >= 40) ? ' · 💨 Bulletin météo : Mistral annoncé, tenue discriminante recommandée' : '';
 
   container.innerHTML = `
-    <div style="background: var(--bg-raised); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px;">
-      <div style="width: 40px; height: 40px; flex-shrink: 0;">${EXPLORE_ICONS_3D.meteo}</div>
+    <div class="card-luxe" style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
+      <div style="width: 36px; height: 36px; flex-shrink: 0;">${EXPLORE_ICONS_3D.meteo}</div>
       <div style="flex: 1;">
-        <div style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif;">${info.label} à ${WEATHER_LOCATION.label} · ${tmin}°–${tmax}°C</div>
+        <div class="title-serif" style="font-size: 14px;">${info.label} à ${WEATHER_LOCATION.label} · ${tmin}°–${tmax}°C</div>
         <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 2px;">UV ${uv}${uvNote}${isRainy ? ' · pense aux activités indoor aujourd\'hui' : ''}${mistralNote}</div>
       </div>
     </div>
@@ -102,7 +102,7 @@ function renderCountdownBanner() {
     }
     container.innerHTML = `
       <div style="border-radius: 14px; padding: 12px 16px; text-align: center; border: 1.5px solid ${color}; background: var(--bg-raised);">
-        <div style="font-size: 13px; font-weight: 800; color: ${color}; font-family: 'Bricolage Grotesque', sans-serif;">🧳 J-${daysUntilStart} avant le départ</div>
+        <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; color: ${color};">🧳 J-${daysUntilStart} avant le départ</div>
         <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 3px;">${message}</div>
       </div>
     `;
@@ -129,7 +129,7 @@ function renderCountdownBanner() {
 
   container.innerHTML = `
     <div style="border-radius: 14px; padding: 12px 16px; text-align: center; border: 1.5px solid ${color}; background: var(--bg-raised);">
-      <div style="font-size: 13px; font-weight: 800; color: ${color}; font-family: 'Bricolage Grotesque', sans-serif;">📅 ${daysLeft <= 0 ? 'Dernier jour' : `J-${daysLeft} avant le retour`}</div>
+      <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; color: ${color};">📅 ${daysLeft <= 0 ? 'Dernier jour' : `J-${daysLeft} avant le retour`}</div>
       <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 3px;">${message}</div>
     </div>
   `;
@@ -170,8 +170,8 @@ function renderMysteryPhoto() {
   if (dayIdx === null) {
     const { person, theme } = getMysteryOfTheDay(0);
     container.innerHTML = `
-      <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 14px; padding: 16px; color: white; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); opacity: 0.7;">
-        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.3px;">🎲 Photo mystère du jour · aperçu</div>
+      <div style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 14px; padding: 16px; color: white; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2); opacity: 0.7;">
+        <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; letter-spacing: 0.3px;">🎲 Photo mystère du jour · aperçu</div>
         <div style="font-size: 12.5px; margin-top: 6px; opacity: 0.95;">Jour 1 : <strong>${escapeHtml(person.name)}</strong> devra poster une photo sur le thème « ${theme} »</div>
         <div style="font-size: 10.5px; margin-top: 6px; opacity: 0.8;">S'activera automatiquement le premier jour du séjour</div>
       </div>
@@ -182,8 +182,8 @@ function renderMysteryPhoto() {
   const { person, theme } = getMysteryOfTheDay(dayIdx);
 
   container.innerHTML = `
-    <div style="background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 14px; padding: 16px; color: white; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2);">
-      <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.3px;">🎲 Photo mystère du jour</div>
+    <div style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 14px; padding: 16px; color: white; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2);">
+      <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; letter-spacing: 0.3px;">🎲 Photo mystère du jour</div>
       <div style="font-size: 12.5px; margin-top: 6px; opacity: 0.95;"><strong>${escapeHtml(person.name)}</strong> doit poster une photo sur le thème : « ${theme} »</div>
     </div>
   `;
@@ -225,7 +225,7 @@ function renderTripRecap() {
 
   container.innerHTML = `
     <div style="background: var(--bg-raised); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); border: 1.5px solid var(--accent-gold);">
-      <div style="font-size: 14px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 10px;">🏆 Bilan du séjour</div>
+      <div class="title-serif" style="font-size: 16px; margin-bottom: 10px;">🏆 Bilan du séjour</div>
       <div style="font-size: 12.5px; color: var(--primary); line-height: 1.9;">
         ✨ <strong>${r.totalXp} XP</strong> cumulés par le groupe<br>
         ⚡ <strong>${r.choresDone}</strong> corvée${r.choresDone > 1 ? 's' : ''} faite${r.choresDone > 1 ? 's' : ''}<br>

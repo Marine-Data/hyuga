@@ -14,7 +14,7 @@ function renderInscriptions() {
       return `
         <div style="padding: 10px; background: var(--bg-sunken); border-radius: 6px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; justify-content: space-between;">
           <div style="display: flex; gap: 8px; align-items: center;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700;">${p.name[0]}</div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700;">${p.name[0]}</div>
             <div>
               <div style="font-weight: 600; font-size: 12px;">${p.name}</div>
               ${estMoi ? '<div style="font-size: 10px; color: var(--accent-gold);">C\'est toi</div>' : ''}

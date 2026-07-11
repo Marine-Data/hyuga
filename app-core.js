@@ -1247,15 +1247,15 @@ function renderHomeGroupSpirit() {
   else msg = 'Esprit de groupe au top, bravo à tous !';
 
   container.innerHTML = `
-    <div style="background: var(--bg-raised); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow);">
+    <div class="card-luxe">
       <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-        <span style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif;">✨ Esprit de groupe</span>
-        <span style="font-size: 13px; font-weight: 700; color: var(--accent-gold);">${pct}%</span>
+        <span class="eyebrow" style="margin-bottom: 0;">Esprit de groupe</span>
+        <span class="title-serif" style="font-size: 16px; color: var(--accent-sand);">${pct}%</span>
       </div>
-      <div style="height: 10px; border-radius: 6px; background: var(--bg-sunken); overflow: hidden;">
-        <div style="height: 100%; width: ${pct}%; border-radius: 6px; background: linear-gradient(90deg, var(--accent-gold), var(--accent-cyan)); transition: width 0.6s ease;"></div>
+      <div style="height: 8px; border-radius: 6px; background: var(--bg-sunken); overflow: hidden;">
+        <div style="height: 100%; width: ${pct}%; border-radius: 6px; background: linear-gradient(90deg, var(--accent-gold), var(--accent-sand)); transition: width 0.6s ease;"></div>
       </div>
-      <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 6px;">${msg}</div>
+      <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 8px; font-style: italic;">${msg}</div>
     </div>
   `;
 }
