@@ -358,7 +358,6 @@ function renderTresor() {
   const total = treasureHuntItems.length;
 
   let html = `
-    <div style="font-size: 13px; font-weight: 800; color: var(--primary); font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 10px;">🗺️ Chasse au trésor</div>
     <div style="margin-bottom: 16px; text-align: center;">
       <div style="font-size: 13px; font-weight: 700; color: var(--primary);">${foundCount} / ${total} trésors trouvés</div>
       <div style="height: 8px; border-radius: 5px; background: var(--bg-sunken); overflow: hidden; margin-top: 6px;">

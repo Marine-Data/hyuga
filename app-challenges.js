@@ -8,68 +8,62 @@ function renderChallenges() {
     const xp = ch.xp || 20;
     const totalParticipants = PARTICIPANTS.length;
     const progressPct = Math.round((completedBy.length / totalParticipants) * 100);
+    const title = ch.isQuest ? (ch.questLabel || 'QUÊTE') : ch.creator;
+    const rowIcon = ch.isQuest
+      ? `<div style="width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-gold), #ffb700); display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; flex-shrink: 0;">🎮</div>`
+      : `<div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; flex-shrink: 0;">${ch.creator.charAt(0)}</div>`;
+
     return `
-    <div class="card" style="position: relative; border-radius: 16px; overflow: hidden; ${userCompleted ? 'box-shadow: 0 4px 20px rgba(227, 185, 79, 0.25), 0 0 0 2px rgba(227, 185, 79, 0.4);' : ''}">
-      <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 2;">
-        <button class="btn-icon-small" onclick="editChallenge(${ch.id})" title="Éditer" style="background: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">✏️</button>
-        <button class="btn-icon-small" onclick="duplicateChallenge(${ch.id})" title="Dupliquer" style="background: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">📋</button>
-        <button class="btn-icon-small" onclick="confirmDeleteChallenge(${ch.id})" title="Supprimer" style="background: white; border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15); color: var(--danger); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">🗑️</button>
+    <div class="card" style="border-radius: 12px; overflow: hidden; margin-bottom: 8px; ${userCompleted ? 'box-shadow: 0 0 0 1.5px rgba(227, 185, 79, 0.4);' : ''}">
+      <div onclick="toggleChallengeDetail(${ch.id})" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer;">
+        ${rowIcon}
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 13px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</div>
+          <div style="font-size: 10.5px; color: var(--primary-light);">${completedBy.length}/${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''} · ${xp} XP</div>
+        </div>
+        ${userCompleted ? '<span style="font-size: 16px;">✅</span>' : ''}
+        <span id="ch-chevron-${ch.id}" style="color: var(--primary-light); font-size: 12px; transition: transform 0.2s ease;">▾</span>
       </div>
-      <div style="display: flex; gap: 12px; margin-bottom: 14px; padding-bottom: 14px; padding-right: 108px; box-shadow: inset 0 -1px 3px rgba(12, 47, 58, 0.05);">
-        ${ch.isQuest ? `
-        <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--accent-gold), #ffb700); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.3);">
-          🎮
+      <div id="ch-detail-${ch.id}" style="display: none; padding: 0 14px 14px;">
+        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 10px;">
+          <button class="btn-icon-small" onclick="event.stopPropagation(); editChallenge(${ch.id})" title="Éditer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px;">✏️</button>
+          <button class="btn-icon-small" onclick="event.stopPropagation(); duplicateChallenge(${ch.id})" title="Dupliquer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px;">📋</button>
+          <button class="btn-icon-small" onclick="event.stopPropagation(); confirmDeleteChallenge(${ch.id})" title="Supprimer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; color: var(--danger);">🗑️</button>
         </div>
-        <div style="flex: 1;">
-          <div style="font-weight: 800; font-size: 13px; letter-spacing: 1px; color: var(--accent-gold);">${ch.questLabel || 'QUÊTE'}</div>
-          <div style="font-size: 11px; color: var(--primary-light);">Épreuve du séjour · 🏆 ${xp} XP</div>
+        ${ch.media ? `<div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; max-height: 300px;">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
+        ${/^CHALLENGE \d+$/.test(ch.creator) ? `
+        <div style="margin-bottom: 12px;">
+          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
+            🎥 ${ch.media ? 'Remplacer' : 'Uploader'} la vidéo
+            <input type="file" accept="video/mp4,video/quicktime,video/*" style="display: none;" onchange="uploadChallengeVideo(${ch.id}, this)">
+          </label>
+          <span id="upload-progress-${ch.id}" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
         </div>
-        ` : `
-        <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.2);">
-          ${ch.creator.charAt(0)}
+        ` : ''}
+        <div style="margin-bottom: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--primary);">${escapeHtml(ch.description)}</div>
+        <div style="margin-bottom: 10px;">
+          <div style="height: 5px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden;">
+            <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+          </div>
         </div>
-        <div style="flex: 1;">
-          <div style="font-weight: 700; font-size: 14px;">${escapeHtml(ch.creator)}</div>
-          <div style="font-size: 11px; color: var(--primary-light);">${new Date(ch.timestamp).toLocaleDateString('fr-FR')} · 🏆 ${xp} XP</div>
+        ${completedBy.length > 0 ? `
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
+          ${completedBy.map(pid => {
+            const p = PARTICIPANTS.find(pp => pp.id === pid);
+            return p ? `<span style="font-size: 11px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 10px;">✅ ${escapeHtml(p.name)}</span>` : '';
+          }).join('')}
+        </div>` : ''}
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <button class="btn btn-small" style="background: ${userCompleted ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${userCompleted ? 'white' : 'var(--primary)'}; flex: 1.4; font-weight: 700; border: none;" onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})">${userCompleted ? '✅ Relevé !' : '🎯 Relever le défi'}</button>
+          <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; border: none;" onclick="event.stopPropagation(); likeCh(${ch.id})">❤️ ${likesCount}</button>
+          <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1; border: none;" onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})">💬 ${ch.comments.length}</button>
         </div>
-        `}
-      </div>
-      ${ch.media ? `<div style="margin-bottom: 14px; border-radius: 8px; overflow: hidden; max-height: 300px; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.1);">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
-      ${/^CHALLENGE \d+$/.test(ch.creator) ? `
-      <div style="margin-bottom: 14px;">
-        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
-          🎥 ${ch.media ? 'Remplacer' : 'Uploader'} la vidéo
-          <input type="file" accept="video/mp4,video/quicktime,video/*" style="display: none;" onchange="uploadChallengeVideo(${ch.id}, this)">
-        </label>
-        <span id="upload-progress-${ch.id}" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
-      </div>
-      ` : ''}
-      <div style="margin-bottom: 14px; font-size: 13px; line-height: 1.5; white-space: pre-line;">${escapeHtml(ch.description)}</div>
-      <div style="margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span style="font-size: 10.5px; color: var(--primary-light); font-weight: 600;">${completedBy.length} / ${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''}</span>
-        </div>
-        <div style="height: 5px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden;">
-          <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
-        </div>
-      </div>
-      ${completedBy.length > 0 ? `
-      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
-        ${completedBy.map(pid => {
-          const p = PARTICIPANTS.find(pp => pp.id === pid);
-          return p ? `<span style="font-size: 11px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(227, 185, 79, 0.3);">✅ ${escapeHtml(p.name)}</span>` : '';
-        }).join('')}
-      </div>` : ''}
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <button class="btn btn-small" style="background: ${userCompleted ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${userCompleted ? 'white' : 'var(--primary)'}; flex: 1.4; font-weight: 700; border: none; box-shadow: 0 2px 6px rgba(227, 185, 79, 0.15); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" onclick="toggleChallengeCompletion(${ch.id})">${userCompleted ? '✅ Relevé !' : '🎯 Relever le défi'}</button>
-        <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; font-weight: ${userLiked ? '700' : '400'}; border: none; box-shadow: 0 2px 6px rgba(${userLiked ? '224, 122, 150' : '51, 131, 172'}, 0.1); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" onclick="likeCh(${ch.id})">❤️ ${likesCount}</button>
-        <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1; border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" onclick="toggleChallengeComments(${ch.id})">💬 ${ch.comments.length}</button>
-      </div>
-      <div id="ch-comments-${ch.id}" style="display: none; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, var(--bg-sunken) 0%, var(--bg-raised) 100%); border-radius: 8px;">
-        ${ch.comments.map(c => `<div style="font-size: 12px; margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);"><strong>${escapeHtml(c.author)}:</strong> ${escapeHtml(c.text)}</div>`).join('')}
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <input type="text" placeholder="Commenter..." id="ch-comment-${ch.id}" style="flex: 1; margin-bottom: 0; border: none; padding: 10px; border-radius: 6px; background: white; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
-          <button class="btn btn-small btn-primary" style="border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);" onclick="addChallengeComment(${ch.id})">📤</button>
+        <div id="ch-comments-${ch.id}" style="display: none; margin-top: 10px; padding: 12px; background: var(--bg-sunken); border-radius: 8px;">
+          ${ch.comments.map(c => `<div style="font-size: 12px; margin-bottom: 8px; padding: 8px; background: var(--bg-raised); border-radius: 4px;"><strong>${escapeHtml(c.author)}:</strong> ${escapeHtml(c.text)}</div>`).join('')}
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <input type="text" placeholder="Commenter..." id="ch-comment-${ch.id}" style="flex: 1; margin-bottom: 0; border: none; padding: 10px; border-radius: 6px; background: var(--bg-raised);">
+            <button class="btn btn-small btn-primary" style="border: none;" onclick="addChallengeComment(${ch.id})">📤</button>
+          </div>
         </div>
       </div>
     </div>
@@ -77,6 +71,17 @@ function renderChallenges() {
   }).join('');
   
   document.getElementById('challenges-content').innerHTML = renderChallengesLeaderboard() + (html || '<div style="text-align: center; color: var(--primary-light); padding: 50px 20px;"><div style="font-size: 40px; margin-bottom: 10px;">🏝️</div><p style="margin: 0; font-size: 14px;">Aucun défi pour le moment — lance le premier !</p></div>');
+}
+
+// ✅ Déplie/replie le détail d'une quête (description, média, actions) — la ligne
+// résumée suffit pour parcourir la liste, le détail ne s'ouvre qu'à la demande.
+function toggleChallengeDetail(id) {
+  const detail = document.getElementById(`ch-detail-${id}`);
+  const chevron = document.getElementById(`ch-chevron-${id}`);
+  if (!detail) return;
+  const isOpen = detail.style.display !== 'none';
+  detail.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
 function confirmDeleteChallenge(id) {

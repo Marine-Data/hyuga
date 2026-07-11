@@ -879,6 +879,22 @@ async function uploadChallengeVideo(challengeId, inputEl) {
   }
 }
 
+// ✅ Bascule entre les deux panneaux de l'onglet Quêtes (défis vs chasse au trésor),
+// pour éviter d'empiler les deux listes verticalement (illisible).
+function switchQuestPanel(panel) {
+  const isQuetes = panel === 'quetes';
+  document.getElementById('quest-panel-quetes').style.display = isQuetes ? 'block' : 'none';
+  document.getElementById('quest-panel-tresor').style.display = isQuetes ? 'none' : 'block';
+  const btnQ = document.getElementById('quest-panel-tab-quetes');
+  const btnT = document.getElementById('quest-panel-tab-tresor');
+  btnQ.style.background = isQuetes ? 'var(--bg-raised)' : 'transparent';
+  btnQ.style.color = isQuetes ? 'var(--primary)' : 'var(--primary-light)';
+  btnQ.style.boxShadow = isQuetes ? '0 2px 6px rgba(12, 47, 58, 0.08)' : 'none';
+  btnT.style.background = isQuetes ? 'transparent' : 'var(--bg-raised)';
+  btnT.style.color = isQuetes ? 'var(--primary-light)' : 'var(--primary)';
+  btnT.style.boxShadow = isQuetes ? 'none' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+}
+
 function switchTab(tab) {
   // Sauvegarder le tab COURANT comme previousTab AVANT de changer
   if (document.querySelector('.tab-content.active')) {
