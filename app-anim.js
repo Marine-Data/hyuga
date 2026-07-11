@@ -233,6 +233,10 @@ function applyHeroDayNight() {
   if (sunGroup) sunGroup.style.opacity = isNight ? '0' : '1';
   nightGroup.style.opacity = isNight ? '1' : '0';
 
+  // ✅ Fondu de la photo nuit sur l'écran de connexion (même détection jour/nuit)
+  const nightPhoto = document.getElementById('hero-bg-photo-night');
+  if (nightPhoto) nightPhoto.style.opacity = isNight ? '1' : '0';
+
   return isNight;
 }
 
@@ -293,3 +297,4 @@ function lanterns() {
   spawn(html, 6300);
 }
 MedAnim.lanterns = lanterns;
+

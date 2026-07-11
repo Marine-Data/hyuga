@@ -23,6 +23,7 @@
 <!-- MODAL: SÉLECTION DE PROFIL -->
 <div id="modalProfileSelect" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #bfe3f5; display: none; z-index: 9999; overflow: hidden;">
   <img id="hero-bg-photo" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/hero-login.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;" onload="var f=document.getElementById('hero-svg-fallback'); if(f) f.style.display='none';" onerror="this.style.display='none';">
+  <img id="hero-bg-photo-night" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/hero-login-night.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0; transition: opacity 1.2s ease;" onerror="this.style.display='none';">
   <div id="hero-svg-fallback">
   <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMax slice" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -554,11 +555,16 @@
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">🖼️ Fond d'écran d'accueil</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
-              📤 Mettre en ligne la photo
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              📤 Photo de jour
               <input type="file" accept="image/*" style="display: none;" onchange="uploadHeroBackground(this)">
             </label>
-            <span id="hero-bg-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+            <span id="hero-bg-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
+              🌙 Photo de nuit
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadHeroBackgroundNight(this)">
+            </label>
+            <span id="hero-bg-night-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">💾 Données</div>
@@ -707,6 +713,8 @@ const SUPABASE_ANON_KEY = 'sb_publishable_SaQ7IOxIEnUhj0-VQ9TsVw_1UIAldOt';
 
 // Initialize Supabase - store globally
 window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.SUPABASE_URL = SUPABASE_URL;
+window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 window.supabaseReady = true;
 
 // Helper functions for Supabase sync

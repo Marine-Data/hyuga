@@ -23,6 +23,30 @@ async function uploadHeroBackground(inputEl) {
   }
 }
 
+// ✅ Version nuit de la photo d'accueil, s'affiche automatiquement en fondu
+// (voir applyHeroDayNight dans app-anim.js) selon l'heure réelle.
+async function uploadHeroBackgroundNight(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('hero-bg-night-upload-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    const publicUrl = await uploadFileToStorage('app-assets', 'hero-login-night.jpg', file);
+    const img = document.getElementById('hero-bg-photo-night');
+    if (img) {
+      img.src = `${publicUrl}?t=${Date.now()}`;
+    }
+    if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
+    showNotification('🌙 Fond de nuit mis à jour !', 'success');
+  } catch (err) {
+    console.error('Échec upload fond accueil nuit:', err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
 
 // 🔧 Chaque matin, chaque personne reçoit UNE mission privée, visible d'elle
 // seule dans l'app. {target} est remplacé par le prénom de la personne visée.
@@ -536,3 +560,4 @@ function showMorningWisdomIfDue() {
   showNotification(`🌞 ${wisdom}`, 'success');
   localStorage.setItem('saraillon_morning_wisdom_shown', todayKey);
 }
+
