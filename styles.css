@@ -840,6 +840,9 @@
       .bottom-tab-bar { height: 66px; bottom: 14px; left: 14px; right: 14px; }
       .main-content { padding-bottom: 100px; }
 
+      /* ✅ Moins de padding perdu sur les côtés sur petit écran */
+      .tab-content { padding: 14px 12px; }
+
       /* ✅ Empêche le zoom automatique iOS au focus (nécessite font-size >= 16px) */
       input[type="text"],
       input[type="email"],
