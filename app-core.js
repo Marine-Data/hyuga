@@ -128,7 +128,7 @@ function renderProfileSelectCarousel() {
     <div onclick="confirmProfileCarouselSelection()" style="position: relative; z-index: 2; text-align: center; cursor: pointer;">
       ${portrait(centerP, 190, 1, 0, '0 0 50px rgba(255, 203, 5, 0.5), 0 20px 40px rgba(0,0,0,0.4)')}
       <div style="margin-top: 14px; display: inline-block; background: ${centerP.c}; color: ${centerP.text}; padding: 3px 12px; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);">${centerP.label}</div>
-      <div style="margin-top: 8px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 15px; color: var(--primary); text-shadow: 0 2px 10px rgba(255,255,255,0.8);">${centerP.p.name.toUpperCase()}</div>
+      <div style="margin-top: 8px; font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--primary); text-shadow: 0 2px 10px rgba(255,255,255,0.8);">${centerP.p.name.toUpperCase()}</div>
       ${(['Marine', 'Mathieu'].includes(centerP.p.name) && new Date() < new Date('2026-07-18')) ? `<div style="margin-top: 4px; display: inline-block; background: rgba(239, 68, 68, 0.12); color: var(--danger); padding: 2px 10px; border-radius: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;">🧪 PROFIL TEST — jusqu'au 17/07</div>` : ''}
     </div>
     <div onclick="shiftProfileCarousel(1)" style="position: absolute; right: -6px; cursor: pointer;">
@@ -254,6 +254,8 @@ async function enterMainApp() {
   renderDaySelector();
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
+  ensureTodaySecretMission(); // ✅ Mission secrète privée du jour
+  refreshSecretMissionXpCache();
   renderChallenges();
   renderMysteryPhoto();
   renderInscriptions();
@@ -295,6 +297,7 @@ async function enterMainApp() {
       safe(updateNotifBadge);
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
+      safe(refreshSecretMissionXpCache);
     }, 25000);
   }
 
@@ -840,15 +843,33 @@ function applyHistory(data) {
 // passent en base64 dans une ligne de table, ceci envoie le vrai fichier — seule
 // méthode viable pour des vidéos de plusieurs dizaines de Mo). Permet d'uploader
 // depuis le téléphone/ordinateur SANS passer par le dashboard Supabase.
-async function uploadFileToStorage(bucket, path, file, onProgress) {
-  if (!window.supabaseReady || !window.supabase) throw new Error('Supabase non prêt, réessaie dans quelques secondes.');
-  const { error } = await window.supabase.storage.from(bucket).upload(path, file, {
-    upsert: true,
-    contentType: file.type || 'application/octet-stream'
+// ✅ Upload direct vers Supabase Storage — appel REST manuel plutôt que le module
+// storage du SDK JS. Le SDK (figé en version 2.45.0) semble incompatible avec le
+// nouveau format de clé "sb_publishable_..." spécifiquement pour les uploads —
+// toutes les lectures/écritures en base fonctionnaient, mais aucun fichier n'a
+// jamais réellement été envoyé jusqu'ici. Cet appel direct contourne le souci.
+async function uploadFileToStorage(bucket, path, file) {
+  if (!window.supabaseReady || !window.SUPABASE_URL) throw new Error('Supabase non prêt, réessaie dans quelques secondes.');
+
+  const url = `${window.SUPABASE_URL}/storage/v1/object/${bucket}/${encodeURIComponent(path)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+      'apikey': window.SUPABASE_ANON_KEY,
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'true'
+    },
+    body: file
   });
-  if (error) throw error;
-  const { data } = window.supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+
+  if (!res.ok) {
+    let detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error(`Upload échoué (HTTP ${res.status}) ${detail}`.trim());
+  }
+
+  return `${window.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
 }
 
 // ✅ Upload direct de la vidéo d'un challenge CHALLENGE 1-4, au bon nom de fichier
@@ -1028,6 +1049,7 @@ function renderHome() {
   updateTodayPlaneBanner();
   renderHomeInscriptionAlert();
   renderSyncStatus();
+  renderSecretMission();
   renderHomeGroupSpirit();
   renderWeatherBanner();
   renderCountdownBanner();
