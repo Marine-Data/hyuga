@@ -260,7 +260,7 @@ function renderAllProfiles() {
     return `
       <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="showPublicProfile(${user.id})">
         <div style="display: flex; gap: 12px;">
-          <div style="width: 50px; height: 50px; font-size: 50px; border-radius: 50%; overflow: hidden; flex-shrink: 0;">${avatarHTML}</div>
+          <div style="width: 68px; height: 68px; font-size: 68px; border-radius: 50%; overflow: hidden; flex-shrink: 0;">${avatarHTML}</div>
           <div style="flex: 1;">
             <div class="card-title" style="margin-bottom: 4px;">${user.name}</div>
             <div style="font-size: 12px; color: var(--primary-light); margin-bottom: 6px; font-style: italic;">${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}</div>
@@ -277,15 +277,19 @@ function showPublicProfile(userId) {
   const section = document.getElementById('all-profiles-content');
   const user = PARTICIPANTS.find(u => u.id === userId);
   const personalData = personalsData[userId] || {};
-  const avatarHTML = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+  const hasRealPhoto = personalData.avatar && personalData.avatar.startsWith('data:image');
+  const avatarHTML = hasRealPhoto
     ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
     : (personalData.avatar || '👤');
-  
+  const avatarWrapStyle = hasRealPhoto
+    ? `font-size: 80px; margin-bottom: 20px; display: inline-flex; width: 140px; height: 140px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(12, 47, 58, 0.15); overflow: hidden;`
+    : `font-size: 80px; margin-bottom: 20px; display: inline-flex; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); overflow: hidden;`;
+
   const html = `
     <div class="card" style="text-align: center; padding: 24px;">
       <button class="btn" onclick="showAllProfiles()" style="width: 100%; margin-bottom: 18px; background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">← Retour aux participants</button>
       
-      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, var(--accent-purple) 0%, #1fb6c9 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(153, 51, 255, 0.2); overflow: hidden;">${avatarHTML}</div>
+      <div style="${avatarWrapStyle}">${avatarHTML}</div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
       <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
         "${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}"
@@ -456,4 +460,3 @@ function commentFeedEntry(entryId) {
     }
   }
 }
-
