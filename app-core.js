@@ -253,6 +253,7 @@ async function enterMainApp() {
   checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
   renderDaySelector();
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
+  await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
   renderChallenges();
   renderInscriptions();
   renderPolls();
@@ -275,6 +276,7 @@ async function enterMainApp() {
     // voyaient des versions figées et différentes de l'app (le cas Marine/Mathieu).
     setInterval(async () => {
       await loadChoreAssignmentsCloud();
+      await loadTresorFromCloud();
       await loadFromSupabaseCloud();
       // ✅ Chaque appel est isolé : si l'onglet correspondant n'est pas monté dans
       // le DOM (utilisateur sur un autre écran), certaines fonctions de rendu
@@ -287,6 +289,7 @@ async function enterMainApp() {
       safe(renderPolls);
       safe(renderExpenses);
       safe(renderShopping);
+      safe(renderTresor);
       safe(renderNotifications);
       safe(updateNotifBadge);
       safe(renderHomeGroupSpirit);
@@ -858,6 +861,7 @@ function switchTab(tab) {
   if (tab === 'inscriptions') renderInscriptions();
   if (tab === 'gallery') renderGallery();
   if (tab === 'polls') renderPolls();
+  if (tab === 'tresor') renderTresor();
   if (tab === 'expenses') renderExpenses();
   if (tab === 'shopping') renderShopping();
   if (tab === 'feed') renderFeed();
@@ -962,6 +966,10 @@ function renderHome() {
   updateTodayPlaneBanner();
   renderHomeInscriptionAlert();
   renderHomeGroupSpirit();
+  renderWeatherBanner();
+  renderCountdownBanner();
+  renderMysteryPhoto();
+  renderTripRecap();
   renderHomeMemoryOfDay();
   renderHomePackingProgress();
   renderHomeHud();
@@ -1055,6 +1063,7 @@ function renderHomeMenuTiles() {
     { tab: 'gallery', icon: 'galerie', label: 'Galerie' },
     { tab: 'polls', icon: 'sondages', label: 'Sondages' },
     { tab: 'expenses', icon: 'depenses', label: 'Dépenses' },
+    { tab: 'tresor', icon: 'quetes', label: 'Trésor' },
   ];
 
   container.innerHTML = tiles.map(t => `

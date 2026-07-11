@@ -294,6 +294,18 @@
           <!-- ESPRIT DE GROUPE : jauge collective (quêtes + corvées faites par tout le monde) -->
           <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
 
+          <!-- MÉTÉO DU JOUR -->
+          <div id="home-weather" style="margin-bottom: 22px;"></div>
+
+          <!-- DÉCOMPTE FIN DE SÉJOUR -->
+          <div id="home-countdown" style="margin-bottom: 22px;"></div>
+
+          <!-- PHOTO MYSTÈRE DU JOUR -->
+          <div id="home-mystery-photo" style="margin-bottom: 22px;"></div>
+
+          <!-- BILAN DE FIN DE SÉJOUR (visible le dernier jour) -->
+          <div id="home-recap" style="margin-bottom: 22px;"></div>
+
           <!-- SOUVENIR DU JOUR -->
           <div id="home-memory" style="margin-bottom: 22px;"></div>
 
@@ -388,6 +400,16 @@
         </div>
         <div class="content">
           <div id="polls-content"></div>
+        </div>
+      </div>
+
+      <!-- CHASSE AU TRÉSOR -->
+      <div id="tresor" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">🗺️ Chasse au trésor</button>
+        </div>
+        <div class="content">
+          <div id="tresor-content"></div>
         </div>
       </div>
 
@@ -706,6 +728,7 @@ window.deleteFromSupabase = async (table, id) => {
 <script src="./app-social.js"></script>
 <script src="./app-misc.js"></script>
 <script src="./app-anim.js"></script>
+<script src="./app-features.js"></script>
 <script src="./app-init.js"></script>
 
 </body>

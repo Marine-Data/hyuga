@@ -101,7 +101,7 @@ let personalsData = {
 // Structure "à apporter" par activité avec checkboxes
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de challenges (quêtes),
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-const CHALLENGES_VERSION = 3;
+const CHALLENGES_VERSION = 4;
 
 let challenges = [
   {
@@ -195,6 +195,17 @@ let challenges = [
     completedBy: [],
     description: "",
     media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge-4.mp4" },
+    likes: [],
+    comments: [],
+    timestamp: new Date()
+  },
+  {
+    id: 9,
+    creator: "PHOTO MIROIR",
+    xp: 30,
+    completedBy: [],
+    description: "📸 Retrouvez une photo emblématique du groupe d'un séjour précédent et reproduisez-la à l'identique ici : même pose, même cadrage, même esprit !",
+    media: null,
     likes: [],
     comments: [],
     timestamp: new Date()
