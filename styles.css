@@ -485,6 +485,60 @@
       transform: translateY(-1px);
     }
 
+    /* ✅ Bouton d'action principal UNIQUE pour toute l'app (Créer/Ajouter/Uploader...) :
+       remplace les 3 dégradés différents utilisés auparavant selon les onglets
+       (bleu-cyan sur Galerie/Défis, orange sur Sondages, cyan-vert sur Dépenses). */
+    .btn-cta, .tab-btn.btn-cta {
+      background: linear-gradient(135deg, var(--primary, #0c2f3a) 0%, #1690A3 100%);
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      box-shadow: 0 4px 12px rgba(12, 47, 58, 0.25);
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
+    }
+    .btn-cta:hover, .tab-btn.btn-cta:hover {
+      box-shadow: 0 6px 16px rgba(12, 47, 58, 0.32);
+    }
+    .btn-cta:active, .tab-btn.btn-cta:active {
+      transform: scale(0.97);
+    }
+
+    /* ✅ Bandeau photo compact pour les pages Planning/Défis/Galerie/Profil/Groupe/Vie pratique :
+       hauteur réduite (56-66px, texte centré) au lieu des anciens bandeaux hauts (110px, texte
+       plaqué en bas) qui faisaient scroller davantage pour rien. */
+    .band-header {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      height: 58px;
+    }
+    .band-header img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .band-header .band-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(12,47,58,0.6), rgba(12,47,58,0.15));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 14px;
+    }
+    .band-header .eyebrow {
+      font-size: 9px;
+      letter-spacing: 1.2px;
+      line-height: 1.3;
+      margin-bottom: 0;
+    }
+    .band-header .title-serif {
+      font-size: 16px !important;
+      line-height: 1.15;
+    }
+
     .btn-success {
       background: var(--accent-green);
       color: white;

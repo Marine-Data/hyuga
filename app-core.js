@@ -570,11 +570,16 @@ async function loadFromSupabaseCloud() {
     }
     
     // Load checklist valise
+    // 🐛 CORRECTIF : chaque case cochée est maintenant liée à person_id — sans ce filtre,
+    // tout le monde partageait les mêmes coches (bug), la valise n'était pas vraiment
+    // personnelle malgré l'intention initiale ("LOCAL ONLY" dans saveAllData, contournée
+    // ici pour permettre la synchro multi-appareils SANS partager entre personnes).
     const valisData = await window.loadFromSupabase('checklist_valise');
     if (valisData && valisData.length > 0) {
-      console.log(`✅ Loaded ${valisData.length} checklist items from Supabase`);
+      const mine = valisData.filter(item => String(item.person_id) === String(currentUser.id));
+      console.log(`✅ Loaded ${mine.length} checklist items from Supabase (perso)`);
       checklistValise = {};
-      valisData.forEach(item => {
+      mine.forEach(item => {
         checklistValise[item.key] = item.status;
       });
     }
@@ -736,8 +741,15 @@ function saveAllData() {
     
     // Notifications: synchronisées individuellement dans addNotification() dès leur création (pas ici en masse)
     
-    // Sync checklist valise (LOCAL ONLY - données trop volatiles)
-    // Les données de valise restent en localStorage seulement
+    // Sync checklist valise — désormais synchronisée avec person_id, pour qu'elle survive
+    // à un changement d'appareil SANS être partagée avec les autres (voir loadAllData).
+    Object.entries(checklistValise).forEach(([key, status]) => {
+      window.syncToSupabase('checklist_valise', {
+        key,
+        person_id: currentUser.id,
+        status: !!status
+      }).catch(err => console.error('Sync Supabase échouée:', err));
+    });
     
     
     // Sync sondages
@@ -961,6 +973,8 @@ function switchTab(tab) {
   if (tab === 'settings') renderSettings();
   
   document.getElementById('backBtn').style.display = tab !== 'home' ? 'inline-block' : 'none';
+  const homeBtnEl = document.getElementById('homeBtn');
+  if (homeBtnEl) homeBtnEl.style.display = tab !== 'home' ? 'inline-block' : 'none';
 }
 
 function setCurrentTab(tabName) {
@@ -1046,7 +1060,22 @@ function goToInscriptions() {
   switchTab('inscriptions');
 }
 
+// ✅ Avatar cliquable dans le header (photo réelle si envoyée, sinon initiale) —
+// raccourci permanent vers "Mon Profil" depuis n'importe quelle page.
+function renderHeaderAvatar() {
+  const el = document.getElementById('headerAvatarContent');
+  if (!el || !currentUser) return;
+  const raw = (personalsData[currentUser.id] && personalsData[currentUser.id].avatar) || null;
+  const photo = (raw && raw.startsWith('data:image')) ? raw : null;
+  if (photo) {
+    el.innerHTML = `<img src="${photo}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`;
+  } else {
+    el.textContent = (currentUser.name || '?')[0].toUpperCase();
+  }
+}
+
 function renderHome() {
+  renderHeaderAvatar();
   // Greeting
   const user = currentUser;
   const greeting = document.getElementById('home-greeting');

@@ -165,20 +165,26 @@
     <div class="main-content">
       <!-- HEADER -->
       <div class="app-header">
-        <!-- SECTION RETOUR (Gauche) -->
-        <button class="btn-header" onclick="goHome()" id="backBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 12px;">← Home</button>
+        <!-- SECTION RETOUR (Gauche) : bouton "page précédente" + accès direct "accueil", toujours les deux -->
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button class="btn-header" onclick="goBackToPreviousTab()" id="backBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 12px;">←</button>
+          <button class="btn-header" onclick="goHome()" id="homeBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 10px;" title="Accueil">🏠</button>
+        </div>
         
         <!-- LOGO (Centre) -->
-        <div class="header-logo" style="flex: 1; text-align: center; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <div class="header-logo" style="flex: 1; text-align: center; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;" onclick="goHome()" title="Accueil">
           <div style="width: 30px; height: 30px; border-radius: 50%; overflow: hidden;"><img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/seal-small.png" alt="" style="width: 100%; height: 100%; object-fit: cover;"></div>
           <h1>Saraillon</h1>
         </div>
         
         <!-- ACTIONS (Droite) - Groupées logiquement -->
         <div class="header-actions" style="display: flex; gap: 4px; align-items: center;">
-          <button class="btn-header" onclick="switchTab('settings')" title="Réglages" style="padding: 8px 10px;">⚙️</button>
           <button class="btn-header" onclick="toggleNotifications()" title="Notifications" style="padding: 8px 10px; position: relative;">
             🔔 <span class="notif-badge" id="notifBadge" style="display: none; position: absolute; top: 0; right: 0; background: var(--accent-pink); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: 700;">0</span>
+          </button>
+          <button class="btn-header" onclick="switchTab('settings')" title="Réglages" style="padding: 8px 10px;">⚙️</button>
+          <button class="btn-header" onclick="switchTab('profile')" title="Mon profil" id="headerAvatarBtn" style="padding: 0; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px var(--accent-gold, #f4b942);">
+            <span id="headerAvatarContent" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1D5FA8, #1690A3); color: #fff; font-size: 12px; font-weight: 700;">?</span>
           </button>
         </div>
       </div>
@@ -418,7 +424,7 @@
       <div id="challenges" class="tab-content">
         <div class="tab-nav">
           <button class="tab-btn active" onclick="switchTab('challenges')">🏁 Challenges</button>
-          <button class="tab-btn" onclick="showCreateChallenge()" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(29, 95, 168, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Créer</button>
+          <button class="tab-btn btn-cta" onclick="showCreateChallenge()">➕ Créer</button>
         </div>
         <div class="content" id="challenges-content-wrap">
           <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
@@ -472,7 +478,7 @@
       <div id="polls" class="tab-content">
         <div class="tab-nav">
           <button class="tab-btn active">🗳️ Sondages</button>
-          <button class="tab-btn" onclick="showCreatePoll()" style="background: linear-gradient(135deg, #ff9d5c 0%, #e35b2e 100%); color: white; font-weight: 600;">➕ Créer</button>
+          <button class="tab-btn btn-cta" onclick="showCreatePoll()">➕ Créer</button>
         </div>
         <div class="content">
           <div id="polls-content"></div>
@@ -483,7 +489,7 @@
       <div id="expenses" class="tab-content">
         <div class="tab-nav">
           <button class="tab-btn active">💰 Dépenses</button>
-          <button class="tab-btn" onclick="showAddExpense()" style="background: linear-gradient(135deg, var(--accent-cyan) 0%, #2e8f82 100%); color: white; font-weight: 600;">➕ Ajouter</button>
+          <button class="tab-btn btn-cta" onclick="showAddExpense()">➕ Ajouter</button>
         </div>
         <div class="content">
           <div id="expenses-balance"></div>
@@ -495,7 +501,7 @@
       <div id="gallery" class="tab-content">
         <div class="tab-nav">
           <button class="tab-btn active">📸 Galerie</button>
-          <button class="tab-btn" onclick="showUploadForm()" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 4px 12px rgba(29, 95, 168, 0.3)';" onmouseout="this.style.boxShadow='';">➕ Uploader</button>
+          <button class="tab-btn btn-cta" onclick="showUploadForm()">➕ Uploader</button>
         </div>
         <div class="content">
           <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
@@ -912,7 +918,7 @@ window.syncToSupabase = async (table, data, isRetry) => {
     if (table === 'inscriptions') {
       onConflict = 'person_id,day_idx,act_idx';
     } else if (table === 'checklist_valise') {
-      onConflict = 'key';
+      onConflict = 'key,person_id';
     } else if (table === 'user_profiles') {
       onConflict = 'person_id';
     } else if (table === 'push_subscriptions') {

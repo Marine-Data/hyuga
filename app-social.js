@@ -35,7 +35,10 @@ function renderMyProfile() {
   
   const html = `
     <div class="card" style="text-align: center; padding: 24px;">
-      <div style="font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2);">${avatarHTML}</div>
+      <div onclick="document.getElementById('avatarInput')?.click()" style="cursor: pointer; position: relative; font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2);" title="Toucher pour changer la photo">
+        ${avatarHTML}
+        <span style="position: absolute; bottom: 4px; right: 4px; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-gold); border: 3px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 15px;">📷</span>
+      </div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
       <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
         "${officialBio || 'Aventurier(e) du groupe'}"
@@ -78,8 +81,7 @@ function showMyProfileTab(tab) {
   if (tab === 'infos') {
     content.innerHTML = `
       <div style="text-align: left;">
-        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📸 Changer ta photo</label>
-        <input type="file" id="avatarInput" accept="image/*" style="width: 100%; padding: 8px; border: none; border-radius: 6px; background: white; cursor: pointer; margin-bottom: 16px;" onchange="previewAvatar(event)">
+        <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
         
         <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📝 Pseudo</label>
         <input type="text" id="pseudoInput" placeholder="Ton pseudo..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;" value="${escapeHtml(currentUser.pseudo || '')}">
@@ -179,6 +181,7 @@ function saveMyProfile() {
   showNotification('✅ Profil mis à jour !', 'success');
   addFeedEntry(`👤 ${currentUser.name} a mis à jour son profil`, '✨');
   renderMyProfile();
+  if (typeof renderHeaderAvatar === 'function') renderHeaderAvatar();
 }
 
 // Upload de photo de profil
@@ -201,6 +204,7 @@ function previewAvatar(event) {
         
         // Mettre à jour l'affichage du profil immédiatement
         renderMyProfile();
+        if (typeof renderHeaderAvatar === 'function') renderHeaderAvatar();
         
         saveAllData();
         showNotification('📸 Photo mise à jour !', 'success');
