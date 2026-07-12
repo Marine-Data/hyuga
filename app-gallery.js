@@ -1,4 +1,18 @@
 // ============== GALLERY ==============
+// ✅ Bascule grille (miniatures, pour retrouver vite un souvenir) / fil (vue détaillée
+// avec likes et commentaires, conservée telle quelle) — par défaut sur "fil" pour ne
+// pas changer le comportement existant tant qu'on ne choisit pas explicitement.
+let galleryViewMode = 'feed';
+
+function setGalleryViewMode(mode) {
+  galleryViewMode = mode;
+  const gridBtn = document.getElementById('gallery-view-grid-btn');
+  const feedBtn = document.getElementById('gallery-view-feed-btn');
+  if (gridBtn) gridBtn.classList.toggle('active', mode === 'grid');
+  if (feedBtn) feedBtn.classList.toggle('active', mode === 'feed');
+  renderGallery();
+}
+
 function populateGalleryFilters() {
   const daySelect = document.getElementById('gallery-filter-day');
   const personSelect = document.getElementById('gallery-filter-person');
@@ -44,6 +58,23 @@ function renderGallery() {
     items = items.filter(item => getTripDayIndex(item.timestamp) === parseInt(galleryFilterDay, 10));
   }
 
+  // ✅ Mode grille : miniatures compactes (3 colonnes), avec un repère ▶ sur les vidéos
+  // pour ne pas les confondre avec une photo cassée dans une si petite vignette.
+  if (galleryViewMode === 'grid') {
+    const gridHtml = items.map(item => `
+      <div onclick="viewGallery(${galleryItems.indexOf(item)})" style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); cursor: pointer; overflow: hidden;">
+        ${item.type === 'image'
+          ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
+          : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
+             <span style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; font-size: 9px; display: flex; align-items: center; justify-content: center;">▶</span>`}
+      </div>
+    `).join('');
+    document.getElementById('gallery-grid').innerHTML = items.length
+      ? `<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">${gridHtml}</div>`
+      : `<div style="text-align: center; padding: 60px 20px;"><div style="font-size: 40px; margin-bottom: 12px;">📷</div><p style="color: var(--primary-light); font-size: 13px;">Aucune photo à afficher</p></div>`;
+    return;
+  }
+
   const html = items.map((item) => {
     const userLiked = (item.likes || []).includes(currentUser.id);
     const likesCount = (item.likes || []).length;
@@ -54,7 +85,7 @@ function renderGallery() {
     const timeago = getTimeAgo(item.timestamp);
 
     return `
-    <div class="ig-post">
+    <div class="ig-post" id="gal-item-${item.id}">
       <!-- En-tête du post -->
       <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer;" onclick="showPublicProfileFromGallery('${item.creator}')">
         <div class="ig-avatar-ring">
@@ -467,8 +498,16 @@ function filterGalleryByTag(tagName) {
   document.getElementById('gallery-grid').innerHTML = html;
 }
 
+// ✅ Depuis une miniature en mode grille : bascule vers le fil détaillé (photo, likes,
+// commentaires) et défile jusqu'au bon souvenir — remplace l'ancien viewGallery() qui
+// se contentait d'une alerte texte sans afficher la photo.
 function viewGallery(idx) {
   const item = galleryItems[idx];
-  alert(`📸 ${item.creator}\n${item.location}\n"${item.description}"\n${new Date(item.timestamp).toLocaleDateString('fr-FR')}`);
+  if (!item) return;
+  setGalleryViewMode('feed');
+  setTimeout(() => {
+    const el = document.getElementById(`gal-item-${item.id}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
 }
 

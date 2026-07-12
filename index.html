@@ -311,63 +311,58 @@
 
         <!-- FICHE BLANCHE -->
         <div style="background: var(--bg); border-radius: 28px 28px 0 0; margin-top: -24px; position: relative; z-index: 2; padding: 22px 20px 20px;">
-          <div id="home-inscriptions-alert"></div>
 
-          <!-- BARRE DE RECHERCHE (raccourci planning) -->
-          <div onclick="switchTab('planning')" style="display: flex; align-items: center; gap: 10px; background: var(--bg-raised); border-radius: 16px; padding: 13px 16px; margin-bottom: 20px; box-shadow: var(--shadow-lg); cursor: pointer;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e7a90" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-            <span style="font-size: 13px; color: var(--primary-light); font-weight: 500;">Où veux-tu aller aujourd'hui ?</span>
-          </div>
-
-          <!-- STATS EN LIGNE -->
-          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-size: 12.5px; color: var(--primary-light);">
-            <span>🎒 <strong id="home-hud-valise" style="color: var(--primary);">0%</strong></span>
-            <span style="opacity: 0.4;">·</span>
-            <span>🏆 <strong id="home-hud-xp" style="color: var(--primary);">0 XP</strong></span>
-            <span style="opacity: 0.4;">·</span>
-            <span>📅 <strong id="home-hud-days" style="color: var(--primary);">...</strong></span>
-          </div>
-
-          <!-- ESPRIT DE GROUPE : jauge collective (quêtes + corvées faites par tout le monde) -->
-          <!-- SYNCHRONISATION -->
-          <div id="home-sync-status" style="margin-bottom: 14px;"></div>
-
-          <!-- MISSION SECRÈTE DU JOUR -->
-          <div id="home-secret-mission" style="margin-bottom: 22px;"></div>
-
-          <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
-
-          <!-- CLASSEMENT XP -->
-          <div id="home-leaderboard" style="margin-bottom: 22px;"></div>
-
-          <!-- MÉTÉO DU JOUR -->
-          <div id="home-weather" style="margin-bottom: 22px;"></div>
-
-          <!-- DÉCOMPTE FIN DE SÉJOUR -->
-          <div id="home-countdown" style="margin-bottom: 22px;"></div>
-
-          <!-- BILAN DE FIN DE SÉJOUR (visible le dernier jour) -->
-          <div id="home-recap" style="margin-bottom: 22px;"></div>
-
-          <!-- SOUVENIR DU JOUR -->
-          <div id="home-memory" style="margin-bottom: 22px;"></div>
-
-          <!-- À LA UNE (scroll horizontal) -->
-          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
-            <div style="font-family: var(--font-display); font-weight: 500; font-size: 19px; color: var(--primary);">À la une</div>
-            <a onclick="switchTab('planning')" style="font-size: 12px; color: var(--accent-sand); font-weight: 700; cursor: pointer;">Voir tout</a>
-          </div>
-          <div id="home-featured-row" style="display: flex; gap: 12px; overflow-x: auto; margin: 0 -20px 24px; padding: 0 20px 4px; scrollbar-width: none;"></div>
-
-          <!-- EXPLORER (grille : toutes les icônes visibles) -->
-          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 14px; height: 110px;">
-            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/detail-water.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
-              <span class="eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Naviguer</span>
-              <div class="title-serif" style="font-size: 19px; color: #fff;">Explorer</div>
+          <!-- STATS EN LIGNE : une seule carte (valise / XP / jours) au lieu de 3 blocs séparés -->
+          <div class="card-luxe" style="display: flex; align-items: center; padding: 14px 6px; margin-bottom: 16px;">
+            <div style="flex: 1; text-align: center; box-shadow: 1px 0 0 var(--border) inset;">
+              <div style="font-size: 16px;">🧳</div>
+              <div class="title-serif" style="font-size: 14px; margin-top: 2px;" id="home-hud-valise">0%</div>
+              <div style="font-size: 9.5px; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.4px;">Valise</div>
+            </div>
+            <div style="flex: 1; text-align: center; box-shadow: 1px 0 0 var(--border) inset;">
+              <div style="font-size: 16px;">🏆</div>
+              <div class="title-serif" style="font-size: 14px; margin-top: 2px;" id="home-hud-xp">0 XP</div>
+              <div style="font-size: 9.5px; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.4px;">Total</div>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div style="font-size: 16px;">📅</div>
+              <div class="title-serif" style="font-size: 14px; margin-top: 2px;" id="home-hud-days">...</div>
+              <div style="font-size: 9.5px; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.4px;">Séjour</div>
             </div>
           </div>
-          <div id="home-menu-tiles" style="margin-bottom: 26px;"></div>
+
+          <!-- SYNCHRONISATION : petite pastille discrète, pas un bloc pleine largeur -->
+          <div id="home-sync-status" style="margin-bottom: 14px;"></div>
+
+          <!-- MISSION SECRÈTE DU JOUR : reste en pleine largeur (interaction : texte à saisir / photo à joindre) -->
+          <div id="home-secret-mission" style="margin-bottom: 20px;"></div>
+
+          <!-- POUR TOI AUJOURD'HUI : carrousel horizontal regroupant souvenir du jour, activités à venir,
+               météo, décompte fin de séjour et bilan (dernier jour) — au lieu de 5 blocs empilés à plat. -->
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+            <div style="font-family: var(--font-display); font-weight: 500; font-size: 19px; color: var(--primary);">Pour toi aujourd'hui</div>
+            <a onclick="switchTab('planning')" style="font-size: 12px; color: var(--accent-sand); font-weight: 700; cursor: pointer;">Voir tout</a>
+          </div>
+          <div id="home-spotlight-row" style="display: flex; gap: 12px; overflow-x: auto; margin: 0 -20px 24px; padding: 0 20px 4px; scrollbar-width: none; align-items: stretch;">
+            <div id="home-memory" style="flex-shrink: 0; width: 190px;"></div>
+            <div id="home-featured-row" style="display: contents;"></div>
+            <div id="home-weather" style="flex-shrink: 0; width: 190px;"></div>
+            <div id="home-countdown" style="flex-shrink: 0; width: 190px;"></div>
+            <div id="home-recap" style="flex-shrink: 0;"></div>
+          </div>
+
+          <!-- ESPRIT D'ÉQUIPE : jauge collective compacte (quêtes + corvées faites par tout le monde) -->
+          <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
+
+          <!-- EXPLORER (4 destinations : Planning / Défis / Galerie / Vie pratique) -->
+          <div class="band-header" style="margin-bottom: 12px;">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/detail-water.jpg" alt="">
+            <div class="band-overlay">
+              <span class="eyebrow" style="color: #ffe9b8;">Naviguer</span>
+              <div class="title-serif" style="color: #fff;">Explorer</div>
+            </div>
+          </div>
+          <div id="home-menu-tiles" style="margin-bottom: 22px;"></div>
 
           <!-- FIL D'ACTIVITÉ -->
           <div class="card">
@@ -376,6 +371,10 @@
               <div style="font-size: 13px; color: var(--primary-light); text-align: center; padding: 12px;">Chargement...</div>
             </div>
           </div>
+
+          <!-- ✅ Raccourci vers le vrai formulaire d'upload de la Galerie (lieu, description,
+               tag des personnes, fichier réellement téléchargeable) — pas une version allégée. -->
+          <button class="btn-cta" style="width: 100%; margin-top: 16px; padding: 13px; border-radius: 14px;" onclick="switchTab('gallery'); showUploadForm();">➕ Ajouter un souvenir</button>
         </div>
       </div>
 
@@ -427,11 +426,11 @@
           <button class="tab-btn btn-cta" onclick="showCreateChallenge()">➕ Créer</button>
         </div>
         <div class="content" id="challenges-content-wrap">
-          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
-            <img id="quest-band-photo" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.3s ease;">
-            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
-              <span class="eyebrow" id="quest-band-eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Aventure</span>
-              <div class="title-serif" id="quest-band-title" style="font-size: 19px; color: #fff;">Quêtes</div>
+          <div class="band-header">
+            <img id="quest-band-photo" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg" alt="">
+            <div class="band-overlay">
+              <span class="eyebrow" id="quest-band-eyebrow" style="color: #ffe9b8;">Aventure</span>
+              <div class="title-serif" id="quest-band-title" style="color: #fff;">Quêtes</div>
             </div>
           </div>
           <div id="mystery-photo-content" style="margin-bottom: 18px;"></div>
@@ -439,6 +438,7 @@
           <div style="display: flex; gap: 4px; background: var(--bg-sunken); border-radius: 10px; padding: 3px; margin-bottom: 16px;">
             <button id="quest-panel-tab-quetes" onclick="switchQuestPanel('quetes')" style="flex: 1; border: none; border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--bg-raised); color: var(--primary); box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;">🎮 Quêtes</button>
             <button id="quest-panel-tab-tresor" onclick="switchQuestPanel('tresor')" style="flex: 1; border: none; border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: transparent; color: var(--primary-light); transition: all 0.2s ease;">🗺️ Trésor</button>
+            <button id="quest-panel-tab-classement" onclick="switchQuestPanel('classement')" style="flex: 1; border: none; border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: transparent; color: var(--primary-light); transition: all 0.2s ease;">🏆 Classement</button>
           </div>
 
           <div id="quest-panel-quetes">
@@ -446,6 +446,9 @@
           </div>
           <div id="quest-panel-tresor" style="display: none;">
             <div id="tresor-content"></div>
+          </div>
+          <div id="quest-panel-classement" style="display: none;">
+            <div id="classement-content"></div>
           </div>
         </div>
       </div>
@@ -497,6 +500,23 @@
         </div>
       </div>
 
+      <!-- VIE PRATIQUE : regroupe Dépenses / Valise / Grand Tirage / Courses / Sondages -->
+      <div id="vie-pratique" class="tab-content">
+        <div class="tab-nav">
+          <button class="tab-btn active">🧭 Vie pratique</button>
+        </div>
+        <div class="content">
+          <div class="band-header">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/detail-water.jpg" alt="">
+            <div class="band-overlay">
+              <span class="eyebrow" style="color: #ffe9b8;">Le quotidien du séjour</span>
+              <div class="title-serif" style="color: #fff;">Vie pratique</div>
+            </div>
+          </div>
+          <div id="vie-pratique-cards"></div>
+        </div>
+      </div>
+
       <!-- GALLERY -->
       <div id="gallery" class="tab-content">
         <div class="tab-nav">
@@ -504,11 +524,11 @@
           <button class="tab-btn btn-cta" onclick="showUploadForm()">➕ Uploader</button>
         </div>
         <div class="content">
-          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
-            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-galerie.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
-              <span class="eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Souvenirs</span>
-              <div class="title-serif" style="font-size: 19px; color: #fff;">Galerie</div>
+          <div class="band-header">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-galerie.jpg" alt="">
+            <div class="band-overlay">
+              <span class="eyebrow" style="color: #ffe9b8;">Souvenirs</span>
+              <div class="title-serif" style="color: #fff;">Galerie</div>
             </div>
           </div>
           <div id="upload-form" style="display: none;">
@@ -521,6 +541,12 @@
               </div>
               <input type="file" id="gallery-input" accept="image/*,video/*">
               <button class="btn btn-primary" onclick="uploadGallery()" style="width: 100%;">Uploader</button>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+            <div style="display: flex; background: var(--bg-sunken); border-radius: 9px; padding: 2px;">
+              <div id="gallery-view-grid-btn" onclick="setGalleryViewMode('grid')" style="padding: 5px 10px; font-size: 12px; border-radius: 7px; cursor: pointer;">▤ Grille</div>
+              <div id="gallery-view-feed-btn" class="active" onclick="setGalleryViewMode('feed')" style="padding: 5px 10px; font-size: 12px; border-radius: 7px; cursor: pointer;">☰ Fil</div>
             </div>
           </div>
           <div style="display: flex; gap: 8px; margin-bottom: 16px;">
@@ -586,159 +612,165 @@
           <button class="tab-btn active" style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 18px; display: inline-flex;" id="settings-tab-icon"></span> Paramètres</button>
         </div>
         <div class="content">
-          <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.04) 100%); padding: 18px;">
+          <!-- Installation : mise en avant, pas repliée -->
+          <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.04) 100%); padding: 18px; margin-bottom: 12px;">
             <div class="card-title" style="margin-bottom: 16px;">📱 Installation</div>
             <button id="pwa-install-btn" class="btn btn-primary" onclick="installPWA()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.25); background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary);">📲 Installer l'application</button>
             <p style="font-size: 11px; color: var(--primary-light); margin: 10px 0 0; line-height: 1.5;">Sur iPhone : bouton Partager → "Sur l'écran d'accueil". Sur Android/Chrome : le bouton apparaît automatiquement si dispo, sinon menu ⋮ → "Installer l'application".</p>
           </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">🖼️ Fond d'écran d'accueil</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              📤 Photo de jour
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadHeroBackground(this)">
+
+          <!-- Personnalisation visuelle : tous les uploads de photos/vidéo regroupés, repliés par défaut -->
+          <div class="settings-group">
+            <div class="settings-group-head" onclick="toggleSettingsGroup('perso')">
+              <span>🎨</span><span class="sg-title">Personnalisation visuelle</span>
+              <span class="sg-chev" id="settings-chev-perso">▾</span>
+            </div>
+            <div class="settings-group-body" id="settings-group-perso">
+            <label class="settings-row-label">
+              <span>📤</span><span>Fond d'écran — photo de jour</span>
+              <span class="settings-row-progress" id="hero-bg-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadHeroBackground(this)">
             </label>
-            <span id="hero-bg-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
-              🌙 Photo de nuit
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadHeroBackgroundNight(this)">
+            <label class="settings-row-label">
+              <span>🌙</span><span>Fond d'écran — photo de nuit</span>
+              <span class="settings-row-progress" id="hero-bg-night-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadHeroBackgroundNight(this)">
             </label>
-            <span id="hero-bg-night-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
-          </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">🎨 Habillage visuel</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              📄 Texture papier (fond des cartes)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadTexturePaper(this)">
+            <label class="settings-row-label">
+              <span>📄</span><span>Texture papier (fond des cartes)</span>
+              <span class="settings-row-progress" id="texture-paper-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadTexturePaper(this)">
             </label>
-            <span id="texture-paper-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
-              🌊 Photo détail (bandeau Explorer)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDetailWater(this)">
+            <label class="settings-row-label">
+              <span>🌊</span><span>Photo bandeau Explorer</span>
+              <span class="settings-row-progress" id="detail-water-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDetailWater(this)">
             </label>
-            <span id="detail-water-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
-          </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">🖼️ Bandeaux d'en-tête</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🏁 Quêtes
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('quete', this)">
+            <label class="settings-row-label">
+              <span>🏁</span><span>Bandeau — Quêtes</span>
+              <span class="settings-row-progress" id="band-quete-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadBandPhoto('quete', this)">
             </label>
-            <span id="band-quete-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🗺️ Trésor
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('tresor', this)">
+            <label class="settings-row-label">
+              <span>🗺️</span><span>Bandeau — Trésor</span>
+              <span class="settings-row-progress" id="band-tresor-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadBandPhoto('tresor', this)">
             </label>
-            <span id="band-tresor-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              👥 Profils
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('profil', this)">
+            <label class="settings-row-label">
+              <span>👥</span><span>Bandeau — Profils</span>
+              <span class="settings-row-progress" id="band-profil-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadBandPhoto('profil', this)">
             </label>
-            <span id="band-profil-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              📸 Galerie
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('galerie', this)">
+            <label class="settings-row-label">
+              <span>📸</span><span>Bandeau — Galerie</span>
+              <span class="settings-row-progress" id="band-galerie-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadBandPhoto('galerie', this)">
             </label>
-            <span id="band-galerie-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
-              📅 Planning
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('planning', this)">
+            <label class="settings-row-label">
+              <span>📅</span><span>Bandeau — Planning</span>
+              <span class="settings-row-progress" id="band-planning-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadBandPhoto('planning', this)">
             </label>
-            <span id="band-planning-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
-          </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">📅 Photos des jours (planning)</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🚉 Gare (J1)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('gare', this)">
+            <label class="settings-row-label">
+              <span>🚉</span><span>Gare (J1)</span>
+              <span class="settings-row-progress" id="day-gare-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('gare', this)">
             </label>
-            <span id="day-gare-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              ✈️ Aéroport (J2)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('avion', this)">
+            <label class="settings-row-label">
+              <span>✈️</span><span>Aéroport (J2)</span>
+              <span class="settings-row-progress" id="day-avion-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('avion', this)">
             </label>
-            <span id="day-avion-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              💎 Surprise (J3)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('surprise', this)">
+            <label class="settings-row-label">
+              <span>💎</span><span>Surprise (J3)</span>
+              <span class="settings-row-progress" id="day-surprise-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('surprise', this)">
             </label>
-            <span id="day-surprise-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🤿 Plongée (J4)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('plongee', this)">
+            <label class="settings-row-label">
+              <span>🤿</span><span>Plongée (J4)</span>
+              <span class="settings-row-progress" id="day-plongee-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('plongee', this)">
             </label>
-            <span id="day-plongee-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              ⛵ Bateau (J5)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('bateau', this)">
+            <label class="settings-row-label">
+              <span>⛵</span><span>Bateau (J5)</span>
+              <span class="settings-row-progress" id="day-bateau-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('bateau', this)">
             </label>
-            <span id="day-bateau-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🏄 Paddle (J6)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('paddle', this)">
+            <label class="settings-row-label">
+              <span>🏄</span><span>Paddle (J6)</span>
+              <span class="settings-row-progress" id="day-paddle-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('paddle', this)">
             </label>
-            <span id="day-paddle-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🧗 Via Ferrata (J7)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('viaferrata', this)">
+            <label class="settings-row-label">
+              <span>🧗</span><span>Via Ferrata (J7)</span>
+              <span class="settings-row-progress" id="day-viaferrata-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('viaferrata', this)">
             </label>
-            <span id="day-viaferrata-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🎤 Talent (J8)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('concert', this)">
+            <label class="settings-row-label">
+              <span>🎤</span><span>Talent (J8)</span>
+              <span class="settings-row-progress" id="day-concert-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('concert', this)">
             </label>
-            <span id="day-concert-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🏊 Piscine (J9)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('piscine', this)">
+            <label class="settings-row-label">
+              <span>🏊</span><span>Piscine (J9)</span>
+              <span class="settings-row-progress" id="day-piscine-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadDayPhoto('piscine', this)">
             </label>
-            <span id="day-piscine-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+            <label class="settings-row-label">
+              <span>🔸</span><span>Sceau petit (en-tête, connexion)</span>
+              <span class="settings-row-progress" id="seal-small-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadSeal('small', this)">
+            </label>
+            <label class="settings-row-label">
+              <span>🔶</span><span>Sceau grand (souvenir PDF)</span>
+              <span class="settings-row-progress" id="seal-full-upload-progress"></span>
+              <input type="file" accept="image/*" onchange="uploadSeal('full', this)">
+            </label>
+            <label class="settings-row-label">
+              <span>🎥</span><span>Vidéo du Grand Tirage</span>
+              <span class="settings-row-progress" id="tirage-video-upload-progress"></span>
+              <input type="file" accept="video/mp4,video/*" onchange="uploadTirageVideo(this)">
+            </label>
+
+            </div>
           </div>
 
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">🎡 Vidéo du Grand Tirage</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
-              🎥 Uploader la vidéo
-              <input type="file" accept="video/mp4,video/*" style="display: none;" onchange="uploadTirageVideo(this)">
-            </label>
-            <span id="tirage-video-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+          <!-- Données -->
+          <div class="settings-group">
+            <div class="settings-group-head" onclick="toggleSettingsGroup('donnees')">
+              <span>💾</span><span class="sg-title">Données</span>
+              <span class="sg-chev" id="settings-chev-donnees">▾</span>
+            </div>
+            <div class="settings-group-body" id="settings-group-donnees">
+              <div style="padding: 12px 16px;">
+                <button class="btn btn-primary" onclick="backupData()" style="width: 100%; margin-bottom: 10px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬇️ Télécharger sauvegarde</button>
+                <button class="btn btn-primary" onclick="restoreData()" style="width: 100%; margin-bottom: 10px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬆️ Restaurer données</button>
+                <button class="btn btn-primary" onclick="exportTripSouvenir()" style="width: 100%; margin-bottom: 0; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">📖 Télécharger le souvenir du séjour</button>
+                <input type="file" id="restore-file" accept=".json" style="display: none;">
+              </div>
+            </div>
           </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">🌊 Sceau Saraillon</div>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
-              🔸 Petit (en-tête, connexion)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadSeal('small', this)">
-            </label>
-            <span id="seal-small-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
-              🔶 Grand (souvenir PDF)
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadSeal('full', this)">
-            </label>
-            <span id="seal-full-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+
+          <!-- Compte -->
+          <div class="settings-group">
+            <div class="settings-group-head" onclick="toggleSettingsGroup('compte')">
+              <span>👤</span><span class="sg-title">Compte</span>
+              <span class="sg-chev" id="settings-chev-compte">▾</span>
+            </div>
+            <div class="settings-group-body" id="settings-group-compte">
+              <div style="padding: 12px 16px;">
+                <button class="btn btn-primary" onclick="switchToOtherProfile()" style="width: 100%; margin-bottom: 10px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">🔄 Changer de personnage</button>
+                <button class="btn btn-primary" onclick="shareApp()" style="width: 100%; margin-bottom: 0; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">📤 Partager l'application</button>
+              </div>
+            </div>
           </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">💾 Données</div>
-            <button class="btn btn-primary" onclick="backupData()" style="width: 100%; margin-bottom: 12px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬇️ Télécharger sauvegarde</button>
-            <button class="btn btn-primary" onclick="restoreData()" style="width: 100%; margin-bottom: 12px; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">⬆️ Restaurer données</button>
-            <button class="btn btn-primary" onclick="exportTripSouvenir()" style="width: 100%; margin-bottom: 0; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">📖 Télécharger le souvenir du séjour</button>
-            <input type="file" id="restore-file" accept=".json" style="display: none;">
-          </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">🔗 Partage</div>
-            <button class="btn btn-primary" onclick="shareApp()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">📤 Partager l'app</button>
-          </div>
-          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
-            <div class="card-title" style="margin-bottom: 16px;">👤 Personnage</div>
-            <button class="btn btn-primary" onclick="switchToOtherProfile()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">🔄 Changer de personnage</button>
-          </div>
-          <div class="card" style="background: linear-gradient(135deg, rgba(111, 184, 176, 0.1) 0%, rgba(111, 184, 176, 0.05) 100%); padding: 18px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 4px 12px rgba(111, 184, 176, 0.12);">
-            <div class="card-title" style="margin-bottom: 12px;">ℹ️ À Propos</div>
-            <p style="font-size: 13px; color: var(--primary-light); margin: 0; line-height: 1.5;">🏝️ <strong>SARAILLON v4.0</strong><br>L'app ultime de gestion de séjour<br><span style="font-size: 11px; opacity: 0.7;">Créée pour 9 amis en quête d'aventure</span></p>
-          </div>
+
+          <!-- À propos -->
+          <p style="text-align: center; font-size: 11px; color: var(--primary-light); padding: 14px 20px; line-height: 1.6;">🏝️ <strong style="color: var(--primary);">SARAILLON v4.0</strong><br>L'app ultime de gestion de séjour<br><span style="opacity: 0.7;">Créée pour 9 amis en quête d'aventure</span></p>
         </div>
       </div>
     </div>
   </div>
-
   <!-- NOTIFICATIONS PANEL -->
   <div class="notif-panel" id="notifPanel">
     <div class="notif-header">

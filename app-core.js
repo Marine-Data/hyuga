@@ -913,30 +913,40 @@ async function uploadChallengeVideo(challengeId, inputEl) {
   }
 }
 
-// ✅ Bascule entre les deux panneaux de l'onglet Quêtes (défis vs chasse au trésor),
-// pour éviter d'empiler les deux listes verticalement (illisible).
-function switchQuestPanel(panel) {
-  const isQuetes = panel === 'quetes';
-  document.getElementById('quest-panel-quetes').style.display = isQuetes ? 'block' : 'none';
-  document.getElementById('quest-panel-tresor').style.display = isQuetes ? 'none' : 'block';
-  const btnQ = document.getElementById('quest-panel-tab-quetes');
-  const btnT = document.getElementById('quest-panel-tab-tresor');
-  btnQ.style.background = isQuetes ? 'var(--bg-raised)' : 'transparent';
-  btnQ.style.color = isQuetes ? 'var(--primary)' : 'var(--primary-light)';
-  btnQ.style.boxShadow = isQuetes ? '0 2px 6px rgba(12, 47, 58, 0.08)' : 'none';
-  btnT.style.background = isQuetes ? 'transparent' : 'var(--bg-raised)';
-  btnT.style.color = isQuetes ? 'var(--primary-light)' : 'var(--primary)';
-  btnT.style.boxShadow = isQuetes ? 'none' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+// ✅ Bascule entre les 3 panneaux de l'onglet Défis (quêtes / chasse au trésor / classement),
+// pour éviter d'empiler plusieurs listes verticalement (illisible). Le classement XP était
+// auparavant sur l'accueil (home-leaderboard) : il vit maintenant ici, à sa vraie place.
+const QUEST_PANELS = {
+  quetes:     { band: 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg', eyebrow: 'Aventure', title: 'Quêtes', emoji: '🎮 Quêtes' },
+  tresor:     { band: 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-tresor.jpg', eyebrow: 'Exploration', title: 'Chasse au trésor', emoji: '🗺️ Trésor' },
+  classement: { band: 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg', eyebrow: 'Le groupe', title: 'Classement', emoji: '🏆 Classement' },
+};
 
+function switchQuestPanel(panel) {
+  currentQuestPanel = panel;
+  Object.keys(QUEST_PANELS).forEach(key => {
+    const panelEl = document.getElementById(`quest-panel-${key}`);
+    const btnEl = document.getElementById(`quest-panel-tab-${key}`);
+    const active = key === panel;
+    if (panelEl) panelEl.style.display = active ? 'block' : 'none';
+    if (btnEl) {
+      btnEl.style.background = active ? 'var(--bg-raised)' : 'transparent';
+      btnEl.style.color = active ? 'var(--primary)' : 'var(--primary-light)';
+      btnEl.style.boxShadow = active ? '0 2px 6px rgba(12, 47, 58, 0.08)' : 'none';
+    }
+  });
+
+  const info = QUEST_PANELS[panel];
   const bandPhoto = document.getElementById('quest-band-photo');
   const bandEyebrow = document.getElementById('quest-band-eyebrow');
   const bandTitle = document.getElementById('quest-band-title');
-  if (bandPhoto) bandPhoto.src = isQuetes
-    ? 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg'
-    : 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-tresor.jpg';
-  if (bandEyebrow) bandEyebrow.textContent = isQuetes ? 'Aventure' : 'Exploration';
-  if (bandTitle) bandTitle.textContent = isQuetes ? 'Quêtes' : 'Chasse au trésor';
+  if (bandPhoto && info) bandPhoto.src = info.band;
+  if (bandEyebrow && info) bandEyebrow.textContent = info.eyebrow;
+  if (bandTitle && info) bandTitle.textContent = info.title;
+
+  if (panel === 'classement' && typeof renderClassement === 'function') renderClassement();
 }
+let currentQuestPanel = 'quetes';
 
 function switchTab(tab) {
   // Sauvegarder le tab COURANT comme previousTab AVANT de changer
@@ -971,6 +981,7 @@ function switchTab(tab) {
   if (tab === 'profile') showMyProfile();
   // Corvées: PAS d'appel automatique - attend le clic SPIN!
   if (tab === 'settings') renderSettings();
+  if (tab === 'vie-pratique') renderViePratique();
   
   document.getElementById('backBtn').style.display = tab !== 'home' ? 'inline-block' : 'none';
   const homeBtnEl = document.getElementById('homeBtn');
@@ -1084,14 +1095,12 @@ function renderHome() {
   }
 
   updateTodayPlaneBanner();
-  renderHomeInscriptionAlert();
   renderSyncStatus();
   renderSecretMission();
   renderHomeGroupSpirit();
   renderWeatherBanner();
   renderCountdownBanner();
   renderTripRecap();
-  renderHomeLeaderboard();
   renderHomeMemoryOfDay();
   renderHomePackingProgress();
   renderHomeHud();
@@ -1172,73 +1181,116 @@ const EXPLORE_ICONS_3D = {
   parametres: `<svg viewBox="0 0 100 100"><defs><linearGradient id="pa-g1" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#c98bf0"/><stop offset="1" stop-color="#7b2fd6"/></linearGradient><linearGradient id="pa-g2" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#7fe0ea"/><stop offset="1" stop-color="#0e7a90"/></linearGradient><radialGradient id="pa-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><g transform="translate(42,52)"><g fill="url(#pa-g1)"><circle cx="0" cy="0" r="19"/><rect x="-4" y="-27" width="8" height="14" rx="3"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(45)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(90)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(135)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(180)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(225)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(270)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(315)"/></g><circle cx="0" cy="0" r="9" fill="#fff"/></g><g transform="translate(68,68)"><g fill="url(#pa-g2)"><circle cx="0" cy="0" r="13"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(60)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(120)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(180)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(240)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(300)"/></g><circle cx="0" cy="0" r="6" fill="#fff"/></g><ellipse cx="34" cy="38" rx="14" ry="6" fill="url(#pa-gl)"/></svg>`
 };
 
-// ✅ JAUGE DE VALISE — progression réelle et utile de la checklist personnelle,
-// privée (visible seulement par soi), pas de classement entre participants.
+// ✅ Explorer : 4 destinations seulement (Planning / Défis / Galerie / Vie pratique),
+// au lieu de l'ancienne liste + accordéon "Vie pratique" replié par défaut.
+// "Vie pratique" ouvre désormais un vrai onglet dédié (voir renderViePratique) qui
+// regroupe Dépenses, Valise, Grand Tirage, Courses et Sondages avec un aperçu chiffré.
 function renderHomeMenuTiles() {
   const container = document.getElementById('home-menu-tiles');
   if (!container) return;
 
-  const items = [
-    { type: 'link', tab: 'planning', label: 'Planning du séjour' },
-    { type: 'link', tab: 'challenges', label: 'Quêtes et trésor' },
-    { type: 'link', tab: 'gallery', label: 'Galerie de souvenirs' },
-    { type: 'link', tab: 'surprises', label: 'Surprises' },
-    {
-      type: 'group',
-      label: 'Vie pratique',
-      children: [
-        { tab: 'corvees', label: 'Le Grand Tirage' },
-        { tab: 'shopping', label: 'Courses' },
-        { tab: 'polls', label: 'Sondages' },
-        { tab: 'expenses', label: 'Dépenses' },
-      ]
-    },
+  const tiles = [
+    { tab: 'planning', label: 'Planning', icon: EXPLORE_ICONS_3D.planning },
+    { tab: 'challenges', label: 'Défis', icon: EXPLORE_ICONS_3D.quetes },
+    { tab: 'gallery', label: 'Galerie', icon: EXPLORE_ICONS_3D.galerie },
+    { tab: 'vie-pratique', label: 'Vie pratique', icon: EXPLORE_ICONS_3D.courses },
   ];
 
-  const roman = ['I', 'II', 'III', 'IV', 'V'];
-
   container.innerHTML = `
-    <div style="background: var(--bg-raised); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(12, 47, 58, 0.08);">
-      ${items.map((it, i) => {
-        if (it.type === 'link') {
-          return `
-            <div onclick="switchTab('${it.tab}')" style="display: flex; align-items: center; gap: 14px; padding: 15px 16px; cursor: pointer; ${i < items.length - 1 ? 'box-shadow: 0 1px 0 var(--border);' : ''}">
-              <div class="title-serif" style="font-size: 13px; color: var(--accent-sand); width: 22px; flex-shrink: 0;">${roman[i]}</div>
-              <div class="title-serif" style="flex: 1; font-size: 15px;">${it.label}</div>
-              <div style="color: var(--accent-sand); font-size: 13px;">→</div>
-            </div>
-          `;
-        }
-        return `
-          <div>
-            <div onclick="toggleExploreGroup('practical')" style="display: flex; align-items: center; gap: 14px; padding: 15px 16px; cursor: pointer;">
-              <div class="title-serif" style="font-size: 13px; color: var(--accent-sand); width: 22px; flex-shrink: 0;">${roman[i]}</div>
-              <div class="title-serif" style="flex: 1; font-size: 15px;">${it.label}</div>
-              <span id="explore-group-chevron-practical" style="color: var(--accent-sand); font-size: 12px; transition: transform 0.2s ease;">▾</span>
-            </div>
-            <div id="explore-group-practical" style="display: none; background: var(--bg-sunken);">
-              ${it.children.map((c, j) => `
-                <div onclick="switchTab('${c.tab}')" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 46px; cursor: pointer; ${j < it.children.length - 1 ? 'box-shadow: 0 1px 0 var(--border);' : ''}">
-                  <div style="flex: 1; font-size: 13.5px; color: var(--primary);">${c.label}</div>
-                  <div style="color: var(--accent-sand); font-size: 12px;">→</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }).join('')}
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+      ${tiles.map(t => `
+        <div onclick="switchTab('${t.tab}')" style="cursor: pointer; background: var(--bg-raised); border-radius: 14px; padding: 12px 4px; text-align: center; box-shadow: 0 2px 10px rgba(12, 47, 58, 0.07);">
+          <div style="width: 34px; height: 34px; margin: 0 auto;">${t.icon}</div>
+          <div style="font-size: 10px; font-weight: 700; color: var(--primary); margin-top: 6px;">${t.label}</div>
+        </div>
+      `).join('')}
     </div>
   `;
 }
 
-// ✅ Déplie/replie le sous-groupe "Vie pratique" de la navigation Explorer
-function toggleExploreGroup(name) {
-  const panel = document.getElementById(`explore-group-${name}`);
-  const chevron = document.getElementById(`explore-group-chevron-${name}`);
-  if (!panel) return;
-  const isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
-  if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+// ✅ Depuis la carte "Ma valise" de Vie pratique : ouvre directement le sous-onglet Valise du profil.
+function goToValiseFromPratique() {
+  switchTab('profile');
+  setTimeout(() => { if (typeof showMyProfileTab === 'function') showMyProfileTab('valise'); }, 50);
+}
+
+// ✅ Onglet "Vie pratique" — regroupe Dépenses / Valise / Grand Tirage / Courses / Sondages
+// avec un aperçu chiffré réel sur chaque carte (montant, %, corvée du jour, nb d'articles),
+// pour ne pas avoir à ouvrir chaque outil juste pour savoir où on en est.
+function renderViePratique() {
+  const container = document.getElementById('vie-pratique-cards');
+  if (!container) return;
+
+  // Dépenses : total dépensé par le groupe
+  const totalSpent = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+
+  // Valise : réutilise le même regroupement dédoublonné que l'onglet Profil > Valise
+  // (objets "à apporter" agrégés depuis toutes les activités du planning).
+  const grouped = {};
+  planningData.forEach(day => {
+    day.activities.forEach(activity => {
+      const list = Array.isArray(activity.apporter) ? activity.apporter : [];
+      list.forEach(itemName => {
+        const norm = String(itemName || '').trim().toLowerCase();
+        if (!norm) return;
+        grouped[norm] = grouped[norm] || `pack:${norm}`;
+      });
+    });
+  });
+  const valiseKeys = Object.values(grouped);
+  const valisePacked = valiseKeys.filter(k => checklistValise[k]).length;
+  const valisePct = valiseKeys.length ? Math.round((valisePacked / valiseKeys.length) * 100) : 0;
+
+  // Grand Tirage : corvée du jour assignée à la personne courante (si tirée)
+  const dayIdx = getTripDayIndex(new Date());
+  const myChoreToday = (typeof cloudChoreAssignments !== 'undefined' ? cloudChoreAssignments : [])
+    .find(r => r.day_idx === dayIdx && String(r.person_id) === String(currentUser.id));
+
+  // Courses : articles restant à acheter
+  const shoppingLeft = shoppingList.filter(i => !i.done).length;
+
+  // Sondages en cours
+  const pollsCount = polls.length;
+
+  const cards = [
+    {
+      tab: 'expenses', icon: '💰', bg: 'linear-gradient(135deg,#fdeccf,#f4b942)',
+      title: 'Dépenses', detail: `${expenses.length} dépense${expenses.length > 1 ? 's' : ''} enregistrée${expenses.length > 1 ? 's' : ''}`,
+      right: `${totalSpent.toFixed(0)} €`
+    },
+    {
+      tab: 'profile', direct: 'goToValiseFromPratique()',
+      icon: '🧳', bg: 'linear-gradient(135deg,#dff0f2,#1fb6c9)',
+      title: 'Ma valise', detail: `${valiseKeys.length ? `${valisePct}% prêt` : 'Rien à préparer pour l\'instant'} <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:var(--bg-sunken); color:var(--primary-soft); padding:2px 7px; border-radius:8px; margin-left:4px;">🔒 Personnel</span>`,
+      right: valiseKeys.length ? `${valisePct}%` : '—'
+    },
+    {
+      tab: 'corvees', icon: '🎡', bg: 'linear-gradient(135deg,#fdeccf,#e35b2e)',
+      title: 'Le Grand Tirage', detail: myChoreToday ? `Aujourd'hui : ${myChoreToday.emoji || ''} ${escapeHtml(myChoreToday.chore_name)}` : "Pas encore de tirage pour aujourd'hui",
+      right: '→'
+    },
+    {
+      tab: 'shopping', icon: '🛒', bg: 'linear-gradient(135deg,#e3ecd8,#6fe0a0)',
+      title: 'Courses', detail: `${shoppingLeft} article${shoppingLeft > 1 ? 's' : ''} à acheter`,
+      right: '→'
+    },
+    {
+      tab: 'polls', icon: '🗳️', bg: 'linear-gradient(135deg,#f4dbe0,#ef6a7c)',
+      title: 'Sondages', detail: `${pollsCount} sondage${pollsCount > 1 ? 's' : ''} en cours`,
+      right: 'Voter'
+    },
+  ];
+
+  container.innerHTML = cards.map(c => `
+    <div onclick="${c.direct || `switchTab('${c.tab}')`}" style="cursor: pointer; display: flex; align-items: center; gap: 12px; background: var(--bg-raised); border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(12, 47, 58, 0.07);">
+      <div style="width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; background: ${c.bg};">${c.icon}</div>
+      <div style="flex: 1; min-width: 0;">
+        <div class="title-serif" style="font-size: 13.5px;">${c.title}</div>
+        <div style="font-size: 11px; color: var(--primary-soft); margin-top: 2px;">${c.detail}</div>
+      </div>
+      <div style="font-size: 11px; font-weight: 700; color: var(--accent-sand); flex-shrink: 0;">${c.right}</div>
+    </div>
+  `).join('');
 }
 
 function renderHomeFeaturedRow() {

@@ -461,6 +461,16 @@ function renderSettings() {
   }
 }
 
+// ✅ Ouvre/ferme un groupe de réglages repliable (Personnalisation visuelle, Données, Compte...)
+function toggleSettingsGroup(name) {
+  const body = document.getElementById(`settings-group-${name}`);
+  const chev = document.getElementById(`settings-chev-${name}`);
+  if (!body) return;
+  const isOpen = body.style.display === 'block';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chev) chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
 function backupData() {
   const data = {
     personalsData,

@@ -19,7 +19,10 @@ function renderChallenges() {
         ${rowIcon}
         <div style="flex: 1; min-width: 0;">
           <div class="title-serif" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</div>
-          <div style="font-size: 10.5px; color: var(--primary-light);">${completedBy.length}/${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''} · ${xp} XP</div>
+          <div style="font-size: 10.5px; color: var(--primary-light); margin-bottom: 4px;">${completedBy.length}/${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''} · ${xp} XP</div>
+          <div style="height: 4px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden;">
+            <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%);"></div>
+          </div>
         </div>
         ${userCompleted ? '<span style="font-size: 16px;">✅</span>' : ''}
         <span id="ch-chevron-${ch.id}" style="color: var(--primary-light); font-size: 12px; transition: transform 0.2s ease;">▾</span>
@@ -144,12 +147,12 @@ function computeXpLeaderboard() {
     .sort((a, b) => b.xp - a.xp);
 }
 
-// ✅ Classement XP — affiché sur l'accueil (plus dans l'onglet Quêtes, pour ne
-// pas encombrer la liste des défis).
+// ✅ Classement XP — déplacé de l'accueil (home-leaderboard) vers l'onglet Défis
+// (sous-onglet Classement), pour ne plus encombrer l'accueil.
 let _lastKnownRank = null; // ✅ pour détecter un dépassement au classement XP
 
 function renderHomeLeaderboard() {
-  const container = document.getElementById('home-leaderboard');
+  const container = document.getElementById('classement-content');
   if (!container) return;
 
   const ranking = computeXpLeaderboard();
@@ -198,6 +201,11 @@ function toggleLeaderboardExpand() {
   rest.style.display = isOpen ? 'none' : 'block';
   const count = rest.querySelectorAll(':scope > div').length;
   label.textContent = isOpen ? `Voir tout le classement (${count} de plus) ▾` : 'Réduire ▴';
+}
+
+// ✅ Alias — appelé depuis switchQuestPanel('classement')
+function renderClassement() {
+  renderHomeLeaderboard();
 }
 
 function showCreateChallenge() {

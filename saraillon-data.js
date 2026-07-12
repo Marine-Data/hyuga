@@ -135,7 +135,7 @@ let challenges = [
     xp: 20,
     completedBy: [],
     description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge-1%20.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlLTEgLm1wNCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODM3ODQ5ODYsImV4cCI6MTgxNTMyMDk4Nn0.eIWbp9x6MlSSwHrbVulO3jK_iqb5vng6wDoDYnhs4y0" },
+    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge1.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlMS5tcDQiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzODk5NzI4LCJleHAiOjE4MTU0MzU3Mjh9.zKOxRpi6Bew6we5MiVDjLjUAxys8QdQ_kTHi5z8glWQ" },
     likes: [],
     comments: [],
     timestamp: new Date()
@@ -146,7 +146,7 @@ let challenges = [
     xp: 20,
     completedBy: [],
     description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge-2.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlLTIubXA0Iiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4Mzc4NTA4OCwiZXhwIjoxODE1MzIxMDg4fQ.WnQcHTjceRrfWe32IoBqHAPr5mK_KxvXygIlzsvjPDw" },
+    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge2.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlMi5tcDQiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzODk5NzU0LCJleHAiOjE4MTU0MzU3NTR9._LIHxYn0USjckFNhFZ8tYDZMqRQTSr0xmjH6K3zIiRk" },
     likes: [],
     comments: [],
     timestamp: new Date()
@@ -157,7 +157,7 @@ let challenges = [
     xp: 20,
     completedBy: [],
     description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge-3.;mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlLTMuO21wNCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODM3ODUwMzAsImV4cCI6MTgxNTMyMTAzMH0.-kA1N8n4QXIBgWE7dj_m4UWmm11QnjjFO5ytEXJbSA4" },
+    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge3.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlMy5tcDQiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzODk5Nzc2LCJleHAiOjE4MTU0MzU3NzZ9.7o5lzRfjcYkFtCE74StDJtjK81KXsrMs6__MA3llKkA" },
     likes: [],
     comments: [],
     timestamp: new Date()

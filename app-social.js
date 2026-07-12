@@ -254,26 +254,37 @@ function compressImage(imageSource, callback, maxSize = 300, quality = 0.7) {
   };
 }
 
+// ✅ Grille de cartes façon trombinoscope (au lieu d'une liste verticale) — médaille
+// sur l'avatar pour les 3 premiers du classement XP, pour voir tout le groupe d'un coup.
 function renderAllProfiles() {
   const section = document.getElementById('all-profiles-content');
-  section.innerHTML = `<div style="margin-bottom: 15px; font-size: 12px; color: var(--primary-light); font-weight: 600;">👥 Les participants</div>` + PARTICIPANTS.map(user => {
-    const personalData = personalsData[user.id] || {};
-    const avatarHTML = (personalData.avatar && personalData.avatar.startsWith('data:image'))
-      ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
-      : (personalData.avatar || '👤');
-    return `
-      <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="showPublicProfile(${user.id})">
-        <div style="display: flex; gap: 12px;">
-          <div class="avatar-ring" style="width: 68px; height: 68px; font-size: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${avatarHTML}</div>
-          <div style="flex: 1;">
-            <div class="card-title" style="margin-bottom: 4px;">${user.name}</div>
-            <div style="font-size: 12px; color: var(--primary-light); margin-bottom: 6px; font-style: italic;">${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}</div>
-            <div style="font-size: 11px; color: var(--accent-cyan); margin-top: 8px;">▶ Voir profil</div>
+  const ranking = (typeof computeXpLeaderboard === 'function') ? computeXpLeaderboard() : [];
+  const medals = ['🥇', '🥈', '🥉'];
+
+  section.innerHTML = `
+    <div style="margin-bottom: 15px; font-size: 12px; color: var(--primary-light); font-weight: 600;">👥 ${PARTICIPANTS.length} participants</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+      ${PARTICIPANTS.map(user => {
+        const personalData = personalsData[user.id] || {};
+        const avatarHTML = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+          ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+          : (personalData.avatar || user.name.charAt(0));
+        const rankIdx = ranking.findIndex(r => r.p.id === user.id);
+        const xp = rankIdx !== -1 ? ranking[rankIdx].xp : 0;
+        const medal = rankIdx >= 0 && rankIdx < 3 ? medals[rankIdx] : null;
+        return `
+          <div onclick="showPublicProfile(${user.id})" style="cursor: pointer; background: var(--bg-raised); border-radius: 14px; padding: 12px 6px; text-align: center; box-shadow: 0 2px 10px rgba(12, 47, 58, 0.07);">
+            <div style="position: relative; width: 46px; height: 46px; margin: 0 auto 6px; border-radius: 50%; background: linear-gradient(135deg, #1D5FA8, #1690A3); display: flex; align-items: center; justify-content: center; font-size: ${avatarHTML.startsWith('<img') ? '0' : '18px'}; color: white; font-weight: 700; overflow: hidden;">
+              ${avatarHTML}
+              ${medal ? `<span style="position: absolute; bottom: -2px; right: -2px; font-size: 13px; background: var(--bg-raised); border-radius: 50%; padding: 1px;">${medal}</span>` : ''}
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(user.name)}</div>
+            <div style="font-size: 10px; color: var(--primary-light);">${xp} XP</div>
           </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+        `;
+      }).join('')}
+    </div>
+  `;
 }
 
 function showPublicProfile(userId) {

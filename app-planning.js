@@ -56,7 +56,10 @@ function renderPlanningDayDetail(dayIdx) {
   }
   const photoKey = DAY_PHOTO_MAP[dayIdx];
   let html = `
-    <button class="btn btn-small" onclick="closePlanningDay()" style="margin-bottom: 16px; background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);">← Tous les jours</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <button class="btn btn-small" onclick="closePlanningDay()" style="background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1); margin-bottom: 0;">← Tous les jours</button>
+      <span onclick="switchTab('inscriptions')" style="cursor: pointer; font-size: 11px; font-weight: 700; color: var(--accent-sand);">✍️ Voir toutes les inscriptions →</span>
+    </div>
     ${photoKey ? `
     <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 130px;">
       <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/day-${photoKey}.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
@@ -148,9 +151,28 @@ function toggleDepartureTask(dayIdx, actIdx) {
 function renderActivityDetailCard(dayIdx, activity, actIdx) {
   const apporterList = Array.isArray(activity.apporter) ? activity.apporter : (activity.apporter ? String(activity.apporter).split(',').map(s => s.trim()).filter(Boolean) : []);
   const inscrits = activity.inscription ? PARTICIPANTS.filter(p => inscriptions[`${p.id}-${dayIdx}-${actIdx}`] === true) : [];
+  // ✅ La "Surprise" du jour n'est pas une activité comme les autres : c'est le mécanisme
+  // à code secret (voir revealSurprise()). On la signale avec un bandeau dédié, tout en
+  // gardant la carte éditable en dessous (horaires/lieu/notes restent modifiables).
+  const isSurprise = /surprise/i.test(activity.nom || '');
+  const surpriseBanner = isSurprise ? `
+    <div onclick="switchTab('surprises')" style="cursor: pointer; display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); color: white; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;">
+      <span style="font-size: 20px;">🔐</span>
+      <div style="flex: 1;">
+        <div style="font-weight: 700; font-size: 13px;">Surprise du jour</div>
+        <div style="font-size: 11px; opacity: 0.9;">Touche pour entrer le code secret et la débloquer →</div>
+      </div>
+    </div>
+  ` : '';
 
   return `
-    <div class="card">
+    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+      <div style="width: 30px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--bg-raised); box-shadow: 0 2px 8px rgba(12,47,58,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">${activity.emoji || '📌'}</div>
+        <div style="flex: 1; width: 2px; background: var(--border); margin-top: 4px;"></div>
+      </div>
+      <div class="card" style="flex: 1; min-width: 0; margin-bottom: 0;">
+      ${surpriseBanner}
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
         <span style="font-size: 26px;">${activity.emoji || '📌'}</span>
         <input type="text" value="${escapeHtml(activity.nom)}" placeholder="Nom de l'activité" onblur="updateActivityField(${dayIdx},${actIdx},'nom',this.value)" style="flex: 1; font-weight: 800; font-size: 15px; background: var(--bg-sunken); border-radius: 6px; padding: 8px 10px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
@@ -205,6 +227,7 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
           </div>
         </div>
       ` : ''}
+      </div>
     </div>
   `;
 }
