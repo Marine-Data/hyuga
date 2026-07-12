@@ -396,7 +396,6 @@ async function finishProfileSetup() {
 
   await enterMainApp();
 
-  addNotification(`✅ ${currentUser.name} a rejoint l'app!`);
   requestNotificationPermission();
 }
 

@@ -591,7 +591,6 @@ function revealSurprise() {
       </div>
     `;
     showNotification('🎉 Surprise débloquée !', 'success');
-    addNotification(`💎 ${currentUser.name} a découvert la surprise !`, '💎', 'surprises');
     celebrateWithConfetti();
     if (typeof MedAnim !== 'undefined' && MedAnim.lanterns) setTimeout(() => MedAnim.lanterns(), 400);
     input.value = '';
