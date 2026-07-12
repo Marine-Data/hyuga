@@ -164,7 +164,7 @@
       position: sticky;
       top: 0;
       z-index: 40;
-      background: rgba(244, 247, 248, 0.85);
+      background: rgba(246, 243, 234, 0.88);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       padding: 14px 20px;
@@ -177,9 +177,10 @@
     }
 
     .header-logo h1 {
-      font-family: 'Bricolage Grotesque', sans-serif;
-      font-weight: 700;
-      font-size: 14px;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 19px;
+      letter-spacing: 1px;
       color: var(--primary);
       margin: 0;
       overflow-wrap: break-word; /* ✅ Permet au titre de casser si besoin plutôt que déborder */
@@ -196,7 +197,7 @@
 
     .btn-header {
       padding: 8px 12px;
-      border: none;
+      border: 1px solid var(--accent-sand);
       background: var(--bg-raised);
       color: var(--primary);
       border-radius: 12px;
@@ -205,13 +206,14 @@
       font-weight: 600;
       transition: all 0.3s ease;
       position: relative;
-      box-shadow: var(--shadow);
+      box-shadow: 0 2px 8px rgba(12, 47, 58, 0.06);
     }
 
     .btn-header:hover { 
-      background: var(--accent-dark);
+      background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%);
+      border-color: transparent;
       color: white;
-      box-shadow: var(--shadow-hover);
+      box-shadow: 0 6px 16px rgba(29, 95, 168, 0.25);
       transform: scale(1.05);
     }
 
@@ -328,9 +330,9 @@
     }
 
     .section-header h2 {
-      font-weight: 800;
+      font-weight: 500;
       margin: 0 0 4px 0;
-      font-family: 'Bricolage Grotesque', sans-serif;
+      font-family: var(--font-display);
       font-size: 18px;
       text-shadow: none;
       color: var(--primary);
@@ -412,8 +414,9 @@
     }
 
     .modal-header h2 {
-      font-family: 'Bricolage Grotesque', sans-serif;
-      font-size: 14px;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 16px;
       color: var(--primary);
       margin: 0;
     }
@@ -607,8 +610,9 @@
     }
 
     .notif-header h3 {
-      font-family: 'Bricolage Grotesque', sans-serif;
-      font-size: 12px;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 14px;
       color: var(--primary);
       margin: 0;
     }
@@ -790,8 +794,9 @@
     }
 
     .deezer-header h3 {
-      font-family: 'Bricolage Grotesque', sans-serif;
-      font-size: 10px;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 12px;
       color: var(--primary);
       margin: 0;
     }
@@ -964,7 +969,7 @@
 
       /* ✅ En-tête plus compact sur mobile pour éviter le débordement horizontal */
       .header-logo h1 {
-        font-size: 11px;
+        font-size: 16px;
       }
       .btn-header {
         padding: 6px 8px;
