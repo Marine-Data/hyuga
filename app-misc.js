@@ -567,7 +567,7 @@ function revealSurprise() {
           <span style="opacity: 0.85; font-size: 11.5px;">Équipe perdante prépare les cocktails du soir.</span><br><br>
           <strong>Ⅲ. L'Entraînement de Rock Lee</strong> — Route du jardin<br>
           <span style="opacity: 0.85; font-size: 11.5px;">Ballon 7 rebonds pieds/genoux + Pierre-Feuille-Ciseaux inversé. Équipe perdante dresse la table.</span><br><br>
-          <strong>Ⅳ. Épreuve finale — Karaoké</strong><br>
+          <strong>Ⅳ. Épreuve finale — Blind Test</strong><br>
           <span style="opacity: 0.85; font-size: 11.5px;">Artiste, titre, paroles, suite inventée, funfact, backs, choré — 1 point chacun. Équipe perdante gère les inscriptions aux activités.</span>
         </div>
         <div style="margin-top: 16px;">
