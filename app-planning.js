@@ -42,6 +42,9 @@ function closePlanningDay() {
   renderPlanningOverview();
 }
 
+// ✅ Correspondance jour → photo d'activité (uploadées dans Réglages)
+const DAY_PHOTO_MAP = ['gare', 'avion', 'surprise', 'plongee', 'bateau', 'paddle', 'viaferrata', 'concert', 'piscine'];
+
 function renderPlanningDayDetail(dayIdx) {
   const day = planningData[dayIdx];
   // ✅ Le dernier jour du séjour (jour de départ) est une succession de tâches ménage/rangement
@@ -51,12 +54,23 @@ function renderPlanningDayDetail(dayIdx) {
     renderDepartureDayChecklist(dayIdx);
     return;
   }
+  const photoKey = DAY_PHOTO_MAP[dayIdx];
   let html = `
     <button class="btn btn-small" onclick="closePlanningDay()" style="margin-bottom: 16px; background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);">← Tous les jours</button>
+    ${photoKey ? `
+    <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 130px;">
+      <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/day-${photoKey}.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+      <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.05)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
+        <div class="title-serif" style="font-size: 20px; color: #fff;">${escapeHtml(day.jour)}</div>
+        <div style="font-size: 12.5px; color: #ffe9b8;">${escapeHtml(day.date || '')}</div>
+      </div>
+    </div>
+    ` : `
     <div style="text-align: center; margin-bottom: 20px;">
       <div style="font-weight: 800; font-size: 20px;">${escapeHtml(day.jour)}</div>
       <div style="font-size: 13px; color: var(--primary-light);">${escapeHtml(day.date || '')}</div>
     </div>
+    `}
   `;
   html += day.activities.map((activity, actIdx) => renderActivityDetailCard(dayIdx, activity, actIdx)).join('');
   document.getElementById('planning-content').innerHTML = html;

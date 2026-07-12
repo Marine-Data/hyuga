@@ -104,7 +104,27 @@ async function uploadBandPhoto(key, inputEl) {
   }
 }
 
-// ✅ Upload du sceau Saraillon (deux tailles : petit pour en-tête/connexion, grand pour le PDF souvenir)
+// ✅ Upload générique pour les 9 photos de jour du planning (day-XXX.jpg)
+async function uploadDayPhoto(key, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById(`day-${key}-upload-progress`);
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+  try {
+    const path = `day-${key}.jpg`;
+    const publicUrl = await uploadFileToStorage('app-assets', path, file);
+    document.querySelectorAll(`img[src*="${path}"]`).forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
+    if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
+    showNotification('📅 Photo du jour mise à jour !', 'success');
+  } catch (err) {
+    console.error(`Échec upload photo jour ${key}:`, err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
+
 async function uploadSeal(size, inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -555,6 +575,8 @@ function revealSurprise() {
             <iframe loading="lazy" style="width: 100%; aspect-ratio: 16/9; border: none; display: block;" src="https://www.canva.com/design/DAHJ270_OqQ/view?embed" allowfullscreen allow="fullscreen"></iframe>
           </div>
           <a href="https://www.canva.com/d/vtjIiXCFg_OPhF6" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
+          <br>
+          <a href="https://canva.link/saraillon" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Lien public de la surprise</a>
         </div>
         <div style="margin-top: 16px;" id="olympiades-video-slot">
           <video id="olympiades-video-player" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/olympiades.mp4" controls style="width: 100%; border-radius: 12px; display: none; box-shadow: 0 6px 18px rgba(0,0,0,0.2);" onloadeddata="document.getElementById('olympiades-video-player').style.display='block'; document.getElementById('olympiades-video-upload').style.display='none';" onerror="document.getElementById('olympiades-video-upload').style.display='block';"></video>

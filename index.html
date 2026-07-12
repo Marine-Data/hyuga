@@ -637,6 +637,55 @@
             <span id="band-planning-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">📅 Photos des jours (planning)</div>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🚉 Gare (J1)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('gare', this)">
+            </label>
+            <span id="day-gare-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              ✈️ Aéroport (J2)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('avion', this)">
+            </label>
+            <span id="day-avion-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              💎 Surprise (J3)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('surprise', this)">
+            </label>
+            <span id="day-surprise-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🤿 Plongée (J4)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('plongee', this)">
+            </label>
+            <span id="day-plongee-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              ⛵ Bateau (J5)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('bateau', this)">
+            </label>
+            <span id="day-bateau-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🏄 Paddle (J6)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('paddle', this)">
+            </label>
+            <span id="day-paddle-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🧗 Via Ferrata (J7)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('viaferrata', this)">
+            </label>
+            <span id="day-viaferrata-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🎤 Talent (J8)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('concert', this)">
+            </label>
+            <span id="day-concert-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
+              🏊 Piscine (J9)
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadDayPhoto('piscine', this)">
+            </label>
+            <span id="day-piscine-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+          </div>
+
+          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">🌊 Sceau Saraillon</div>
             <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
               🔸 Petit (en-tête, connexion)
