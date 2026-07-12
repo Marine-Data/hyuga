@@ -330,6 +330,20 @@ async function getSecretMissionsXpByPerson() {
   return totals;
 }
 
+// 🐛 CORRECTIF : cette fonction était appelée (app-core.js, dans enterMainApp() et
+// dans le polling 25s) mais n'existait nulle part dans le code → ReferenceError qui
+// interrompait enterMainApp() en plein milieu : tout ce qui suivait (renderChallenges,
+// renderMysteryPhoto, renderInscriptions, renderPolls, renderExpenses, le message de
+// bienvenue, l'auto-save 30s, le polling cloud 25s et l'onboarding) ne s'exécutait
+// jamais au premier chargement de l'app. On la définit ici et on s'en sert pour que
+// l'XP des missions secrètes soit enfin comptée dans le classement (computeXpLeaderboard).
+let secretMissionXpCache = {};
+
+async function refreshSecretMissionXpCache() {
+  secretMissionXpCache = await getSecretMissionsXpByPerson();
+  if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+}
+
 // ✅ Génère une page HTML autonome (photos, XP, corvées, quêtes) téléchargeable —
 // un souvenir qui survit à la suppression de l'app, à garder ou imprimer.
 function exportTripSouvenir() {

@@ -131,6 +131,14 @@ function computeXpLeaderboard() {
   choreLog.forEach(entry => {
     if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15);
   });
+  // 🐛 CORRECTIF : l'XP des missions secrètes (secretMissionXpCache, rempli par
+  // refreshSecretMissionXpCache) n'était jamais additionné ici — les missions secrètes
+  // rapportaient de l'XP en base mais il n'apparaissait jamais dans le classement.
+  if (typeof secretMissionXpCache === 'object' && secretMissionXpCache) {
+    Object.keys(secretMissionXpCache).forEach(pid => {
+      if (totals[pid] !== undefined) totals[pid] += secretMissionXpCache[pid];
+    });
+  }
   return PARTICIPANTS
     .map(p => ({ p, xp: totals[p.id] || 0 }))
     .sort((a, b) => b.xp - a.xp);
