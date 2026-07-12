@@ -282,7 +282,7 @@ function showPublicProfile(userId) {
     ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
     : (personalData.avatar || '👤');
   const avatarWrapStyle = hasRealPhoto
-    ? `margin-bottom: 20px; display: inline-flex; width: 140px; height: 140px; border-radius: 50%; align-items: center; justify-content: center; overflow: hidden; border: 3px solid var(--accent-sand); padding: 3px; background: var(--bg-raised); box-shadow: 0 8px 20px rgba(12, 47, 58, 0.12);`
+    ? `margin-bottom: 20px; display: inline-flex; width: 140px; height: 140px; border-radius: 50%; align-items: center; justify-content: center; overflow: hidden; padding: 3px; background: var(--bg-raised); box-shadow: 0 8px 20px rgba(12, 47, 58, 0.12);`
     : `font-size: 70px; margin-bottom: 20px; display: inline-flex; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2); overflow: hidden;`;
 
   const html = `

@@ -328,7 +328,7 @@ function exportTripSouvenir() {
   `).join('');
 
   const photosHtml = topPhotos.map(p => `
-    <div style="border:2px solid #c99a3f; border-radius:10px; padding:3px; background:#fff;">
+    <div style="border-radius:10px; padding:3px; background:#fff; box-shadow: 0 2px 10px rgba(12,47,58,0.08);">
       ${p.type === 'image' ? `<img src="${p.src}" style="width:100%; height:180px; object-fit:cover; border-radius:7px; display:block;">` : ''}
     </div>
   `).join('');
