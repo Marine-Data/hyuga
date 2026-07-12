@@ -139,7 +139,7 @@
     </div>
     <div id="onboarding-slide-3" class="onboarding-slide" style="display: none;">
       <div style="font-size: 52px; margin-bottom: 16px;">🎮</div>
-      <h2 style="margin: 0 0 10px;">Quêtes, Corvées & Galerie</h2>
+      <h2 style="margin: 0 0 10px;">Quêtes, Grand Tirage & Galerie</h2>
       <p style="font-size: 13px; color: var(--primary-light); line-height: 1.6;">Relève des quêtes pour gagner de l'XP, découvre qui fait la vaisselle, et partage tes plus belles photos avec le groupe !</p>
     </div>
     <div style="display: flex; justify-content: center; gap: 6px; margin: 20px 0;">
@@ -394,10 +394,13 @@
       <!-- CORVEES -->
       <div id="corvees" class="tab-content">
         <div class="tab-nav">
-          <button class="tab-btn active">⚡ Corvées</button>
+          <button class="tab-btn active">⚡ Le Grand Tirage</button>
         </div>
         <div style="padding: 16px 20px;">
           <div style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px;" id="day-selector"></div>
+          <div style="text-align: center; margin-bottom: 8px;">
+            <video src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/tirage-wheel.mp4" autoplay loop muted playsinline style="width: 160px; height: 160px; border-radius: 50%; box-shadow: 0 8px 20px rgba(12, 47, 58, 0.15);"></video>
+          </div>
           <div style="text-align: center; margin: 20px 0;">
             <button id="spin-btn" class="btn btn-primary" style="font-size: 16px; padding: 20px 30px; transition: transform 0.8s;" onclick="spinRoulette()">🎡 SPIN!</button>
           </div>
@@ -685,6 +688,14 @@
             <span id="day-piscine-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
           </div>
 
+          <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
+            <div class="card-title" style="margin-bottom: 16px;">🎡 Vidéo du Grand Tirage</div>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
+              🎥 Uploader la vidéo
+              <input type="file" accept="video/mp4,video/*" style="display: none;" onchange="uploadTirageVideo(this)">
+            </label>
+            <span id="tirage-video-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+          </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">🌊 Sceau Saraillon</div>
             <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">

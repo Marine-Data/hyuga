@@ -395,7 +395,7 @@ function renderChoresDisplay() {
   let html = `
     <div style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.25);">
       <div style="font-size: 26px; margin-bottom: 4px;">⚡</div>
-      <strong style="font-family: var(--font-display); font-weight: 500; font-size: 16px; letter-spacing: 0.3px;">Corvées assignées !</strong>
+      <strong style="font-family: var(--font-display); font-weight: 500; font-size: 16px; letter-spacing: 0.3px;">Le tirage est fait !</strong>
       <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -485,7 +485,7 @@ function completeChore(i) {
 
   addNotification(`⚡ ${a.person.name} a fait "${a.chore.name}" (+${a.xp} XP) !`, '⚡', 'corvees');
   addFeedEntry(`a fait la corvée "${a.chore.name}" (+${a.xp} XP) !`, '⚡');
-  showNotification(`⚡ Corvée faite ! +${a.xp} XP`, 'success');
+  showNotification(`⚡ Tirage réussi ! +${a.xp} XP`, 'success');
 
   // ✅ Marque cette corvée comme faite côté Supabase (upsert sur l'id) pour que
   // tout le monde voie la complétion sans devoir rouvrir l'app.

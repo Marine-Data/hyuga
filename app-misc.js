@@ -125,6 +125,26 @@ async function uploadDayPhoto(key, inputEl) {
 }
 
 
+// ✅ Upload de la vidéo décorative du Grand Tirage (ex-corvées)
+async function uploadTirageVideo(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('tirage-video-upload-progress');
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+  try {
+    const publicUrl = await uploadFileToStorage('challenge-videos', 'tirage-wheel.mp4', file);
+    document.querySelectorAll('video[src*="tirage-wheel.mp4"]').forEach(v => { v.src = `${publicUrl}?t=${Date.now()}`; v.load(); v.play().catch(() => {}); });
+    if (progressEl) progressEl.textContent = '✅ Vidéo mise en ligne !';
+    showNotification('🎡 Vidéo du tirage mise à jour !', 'success');
+  } catch (err) {
+    console.error('Échec upload vidéo tirage:', err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
+
 async function uploadSeal(size, inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -361,7 +381,7 @@ function exportTripSouvenir() {
 
   <div class="stats">
     <div class="stat"><div class="num">${r.totalXp}</div><div class="lbl">XP cumulés</div></div>
-    <div class="stat"><div class="num">${r.choresDone}</div><div class="lbl">Corvées faites</div></div>
+    <div class="stat"><div class="num">${r.choresDone}</div><div class="lbl">Tirages faits</div></div>
     <div class="stat"><div class="num">${r.questsDone}</div><div class="lbl">Défis relevés</div></div>
   </div>
 

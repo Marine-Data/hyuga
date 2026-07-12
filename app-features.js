@@ -236,7 +236,7 @@ function renderTripRecap() {
       <div class="title-serif" style="font-size: 16px; margin-bottom: 10px;">🏆 Bilan du séjour</div>
       <div style="font-size: 12.5px; color: var(--primary); line-height: 1.9;">
         ✨ <strong>${r.totalXp} XP</strong> cumulés par le groupe<br>
-        ⚡ <strong>${r.choresDone}</strong> corvée${r.choresDone > 1 ? 's' : ''} faite${r.choresDone > 1 ? 's' : ''}<br>
+        ⚡ <strong>${r.choresDone}</strong> tirage${r.choresDone > 1 ? 's' : ''} fait${r.choresDone > 1 ? 's' : ''}<br>
         🏆 <strong>${r.questsDone}</strong> défi${r.questsDone > 1 ? 's' : ''} relevé${r.questsDone > 1 ? 's' : ''}
       </div>
       ${r.topPhotos.length > 0 ? `

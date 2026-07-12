@@ -1158,7 +1158,7 @@ function renderHomeMenuTiles() {
       type: 'group',
       label: 'Vie pratique',
       children: [
-        { tab: 'corvees', label: 'Corvées du foyer' },
+        { tab: 'corvees', label: 'Le Grand Tirage' },
         { tab: 'shopping', label: 'Courses' },
         { tab: 'polls', label: 'Sondages' },
         { tab: 'expenses', label: 'Dépenses' },
