@@ -176,16 +176,10 @@
         
         <!-- ACTIONS (Droite) - Groupées logiquement -->
         <div class="header-actions" style="display: flex; gap: 4px; align-items: center;">
-          <!-- Actions principales -->
-          <button class="btn-header" onclick="switchTab('profile'); showMyProfile();" title="Mon Profil" style="padding: 8px 10px;">👥</button>
           <button class="btn-header" onclick="switchTab('settings')" title="Réglages" style="padding: 8px 10px;">⚙️</button>
           <button class="btn-header" onclick="toggleNotifications()" title="Notifications" style="padding: 8px 10px; position: relative;">
             🔔 <span class="notif-badge" id="notifBadge" style="display: none; position: absolute; top: 0; right: 0; background: var(--accent-pink); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: 700;">0</span>
           </button>
-          
-          <!-- Actions secondaires (Undo/Redo) -->
-          <button class="btn-header" onclick="toggleUndo()" id="undoBtn" title="Annuler" style="padding: 8px 8px; font-size: 13px;">↶</button>
-          <button class="btn-header" onclick="toggleRedo()" id="redoBtn" title="Refaire" style="padding: 8px 8px; font-size: 13px;">↷</button>
         </div>
       </div>
 
