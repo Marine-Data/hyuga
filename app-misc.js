@@ -104,6 +104,26 @@ async function uploadBandPhoto(key, inputEl) {
   }
 }
 
+// ✅ Upload du sceau Saraillon (deux tailles : petit pour en-tête/connexion, grand pour le PDF souvenir)
+async function uploadSeal(size, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById(`seal-${size}-upload-progress`);
+  if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
+  try {
+    const path = `seal-${size}.png`;
+    const publicUrl = await uploadFileToStorage('app-assets', path, file);
+    document.querySelectorAll(`img[src*="${path}"]`).forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
+    if (progressEl) progressEl.textContent = '✅ Sceau mis à jour !';
+    showNotification('🌊 Sceau mis à jour !', 'success');
+  } catch (err) {
+    console.error(`Échec upload sceau ${size}:`, err);
+    const detail = (err && (err.message || err.error || err.statusCode)) || 'erreur inconnue';
+    if (progressEl) progressEl.textContent = `❌ Échec : ${detail}`;
+    showNotification(`❌ Échec upload : ${detail}`, 'error');
+  }
+}
+
 
 // 🔧 Chaque matin, chaque personne reçoit UNE mission privée, visible d'elle
 // seule dans l'app. {target} est remplacé par le prénom de la personne visée.
@@ -302,7 +322,8 @@ function exportTripSouvenir() {
   .wrap { max-width: 720px; margin: 0 auto; }
   h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; text-align: center; margin-bottom: 4px; }
   .eyebrow { text-align: center; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #c99a3f; margin-bottom: 30px; }
-  .seal { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe08a, #c99a3f 70%); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; box-shadow: 0 4px 12px rgba(12,47,58,0.2); }
+  .seal { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin: 0 auto 16px; box-shadow: 0 4px 12px rgba(12,47,58,0.2); }
+  .seal img { width: 100%; height: 100%; object-fit: cover; }
   h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; border-bottom: 1px solid #e4d9c0; padding-bottom: 8px; margin-top: 40px; }
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(12,47,58,0.06); }
   .stats { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
@@ -314,7 +335,7 @@ function exportTripSouvenir() {
   @media print { body { padding: 0; } }
 </style></head>
 <body><div class="wrap">
-  <div class="seal">S</div>
+  <div class="seal"><img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/seal-full.png" alt=""></div>
   <div class="eyebrow">Saraillon · 21 — 30 août 2026</div>
   <h1>Le carnet du séjour</h1>
 
