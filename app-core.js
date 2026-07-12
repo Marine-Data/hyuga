@@ -1170,7 +1170,7 @@ function renderHomeMenuTiles() {
   const roman = ['I', 'II', 'III', 'IV', 'V'];
 
   container.innerHTML = `
-    <div style="background: var(--bg-raised); border-radius: 16px; border: 1px solid var(--accent-sand); overflow: hidden;">
+    <div style="background: var(--bg-raised); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(12, 47, 58, 0.08);">
       ${items.map((it, i) => {
         if (it.type === 'link') {
           return `
