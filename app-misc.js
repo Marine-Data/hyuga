@@ -321,7 +321,7 @@ function exportTripSouvenir() {
 
   const rankingRows = ranking.map((row, i) => `
     <tr>
-      <td style="padding:8px 12px; color:#c99a3f; font-family:'Playfair Display',Georgia,serif;">${i + 1}</td>
+      <td style="padding:8px 12px; color:#c99a3f; font-family:'Josefin Sans',sans-serif;">${i + 1}</td>
       <td style="padding:8px 12px;">${escapeHtml(row.p.name)}</td>
       <td style="padding:8px 12px; text-align:right; font-weight:700; color:#c99a3f;">${row.xp} XP</td>
     </tr>
@@ -336,19 +336,19 @@ function exportTripSouvenir() {
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8">
 <title>Saraillon — Souvenir du séjour</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   body { font-family: 'Inter', sans-serif; background: #f6f3ea; color: #0c2f3a; margin: 0; padding: 40px 20px; }
   .wrap { max-width: 720px; margin: 0 auto; }
-  h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; text-align: center; margin-bottom: 4px; }
+  h1 { font-family: 'Josefin Sans', sans-serif; font-size: 32px; text-align: center; margin-bottom: 4px; }
   .eyebrow { text-align: center; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #c99a3f; margin-bottom: 30px; }
   .seal { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin: 0 auto 16px; box-shadow: 0 4px 12px rgba(12,47,58,0.2); }
   .seal img { width: 100%; height: 100%; object-fit: cover; }
-  h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; border-bottom: 1px solid #e4d9c0; padding-bottom: 8px; margin-top: 40px; }
+  h2 { font-family: 'Josefin Sans', sans-serif; font-size: 19px; border-bottom: 1px solid #e4d9c0; padding-bottom: 8px; margin-top: 40px; }
   table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(12,47,58,0.06); }
   .stats { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
   .stat { flex: 1; min-width: 140px; background: #fff; border: 1px solid #e4d9c0; border-radius: 10px; padding: 16px; text-align: center; }
-  .stat .num { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #c99a3f; }
+  .stat .num { font-family: 'Josefin Sans', sans-serif; font-size: 26px; color: #c99a3f; }
   .stat .lbl { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #4a5a5e; margin-top: 4px; }
   .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
   footer { text-align: center; margin-top: 50px; font-size: 12px; font-style: italic; color: #7bb3bf; }
