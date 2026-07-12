@@ -128,7 +128,7 @@ function renderProfileSelectCarousel() {
     <div onclick="confirmProfileCarouselSelection()" style="position: relative; z-index: 2; text-align: center; cursor: pointer;">
       ${portrait(centerP, 190, 1, 0, '0 0 50px rgba(255, 203, 5, 0.5), 0 20px 40px rgba(0,0,0,0.4)')}
       <div style="margin-top: 14px; display: inline-block; background: ${centerP.c}; color: ${centerP.text}; padding: 3px 12px; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);">${centerP.label}</div>
-      <div style="margin-top: 8px; font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--primary); text-shadow: 0 2px 10px rgba(255,255,255,0.8);">${centerP.p.name.toUpperCase()}</div>
+      <div style="margin-top: 8px; font-family: var(--font-display); font-weight: 500; font-size: 15px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6);">${centerP.p.name.toUpperCase()}</div>
       ${(['Marine', 'Mathieu'].includes(centerP.p.name) && new Date() < new Date('2026-07-18')) ? `<div style="margin-top: 4px; display: inline-block; background: rgba(239, 68, 68, 0.12); color: var(--danger); padding: 2px 10px; border-radius: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;">🧪 PROFIL TEST — jusqu'au 17/07</div>` : ''}
     </div>
     <div onclick="shiftProfileCarousel(1)" style="position: absolute; right: -6px; cursor: pointer;">
