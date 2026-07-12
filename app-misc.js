@@ -572,9 +572,9 @@ function revealSurprise() {
         </div>
         <div style="margin-top: 16px;">
           <div style="border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.2); background: #fff;">
-            <iframe loading="lazy" style="width: 100%; aspect-ratio: 16/9; border: none; display: block;" src="https://www.canva.com/design/DAHJ270_OqQ/view?embed" allowfullscreen allow="fullscreen"></iframe>
+            <iframe loading="lazy" style="width: 100%; aspect-ratio: 16/9; border: none; display: block;" src="https://www.canva.com/d/DIdQVqDVX9OLnmY" allowfullscreen allow="fullscreen"></iframe>
           </div>
-          <a href="https://www.canva.com/d/vtjIiXCFg_OPhF6" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
+          <a href="https://www.canva.com/d/DIdQVqDVX9OLnmY" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
           <br>
           <a href="https://canva.link/saraillon" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Lien public de la surprise</a>
         </div>
