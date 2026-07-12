@@ -10,11 +10,11 @@ const PARTICIPANTS = [
   { id: 1, name: "Delphine", pseudo: "", bio: "Passionnée et aventurière, cuisinière hors pair, énergie débordante 🔥", avatar: null, email: "delphine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 2, name: "Chunfei", pseudo: "", bio: "Intense et franche, n'a pas la langue dans sa poche. Danseuse professionnelle et comédienne diplômée du Cours Florent 🎭", avatar: null, email: "chunfei@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 3, name: "Mathilde", pseudo: "", bio: "Aventurière de l'extrême ⛵ navigatrice et exploratrice, féministe et bosseuse incroyable 💪", avatar: null, email: "mathilde@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
-  { id: 4, name: "Nawaëlle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
+  { id: 4, name: "Nawaelle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
   { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 6, name: "Inès", pseudo: "", bio: "Pétillante et attachante, toujours partante pour un cocktail 🍹 drôle, curieuse des autres, voit toujours le verre à moitié plein", avatar: null, email: "ines@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
-  { id: 7, name: "Mathieu", pseudo: "", bio: "Dans le top 3 de mes petits frères préférés 💙 que je n'oublierais jamais", avatar: null, email: "mathieu@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
-  { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "m.zinzen04@gmail.com", phone: "06 51 12 95 98", regimes: "Omnivore", chores: false },
+  { id: 7, name: "Mathieu", pseudo: "", bio: "Le meilleur — dans le top 3 de mes petits frères préférés 💙", avatar: null, email: "mathieu@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
+  { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "marine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
   { id: 9, name: "Audrey", pseudo: "", bio: "Une amie en or 🪙 toujours prête à rendre service, drôle, un style vestimentaire qui détrône tout le monde. Danse comme une queen et chante tous les styles, partante pour toute nouvelle aventure 👩‍🎤", avatar: null, email: "audrey@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true }
 ];
 
@@ -111,7 +111,7 @@ let challenges = [
     questLabel: "LE MIROIR DU TEMPS",
     xp: 30,
     completedBy: [],
-    description: "\ud83d\udcf8 LE MIROIR DU TEMPS \u2014 Retrouvez une photo d'un s\u00e9jour pr\u00e9c\u00e9dent et reproduisez-la \u00e0 l'identique ici : m\u00eame pose, m\u00eame cadrage, m\u00eame esprit !\n\ud83d\udcdc Objectif : reproduire 1 photo d'un s\u00e9jour pr\u00e9c\u00e9dent.\n\ud83c\udfc6 R\u00e9compense : +30 XP Nostalgie, voyage dans le temps garanti.",
+    description: "📸 LE MIROIR DU TEMPS — Retrouvez une photo d'un séjour précédent et reproduisez-la à l'identique ici : même pose, même cadrage, même esprit !\n📜 Objectif : reproduire 1 photo d'un séjour précédent.\n🏆 Récompense : +30 XP Nostalgie, voyage dans le temps garanti.",
     media: null,
     likes: [],
     comments: [],
@@ -123,7 +123,7 @@ let challenges = [
     questLabel: "MESSAGE POUR LE FUTUR",
     xp: 50,
     completedBy: [],
-    description: "\ud83d\uddfa\ufe0f LE MESSAGER DU TEMPS \u2014 Durant le s\u00e9jour trouve une carte postale... avant jeudi ! Une fois trouv\u00e9e, r\u00e9dige-la \u00e0 l'attention de l'H\u00f4te du s\u00e9jour et met l\u00e0 dans la bo\u00eete aux lettres. Ramassage des cartes et lecture commune jeudi soir !\n\ud83d\udcdc Objectif : trouver + r\u00e9diger 1 carte postale pour l'H\u00f4te.\n\u23f3 D\u00e9lai : avant jeudi soir.\n\ud83c\udfc6 R\u00e9compense : +50 XP Amiti\u00e9.",
+    description: "🗺️ LE MESSAGER DU TEMPS — Durant le séjour trouve une carte postale... avant jeudi ! Une fois trouvée, rédige-la à l'attention de l'Hôte du séjour et met là dans la boîte aux lettres. Ramassage des cartes et lecture commune jeudi soir !\n📜 Objectif : trouver + rédiger 1 carte postale pour l'Hôte.\n⏳ Délai : avant jeudi soir.\n🏆 Récompense : +50 XP Amitié.",
     media: null,
     likes: [],
     comments: [],
