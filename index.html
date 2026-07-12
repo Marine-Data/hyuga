@@ -379,7 +379,16 @@
           <button class="tab-btn active">📅 Planning</button>
           <button class="tab-btn" onclick="exportPlanning()">⬇️ Export</button>
         </div>
-        <div class="content" id="planning-content"></div>
+        <div class="content">
+          <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 110px;">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-planning.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12,47,58,0.55), rgba(12,47,58,0.1)); display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;">
+              <span class="eyebrow" style="color: #ffe9b8; margin-bottom: 2px;">Le séjour</span>
+              <div class="title-serif" style="font-size: 19px; color: #fff;">Planning</div>
+            </div>
+          </div>
+          <div id="planning-content"></div>
+        </div>
       </div>
 
       <!-- CORVEES -->
@@ -616,11 +625,16 @@
               <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('profil', this)">
             </label>
             <span id="band-profil-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
-            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; margin-bottom: 8px;">
               📸 Galerie
               <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('galerie', this)">
             </label>
-            <span id="band-galerie-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
+            <span id="band-galerie-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-bottom: 8px;"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center; padding: 12px; border-radius: 10px; background: var(--bg-sunken); font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;">
+              📅 Planning
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadBandPhoto('planning', this)">
+            </label>
+            <span id="band-planning-upload-progress" style="display: block; text-align: center; font-size: 11px; color: var(--primary-light); margin-top: 6px;"></span>
           </div>
           <div class="card" style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 18px;">
             <div class="card-title" style="margin-bottom: 16px;">🌊 Sceau Saraillon</div>

@@ -10,21 +10,25 @@ function renderPlanning() {
 }
 
 function renderPlanningOverview() {
-  const html = planningData.map((day, dayIdx) => {
-    const activityNames = day.activities.map(a => a.nom).join(' · ');
-    const totalItems = day.activities.reduce((sum, a) => sum + (Array.isArray(a.apporter) ? a.apporter.length : 0), 0);
-    return `
-      <div class="card" onclick="openPlanningDay(${dayIdx})" style="cursor: pointer; display: flex; align-items: center; gap: 14px;">
-        <div style="width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; flex-shrink: 0; box-shadow: 0 4px 10px rgba(12, 47, 58, 0.25);">${day.activities[0]?.emoji || '📅'}</div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 800; font-size: 15px;">${escapeHtml(day.jour)}</div>
-          <div style="font-size: 11px; color: var(--primary-light); margin-bottom: 4px;">${escapeHtml(day.date || '')}</div>
-          <div style="font-size: 12px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(activityNames)}${totalItems > 0 ? ` · 🎒 ${totalItems}` : ''}</div>
-        </div>
-        <div style="font-size: 20px; color: var(--primary-light);">›</div>
-      </div>
-    `;
-  }).join('');
+  const html = `
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+      ${planningData.map((day, dayIdx) => {
+        const mainEmoji = day.activities[0]?.emoji || '📅';
+        const totalItems = day.activities.reduce((sum, a) => sum + (Array.isArray(a.apporter) ? a.apporter.length : 0), 0);
+        const isDeparture = dayIdx === planningData.length - 1;
+        // Petit nom de jour abrégé (ex: "Vendredi (J8)" → "VEN.")
+        const shortDay = (day.jour || '').replace(/\s*\(.*\)/, '').slice(0, 3).toUpperCase();
+        return `
+          <div class="card" onclick="openPlanningDay(${dayIdx})" style="cursor: pointer; padding: 10px 6px; text-align: center; aspect-ratio: 0.85; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 0;">
+            <div class="eyebrow" style="margin-bottom: 2px; font-size: 9px;">${shortDay}</div>
+            <div class="title-serif" style="font-size: 20px; line-height: 1;">${dayIdx + 1}</div>
+            <div style="font-size: 20px; margin-top: 6px;">${isDeparture ? '🧳' : mainEmoji}</div>
+            ${totalItems > 0 ? `<div style="font-size: 9px; color: var(--accent-sand); margin-top: 3px; font-weight: 700;">🎒${totalItems}</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
   document.getElementById('planning-content').innerHTML = html;
 }
 
