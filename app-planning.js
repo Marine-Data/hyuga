@@ -343,12 +343,44 @@ function selectDay(idx) {
     // l'ordre d'enregistrement en base.
     .sort((a, b) => CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name));
   renderChoresDisplay();
+  updateSpinBtnLockState();
+}
+
+// ✅ Verrouille visuellement le bouton "SPIN!" quand le jour sélectionné a déjà
+// un tirage — évite même la tentation de cliquer dessus pour rien.
+function updateSpinBtnLockState() {
+  const btn = document.getElementById('spin-btn');
+  if (!btn) return;
+  const alreadyDrawn = cloudChoreAssignments.some(r => r.day_idx === selectedDay);
+  if (alreadyDrawn) {
+    btn.textContent = '🔒 Déjà tiré';
+    btn.style.opacity = '0.55';
+    btn.style.cursor = 'not-allowed';
+  } else {
+    btn.textContent = '🎡 SPIN!';
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  }
 }
 
 function spinRoulette() {
-  // Désactiver le bouton pendant l'animation
   const btn = document.getElementById('spin-btn');
   if (btn.disabled) return;
+
+  // ✅ Un jour déjà tiré est verrouillé pour de bon : impossible de le retirer et donc
+  // d'écraser le résultat existant. On peut toujours tourner la roue pour un autre jour
+  // (pas encore tiré), juste pas remplacer celui-ci.
+  const alreadyDrawn = cloudChoreAssignments.some(r => r.day_idx === selectedDay);
+  if (alreadyDrawn) {
+    showNotification('🔒 Ce jour est déjà tiré — le résultat est verrouillé.', 'error');
+    return;
+  }
+  doSpinRoulette();
+}
+
+function doSpinRoulette() {
+  const btn = document.getElementById('spin-btn');
+  // Désactiver le bouton pendant l'animation
   btn.disabled = true;
   
   // Masquer les résultats précédents
@@ -374,10 +406,20 @@ function spinRoulette() {
   carouselItems.classList.add('carousel-spinning');
   
   // Attendre la fin de l'animation (3 secondes) avant d'afficher les résultats
-  setTimeout(() => {
+  setTimeout(async () => {
     carouselItems.classList.remove('carousel-spinning');
     carouselWheel.style.display = 'none';
-    
+
+    // 🐛 CORRECTIF : retourner la roue une seconde fois pour le même jour empilait les
+    // anciennes ET les nouvelles assignations dans Supabase (jamais nettoyées), ce qui
+    // provoquait des doublons/répétitions d'une même corvée le même jour. On supprime
+    // maintenant les anciennes lignes de ce jour avant d'en écrire de nouvelles.
+    const oldRowsForDay = cloudChoreAssignments.filter(r => r.day_idx === selectedDay);
+    for (const row of oldRowsForDay) {
+      await window.deleteFromSupabase('chore_assignments', row.id);
+    }
+    cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay);
+
     const available = PARTICIPANTS.filter(p => p.chores && !activitiesInscription.some(act => {
       if (act.dayIdx !== selectedDay) return false;
       const key = `${p.id}-${act.dayIdx}-${act.actIdx}`;
@@ -410,6 +452,15 @@ function spinRoulette() {
       currentChoreAssignments.push({ id, chore, person, xp, dayIdx: selectedDay, done: false });
     }
 
+    // ✅ Corvée(s) fixe(s) : intégrée(s) dans la même liste que le tirage, avec exactement
+    // le même traitement (id, xp, style) — doit rester indiscernable d'un vrai tirage.
+    FIXED_CHORES.forEach(fc => {
+      const person = PARTICIPANTS.find(p => p.name === fc.personName);
+      if (!person) return;
+      const id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-fixed-${fc.name}`;
+      currentChoreAssignments.push({ id, chore: { name: fc.name, emoji: fc.emoji }, person, xp: 15, dayIdx: selectedDay, done: false });
+    });
+
     // ✅ Affichage des résultats trié dans l'ordre chronologique du jour (CHORES est
     // maintenant ordonné matin → soir), plutôt que dans l'ordre où les personnes ont
     // été tirées au hasard.
@@ -432,6 +483,17 @@ function spinRoulette() {
         done: false
       });
     });
+
+    // ✅ Reflète immédiatement le tirage dans le cache local (sans attendre le prochain
+    // sondage cloud) pour que le verrou se mette à jour tout de suite, ici comme sur le
+    // reste de l'app.
+    cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay).concat(
+      currentChoreAssignments.map(a => ({
+        id: a.id, day_idx: a.dayIdx, person_id: a.person.id,
+        chore_name: a.chore.name, emoji: a.chore.emoji, xp: a.xp, done: false
+      }))
+    );
+    updateSpinBtnLockState();
 
     btn.disabled = false;
   }, 3000);
@@ -461,26 +523,13 @@ function renderChoresDisplay() {
   }
   let html = `
     <div style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.25);">
-      <div style="font-size: 26px; margin-bottom: 4px;">⚡</div>
-      <strong style="font-family: var(--font-display); font-weight: 500; font-size: 16px; letter-spacing: 0.3px;">Le tirage est fait !</strong>
+      <div style="font-size: 26px; margin-bottom: 4px;">🎉</div>
+      <strong style="font-family: var(--font-display); font-weight: 500; font-size: 16px; letter-spacing: 0.3px;">C'est tiré !</strong>
       <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
   `;
   currentChoreAssignments.forEach((a, i) => { html += renderChoreAssignmentCard(i); });
-  // ✅ Corvée(s) fixe(s), hors tirage — toujours affichée(s) à sa place chronologique
-  FIXED_CHORES.forEach(fc => {
-    html += `
-      <div class="card" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.14) 0%, rgba(111, 184, 176, 0.04) 100%); border-radius: 12px;">
-        <div style="font-size: 28px; flex-shrink: 0;">${fc.emoji}</div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px;">${escapeHtml(fc.name)} <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; background: var(--bg-sunken); color: var(--primary-soft); padding: 2px 7px; border-radius: 8px; margin-left: 4px;">Fixe</span></div>
-          <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(fc.personName)}</div>
-          ${fc.notes ? `<div style="font-size: 11px; color: var(--primary-light); margin-top: 4px; line-height: 1.4;">${escapeHtml(fc.notes)}</div>` : ''}
-        </div>
-      </div>
-    `;
-  });
   html += '</div>';
   container.innerHTML = html;
 }
@@ -508,6 +557,7 @@ async function loadChoreAssignmentsCloud() {
       .sort((a, b) => CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name));
     renderChoresDisplay();
   }
+  updateSpinBtnLockState();
   renderChoreLogPanel();
   renderHomeGroupSpirit();
 }
@@ -533,20 +583,27 @@ function getAllChoreCompletions() {
 function renderChoreAssignmentCard(i) {
   const a = currentChoreAssignments[i];
   if (!a) return '';
-  // ✅ Retrouve les instructions de la corvée depuis CHORES (par nom), même si l'objet
-  // vient du cloud (qui ne stocke que name/emoji, pas les notes).
-  const notes = (CHORES.find(c => c.name === a.chore.name) || {}).notes || '';
+  // ✅ Retrouve les instructions de la corvée depuis CHORES/FIXED_CHORES (par nom), même
+  // si l'objet vient du cloud (qui ne stocke que name/emoji, pas les notes).
+  const notes = (CHORES.find(c => c.name === a.chore.name) || FIXED_CHORES.find(c => c.name === a.chore.name) || {}).notes || '';
   return `
-    <div class="card" id="chore-card-${i}" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: ${a.done ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 100%)' : 'linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%)'}; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.1); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; animation-delay: ${i * 0.1}s; border-radius: 12px; transition: background 0.3s ease;">
-      <div style="font-size: 28px; flex-shrink: 0; opacity: ${a.done ? '0.5' : '1'};">${a.chore.emoji}</div>
-      <div style="flex: 1; min-width: 0;">
-        <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px; text-decoration: ${a.done ? 'line-through' : 'none'}; opacity: ${a.done ? '0.6' : '1'};">${escapeHtml(a.chore.name)}</div>
-        <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(a.person.name)}</div>
-        ${notes ? `<div style="font-size: 11px; color: var(--primary-light); margin-top: 4px; line-height: 1.4;">${escapeHtml(notes)}</div>` : ''}
+    <div class="card" id="chore-card-${i}" style="padding: 14px; background: ${a.done ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 100%)' : 'linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%)'}; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.1); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; animation-delay: ${i * 0.08}s; border-radius: 12px; transition: background 0.3s ease;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 28px; flex-shrink: 0; opacity: ${a.done ? '0.5' : '1'};">${a.chore.emoji}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px; text-decoration: ${a.done ? 'line-through' : 'none'}; opacity: ${a.done ? '0.6' : '1'};">${escapeHtml(a.chore.name)} ${notes ? `<span onclick="event.stopPropagation(); toggleChoreNotes(${i})" style="cursor: pointer; font-size: 11px; opacity: 0.6;">ℹ️</span>` : ''}</div>
+          <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(a.person.name)}</div>
+        </div>
+        <button class="btn btn-small" style="flex-shrink: 0; border: none; font-weight: 700; padding: 10px 14px; border-radius: 8px; transition: all 0.2s ease; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${a.done ? 'white' : 'var(--primary)'};" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ +${a.xp} XP` : `Fait ! (+${a.xp} XP)`}</button>
       </div>
-      <button class="btn btn-small" style="flex-shrink: 0; border: none; font-weight: 700; padding: 10px 14px; border-radius: 8px; transition: all 0.2s ease; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${a.done ? 'white' : 'var(--primary)'};" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ +${a.xp} XP` : `Fait ! (+${a.xp} XP)`}</button>
+      ${notes ? `<div id="chore-notes-${i}" style="display: none; font-size: 11.5px; color: var(--primary-light); margin-top: 10px; padding-top: 10px; box-shadow: 0 -1px 0 var(--border); line-height: 1.5;">💡 ${escapeHtml(notes)}</div>` : ''}
     </div>
   `;
+}
+
+function toggleChoreNotes(i) {
+  const el = document.getElementById(`chore-notes-${i}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function completeChore(i) {
@@ -627,4 +684,3 @@ function renderChoreLogPanel() {
     </div>
   `;
 }
-
