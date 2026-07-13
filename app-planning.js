@@ -331,7 +331,6 @@ function selectDay(idx) {
   // groupe), au lieu de repartir d'un écran vide tant qu'on n'a pas re-tourné la roue.
   const dayRows = cloudChoreAssignments.filter(r => r.day_idx === idx);
   currentChoreAssignments = dayRows
-    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
     .map(r => ({
       id: r.id,
       chore: { name: r.chore_name, emoji: r.emoji },
@@ -339,7 +338,10 @@ function selectDay(idx) {
       xp: r.xp,
       dayIdx: r.day_idx,
       done: r.done
-    }));
+    }))
+    // ✅ Ordre chronologique du déroulé du jour (CHORES matin → soir), plutôt que
+    // l'ordre d'enregistrement en base.
+    .sort((a, b) => CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name));
   renderChoresDisplay();
 }
 
@@ -408,6 +410,13 @@ function spinRoulette() {
       currentChoreAssignments.push({ id, chore, person, xp, dayIdx: selectedDay, done: false });
     }
 
+    // ✅ Affichage des résultats trié dans l'ordre chronologique du jour (CHORES est
+    // maintenant ordonné matin → soir), plutôt que dans l'ordre où les personnes ont
+    // été tirées au hasard.
+    currentChoreAssignments.sort((a, b) =>
+      CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name)
+    );
+
     renderChoresDisplay();
 
     // ✅ Envoie chaque assignation à Supabase pour que la roue soit visible sur
@@ -434,6 +443,15 @@ let currentChoreAssignments = [];
 // corvées soit visible et à jour sur tous les téléphones du groupe.
 let cloudChoreAssignments = [];
 
+// ✅ Ordre chronologique complet (corvées tirées + corvée fixe), utilisé pour trier
+// l'affichage — l'arrosage du soir (fixe, Marine) doit apparaître entre l'aspirateur
+// et les poubelles du soir, comme dans le déroulé réel de la journée.
+const CHRONO_ORDER = [
+  "Préparer petit-déjeuner", "Rentrer poubelles matin", "Faire courses",
+  "Préparer déjeuner", "Préparer dîner", "Passer aspirateur",
+  "Arrosage du jardin (le soir)", "Sortir poubelles soir",
+];
+
 function renderChoresDisplay() {
   const container = document.getElementById('chores-display');
   if (!container) return;
@@ -450,6 +468,19 @@ function renderChoresDisplay() {
     <div style="display: flex; flex-direction: column; gap: 12px;">
   `;
   currentChoreAssignments.forEach((a, i) => { html += renderChoreAssignmentCard(i); });
+  // ✅ Corvée(s) fixe(s), hors tirage — toujours affichée(s) à sa place chronologique
+  FIXED_CHORES.forEach(fc => {
+    html += `
+      <div class="card" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: linear-gradient(135deg, rgba(111, 184, 176, 0.14) 0%, rgba(111, 184, 176, 0.04) 100%); border-radius: 12px;">
+        <div style="font-size: 28px; flex-shrink: 0;">${fc.emoji}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px;">${escapeHtml(fc.name)} <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; background: var(--bg-sunken); color: var(--primary-soft); padding: 2px 7px; border-radius: 8px; margin-left: 4px;">Fixe</span></div>
+          <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(fc.personName)}</div>
+          ${fc.notes ? `<div style="font-size: 11px; color: var(--primary-light); margin-top: 4px; line-height: 1.4;">${escapeHtml(fc.notes)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  });
   html += '</div>';
   container.innerHTML = html;
 }
@@ -465,7 +496,6 @@ async function loadChoreAssignmentsCloud() {
   const dayRows = cloudChoreAssignments.filter(r => r.day_idx === selectedDay);
   if (dayRows.length > 0) {
     currentChoreAssignments = dayRows
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       .map(r => ({
         id: r.id,
         chore: { name: r.chore_name, emoji: r.emoji },
@@ -473,7 +503,9 @@ async function loadChoreAssignmentsCloud() {
         xp: r.xp,
         dayIdx: r.day_idx,
         done: r.done
-      }));
+      }))
+      // ✅ Ordre chronologique du déroulé du jour, comme ailleurs (voir selectDay).
+      .sort((a, b) => CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name));
     renderChoresDisplay();
   }
   renderChoreLogPanel();
@@ -501,12 +533,16 @@ function getAllChoreCompletions() {
 function renderChoreAssignmentCard(i) {
   const a = currentChoreAssignments[i];
   if (!a) return '';
+  // ✅ Retrouve les instructions de la corvée depuis CHORES (par nom), même si l'objet
+  // vient du cloud (qui ne stocke que name/emoji, pas les notes).
+  const notes = (CHORES.find(c => c.name === a.chore.name) || {}).notes || '';
   return `
     <div class="card" id="chore-card-${i}" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: ${a.done ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 100%)' : 'linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%)'}; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.1); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; animation-delay: ${i * 0.1}s; border-radius: 12px; transition: background 0.3s ease;">
       <div style="font-size: 28px; flex-shrink: 0; opacity: ${a.done ? '0.5' : '1'};">${a.chore.emoji}</div>
       <div style="flex: 1; min-width: 0;">
         <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px; text-decoration: ${a.done ? 'line-through' : 'none'}; opacity: ${a.done ? '0.6' : '1'};">${escapeHtml(a.chore.name)}</div>
         <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(a.person.name)}</div>
+        ${notes ? `<div style="font-size: 11px; color: var(--primary-light); margin-top: 4px; line-height: 1.4;">${escapeHtml(notes)}</div>` : ''}
       </div>
       <button class="btn btn-small" style="flex-shrink: 0; border: none; font-weight: 700; padding: 10px 14px; border-radius: 8px; transition: all 0.2s ease; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${a.done ? 'white' : 'var(--primary)'};" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ +${a.xp} XP` : `Fait ! (+${a.xp} XP)`}</button>
     </div>

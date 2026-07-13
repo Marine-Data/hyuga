@@ -11,7 +11,7 @@ const PARTICIPANTS = [
   { id: 2, name: "Chunfei", pseudo: "", bio: "Intense et franche, n'a pas la langue dans sa poche. Danseuse professionnelle et comédienne diplômée du Cours Florent 🎭", avatar: null, email: "chunfei@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 3, name: "Mathilde", pseudo: "", bio: "Aventurière de l'extrême ⛵ navigatrice et exploratrice, féministe et bosseuse incroyable 💪", avatar: null, email: "mathilde@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
   { id: 4, name: "Nawaelle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
-  { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
+  { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: false },
   { id: 6, name: "Inès", pseudo: "", bio: "Pétillante et attachante, toujours partante pour un cocktail 🍹 drôle, curieuse des autres, voit toujours le verre à moitié plein", avatar: null, email: "ines@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 7, name: "Mathieu", pseudo: "", bio: "Le meilleur — dans le top 3 de mes petits frères préférés 💙", avatar: null, email: "mathieu@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
   { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "marine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
@@ -19,16 +19,23 @@ const PARTICIPANTS = [
 ];
 
 // ---- Corvées (roue des corvées) ----
+// ✅ Ordre chronologique du déroulé d'une journée (matin → soir). "Café midi" a été
+// retiré (fusionné dans les instructions du petit-déjeuner) et l'arrosage du soir est
+// désormais fixe (voir FIXED_CHORES ci-dessous, attribué à Marine tous les soirs, plus
+// besoin de le tirer au sort). Chaque corvée porte des instructions précises (notes).
 const CHORES = [
-  { name: "Sortir poubelles soir", emoji: "♻️" },
-  { name: "Préparer café midi", emoji: "☕" },
-  { name: "Passer aspirateur", emoji: "🧹" },
-  { name: "Faire courses", emoji: "🛍️" },
-  { name: "Préparer petit-déjeuner", emoji: "🍳" },
-  { name: "Préparer déjeuner", emoji: "🥗" },
-  { name: "Préparer dîner", emoji: "🍽️" },
-  { name: "Rentrer poubelles matin", emoji: "📦" },
-  { name: "Arrosage du jardin (le soir)", emoji: "🌱" },
+  { name: "Préparer petit-déjeuner", emoji: "🍳", notes: "Sortir en priorité les verres, l'eau fraîche, le thé et le café, et dresser joliment la table. Ensuite chacun se sert selon ses envies. Organiser le rangement de la cuisine ensuite, avec les autres personnes qui ont eu le petit-déjeuner." },
+  { name: "Rentrer poubelles matin", emoji: "📦", notes: "Penser à prendre les clés pour ouvrir la grille." },
+  { name: "Faire courses", emoji: "🛍️", notes: "Voir avec les personnes \"Déjeuner\" et \"Dîner\" de quoi elles ont besoin, et demander à la personne \"Petit-déjeuner\" les stocks pour le lendemain matin. Remplir la liste de courses de l'app avec ces 3 personnes concernées avant de partir." },
+  { name: "Préparer déjeuner", emoji: "🥗", notes: "" },
+  { name: "Préparer dîner", emoji: "🍽️", notes: "" },
+  { name: "Passer aspirateur", emoji: "🧹", notes: "À faire après chaque repas, dans la cuisine et autour des lieux où on a mangé — pour éviter d'attirer les petites bêtes." },
+  { name: "Sortir poubelles soir", emoji: "♻️", notes: "Regarder le calendrier des poubelles affiché dans la cuisine pour savoir laquelle sortir, et prendre les clés pour ouvrir la grille." },
+];
+
+// ✅ Corvée fixe, hors tirage au sort — toujours la même personne, tous les jours.
+const FIXED_CHORES = [
+  { name: "Arrosage du jardin (le soir)", emoji: "🌱", personName: "Marine", notes: "Tous les soirs, sans exception." },
 ];
 
 // ---- Planning du séjour ----
