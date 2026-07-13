@@ -65,7 +65,7 @@ function renderGallery() {
       <div onclick="viewGallery(${galleryItems.indexOf(item)})" style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); cursor: pointer; overflow: hidden;">
         ${item.type === 'image'
           ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
-          : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
+          : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;" playsinline muted preload="metadata"></video>
              <span style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; font-size: 9px; display: flex; align-items: center; justify-content: center;">▶</span>`}
       </div>
     `).join('');
@@ -104,7 +104,7 @@ function renderGallery() {
       <div style="width: 100%; aspect-ratio: 4/5; background: var(--bg-sunken); position: relative;">
         ${item.type === 'image'
           ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
-          : `<video src="${item.src}" controls style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
+          : `<video src="${item.src}" controls playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
         <div class="ig-location-badge">📍 ${escapeHtml(item.location)}</div>
       </div>
 
@@ -488,7 +488,7 @@ function filterGalleryByTag(tagName) {
   filtered.forEach(item => {
     html += `
       <div style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1.5px var(--border), 0 2px 6px rgba(0,0,0,0.1);">
-        ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;"></video>`}
+        ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;" playsinline muted preload="metadata"></video>`}
         <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">${escapeHtml(item.location)}</div>
       </div>
     `;

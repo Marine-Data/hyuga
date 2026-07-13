@@ -367,12 +367,13 @@ function handleCompleteAvatarUpload(event) {
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      // ✅ Compresser avant de sauvegarder (300x300 JPEG 70%, même logique que le profil)
+      // ✅ Compression revue à la hausse (500px / 85%) — 300px/70% donnait des avatars
+      // flous, surtout sur écrans haute densité (retina).
       compressImage(e.target.result, (compressedImage) => {
         personalsData[selectedProfileData.id] = personalsData[selectedProfileData.id] || {};
         personalsData[selectedProfileData.id].avatar = compressedImage;
         document.getElementById('profileSelectAvatar').innerHTML = `<img src="${compressedImage}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-      });
+      }, 500, 0.85);
     };
     reader.readAsDataURL(file);
   }
@@ -593,8 +594,13 @@ async function loadFromSupabaseCloud() {
         if (profile.bio) personalsData[profile.person_id].bio = profile.bio;
         const localAvatar = personalsData[profile.person_id].avatar;
         const localIsRealPhoto = typeof localAvatar === 'string' && localAvatar.startsWith('data:image');
-        const cloudIsRealPhoto = typeof profile.avatar === 'string' && profile.avatar.startsWith('data:image');
-        // Ne jamais remplacer une vraie photo locale par un simple emoji venu du cloud
+        // 🐛 CORRECTIF : "cloudIsRealPhoto" ne vérifiait que le préfixe ("data:image...") — une
+        // photo tronquée en base (ex. colonne trop courte) passait quand même ce test et pouvait
+        // écraser une bonne photo locale par une image cassée (cause probable de photos de profil
+        // "perdues"). On exige maintenant une longueur plausible pour une vraie photo compressée.
+        const cloudIsRealPhoto = typeof profile.avatar === 'string' && profile.avatar.startsWith('data:image') && profile.avatar.length > 2000;
+        // Ne jamais remplacer une vraie photo locale par un simple emoji, une valeur vide,
+        // ou une image tronquée/corrompue venue du cloud.
         if (profile.avatar && (cloudIsRealPhoto || !localIsRealPhoto)) {
           personalsData[profile.person_id].avatar = profile.avatar;
         }
@@ -1073,6 +1079,20 @@ function goToInscriptions() {
 
 // ✅ Avatar cliquable dans le header (photo réelle si envoyée, sinon initiale) —
 // raccourci permanent vers "Mon Profil" depuis n'importe quelle page.
+
+// ✅ Couleur par défaut distincte par personne (au lieu du même dégradé bleu-cyan partout) —
+// utile tant que tout le monde n'a pas encore reposté sa photo de profil.
+const PERSON_DEFAULT_COLORS = [
+  ['#1D5FA8', '#1690A3'], ['#e35b2e', '#f4b942'], ['#2fae6e', '#7fe0ea'],
+  ['#c23d52', '#ff9bab'], ['#7b2fd6', '#c98bf0'], ['#0e7a90', '#7fe0ea'],
+  ['#c9821f', '#ffd873'], ['#1c7d4c', '#6fe0a0'], ['#a9741f', '#f2d79a'],
+];
+function getPersonGradient(personId) {
+  const idx = PARTICIPANTS.findIndex(p => p.id === personId);
+  const [c1, c2] = PERSON_DEFAULT_COLORS[(idx >= 0 ? idx : personId) % PERSON_DEFAULT_COLORS.length];
+  return `linear-gradient(135deg, ${c1}, ${c2})`;
+}
+
 function renderHeaderAvatar() {
   const el = document.getElementById('headerAvatarContent');
   if (!el || !currentUser) return;
@@ -1080,8 +1100,10 @@ function renderHeaderAvatar() {
   const photo = (raw && raw.startsWith('data:image')) ? raw : null;
   if (photo) {
     el.innerHTML = `<img src="${photo}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`;
+    el.style.background = 'none';
   } else {
     el.textContent = (currentUser.name || '?')[0].toUpperCase();
+    el.style.background = getPersonGradient(currentUser.id);
   }
 }
 
@@ -1627,7 +1649,7 @@ function updateNotifBadge() {
   const unread = notifications.filter(n => !n.read).length;
   const badge = document.getElementById('notifBadge');
   if (unread > 0) {
-    badge.textContent = unread;
+    badge.textContent = unread > 99 ? '99+' : unread;
     badge.style.display = 'flex';
   } else {
     badge.style.display = 'none';

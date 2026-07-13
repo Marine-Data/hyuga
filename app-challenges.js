@@ -33,7 +33,7 @@ function renderChallenges() {
           <button class="btn-icon-small" onclick="event.stopPropagation(); duplicateChallenge(${ch.id})" title="Dupliquer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px;">📋</button>
           <button class="btn-icon-small" onclick="event.stopPropagation(); confirmDeleteChallenge(${ch.id})" title="Supprimer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; color: var(--danger);">🗑️</button>
         </div>
-        ${ch.media ? `<div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; max-height: 300px;">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
+        ${ch.media ? `<div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; max-height: 300px;">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls playsinline preload="metadata"></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
         ${/^CHALLENGE \d+$/.test(ch.creator) ? `
         <div style="margin-bottom: 12px;">
           <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
@@ -50,14 +50,31 @@ function renderChallenges() {
           </div>
         </div>
         ${completedBy.length > 0 ? `
-        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
           ${completedBy.map(pid => {
             const p = PARTICIPANTS.find(pp => pp.id === pid);
-            return p ? `<span style="font-size: 11px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 10px;">✅ ${escapeHtml(p.name)}</span>` : '';
+            if (!p) return '';
+            const proof = (ch.proofs || {})[pid];
+            return `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 10px; flex-shrink: 0;">✅ ${escapeHtml(p.name)}</span>
+                ${proof ? (proof.type === 'video'
+                  ? `<video src="${proof.src}" controls playsinline preload="metadata" style="height: 44px; border-radius: 6px;"></video>`
+                  : `<img src="${proof.src}" onclick="event.stopPropagation(); window.open('${proof.src}','_blank')" style="height: 44px; width: 44px; object-fit: cover; border-radius: 6px; cursor: pointer;">`)
+                  : `<span style="font-size: 10px; color: var(--primary-light); font-style: italic;">preuve non disponible</span>`}
+              </div>
+            `;
           }).join('')}
         </div>` : ''}
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <button class="btn btn-small" style="background: ${userCompleted ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${userCompleted ? 'white' : 'var(--primary)'}; flex: 1.4; font-weight: 700; border: none;" onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})">${userCompleted ? '✅ Relevé !' : '🎯 Relever le défi'}</button>
+          ${userCompleted ? `
+            <button class="btn btn-small" style="background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: white; flex: 1.4; font-weight: 700; border: none;" onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})">✅ Relevé ! (annuler)</button>
+          ` : `
+            <label class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1.4; font-weight: 700; border: none; text-align: center; cursor: pointer;" onclick="event.stopPropagation();">
+              📸 Relever le défi (preuve à l'appui)
+              <input type="file" accept="image/*,video/*" style="display: none;" onchange="event.stopPropagation(); submitChallengeProof(${ch.id}, this)">
+            </label>
+          `}
           <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; border: none;" onclick="event.stopPropagation(); likeCh(${ch.id})">❤️ ${likesCount}</button>
           <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1; border: none;" onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})">💬 ${ch.comments.length}</button>
         </div>
@@ -99,6 +116,8 @@ function confirmDeleteChallenge(id) {
   });
 }
 
+// ✅ N'annule plus qu'un défi déjà relevé (la validation initiale passe désormais
+// par submitChallengeProof, qui exige une photo/vidéo à l'appui).
 function toggleChallengeCompletion(id) {
   const ch = challenges.find(c => c.id === id);
   if (!ch) return;
@@ -106,19 +125,64 @@ function toggleChallengeCompletion(id) {
   const idx = ch.completedBy.indexOf(currentUser.id);
   if (idx > -1) {
     ch.completedBy.splice(idx, 1);
+    if (ch.proofs) delete ch.proofs[currentUser.id];
     showNotification('Défi annulé', 'success');
-  } else {
-    ch.completedBy.push(currentUser.id);
+    saveAllData();
+    renderChallenges();
+    renderHomeGroupSpirit();
+    renderHomeLeaderboard();
+  }
+}
+
+// ✅ Valide un défi UNIQUEMENT après avoir fourni une preuve (photo ou vidéo) — on ne peut
+// plus se contenter de cliquer "relevé" sans rien joindre.
+function submitChallengeProof(id, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const ch = challenges.find(c => c.id === id);
+  if (!ch) return;
+
+  const isVideo = file.type.startsWith('video/');
+  if (isVideo && file.size > 15 * 1024 * 1024) {
+    showNotification('⚠️ Vidéo trop lourde (max 15 Mo)', 'error');
+    inputEl.value = '';
+    return;
+  }
+  if (!isVideo && file.size > 8 * 1024 * 1024) {
+    showNotification('⚠️ Image trop lourde (max 8 Mo)', 'error');
+    inputEl.value = '';
+    return;
+  }
+
+  const finalize = (src) => {
+    ch.completedBy = ch.completedBy || [];
+    ch.proofs = ch.proofs || {};
+    if (!ch.completedBy.includes(currentUser.id)) ch.completedBy.push(currentUser.id);
+    ch.proofs[currentUser.id] = { type: isVideo ? 'video' : 'image', src, timestamp: new Date().toISOString() };
+
     const xp = ch.xp || 20;
     addNotification(`🏆 ${currentUser.name} a relevé "${(ch.questLabel || ch.creator)}" (+${xp} XP) !`, '🏆', 'challenge');
-    addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP) !`, '🏆');
+    addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP), preuve à l'appui !`, '🏆');
     showNotification(`🏆 Défi relevé ! +${xp} XP`, 'success');
     celebrateWithConfetti();
-  }
-  saveAllData();
-  renderChallenges();
-  renderHomeGroupSpirit();
-  renderHomeLeaderboard();
+
+    saveAllData();
+    renderChallenges();
+    renderHomeGroupSpirit();
+    renderHomeLeaderboard();
+  };
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if (isVideo) {
+      finalize(e.target.result);
+    } else {
+      // Même qualité que la galerie (1080px / 82%), pas la compression basse des avatars.
+      compressImage(e.target.result, finalize, 1080, 0.82);
+    }
+  };
+  reader.onerror = () => showNotification('⚠️ Erreur lors de la lecture du fichier', 'error');
+  reader.readAsDataURL(file);
 }
 
 function computeXpLeaderboard() {

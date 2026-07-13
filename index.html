@@ -168,7 +168,9 @@
         <!-- SECTION RETOUR (Gauche) : bouton "page précédente" + accès direct "accueil", toujours les deux -->
         <div style="display: flex; align-items: center; gap: 4px;">
           <button class="btn-header" onclick="goBackToPreviousTab()" id="backBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 12px;">←</button>
-          <button class="btn-header" onclick="goHome()" id="homeBtn" style="display: none; font-weight: 700; font-size: 14px; padding: 8px 10px;" title="Accueil">🏠</button>
+          <button class="btn-header" onclick="goHome()" id="homeBtn" style="display: none; padding: 4px; width: 32px; height: 32px; border-radius: 50%; overflow: hidden;" title="Accueil">
+            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/seal-small.png" alt="Accueil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+          </button>
         </div>
         
         <!-- LOGO (Centre) -->
@@ -180,7 +182,7 @@
         <!-- ACTIONS (Droite) - Groupées logiquement -->
         <div class="header-actions" style="display: flex; gap: 4px; align-items: center;">
           <button class="btn-header" onclick="toggleNotifications()" title="Notifications" style="padding: 8px 10px; position: relative;">
-            🔔 <span class="notif-badge" id="notifBadge" style="display: none; position: absolute; top: 0; right: 0; background: var(--accent-pink); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; font-weight: 700;">0</span>
+            🔔 <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
           </button>
           <button class="btn-header" onclick="switchTab('settings')" title="Réglages" style="padding: 8px 10px;">⚙️</button>
           <button class="btn-header" onclick="switchTab('profile')" title="Mon profil" id="headerAvatarBtn" style="padding: 0; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px var(--accent-gold, #f4b942);">
@@ -331,6 +333,10 @@
             </div>
           </div>
 
+          <!-- MÉTÉO DU JOUR : sortie du carrousel (nécessitait de scroller pour la voir) —
+               toujours visible juste sous les stats, c'est une info qu'on consulte souvent. -->
+          <div id="home-weather" style="margin-bottom: 14px;"></div>
+
           <!-- SYNCHRONISATION : petite pastille discrète, pas un bloc pleine largeur -->
           <div id="home-sync-status" style="margin-bottom: 14px;"></div>
 
@@ -338,7 +344,7 @@
           <div id="home-secret-mission" style="margin-bottom: 20px;"></div>
 
           <!-- POUR TOI AUJOURD'HUI : carrousel horizontal regroupant souvenir du jour, activités à venir,
-               météo, décompte fin de séjour et bilan (dernier jour) — au lieu de 5 blocs empilés à plat. -->
+               décompte fin de séjour et bilan (dernier jour) — au lieu de blocs empilés à plat. -->
           <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
             <div style="font-family: var(--font-display); font-weight: 500; font-size: 19px; color: var(--primary);">Pour toi aujourd'hui</div>
             <a onclick="switchTab('planning')" style="font-size: 12px; color: var(--accent-sand); font-weight: 700; cursor: pointer;">Voir tout</a>
@@ -346,7 +352,6 @@
           <div id="home-spotlight-row" style="display: flex; gap: 12px; overflow-x: auto; margin: 0 -20px 24px; padding: 0 20px 4px; scrollbar-width: none; align-items: stretch;">
             <div id="home-memory" style="flex-shrink: 0; width: 190px;"></div>
             <div id="home-featured-row" style="display: contents;"></div>
-            <div id="home-weather" style="flex-shrink: 0; width: 190px;"></div>
             <div id="home-countdown" style="flex-shrink: 0; width: 190px;"></div>
             <div id="home-recap" style="flex-shrink: 0;"></div>
           </div>

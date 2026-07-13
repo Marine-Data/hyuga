@@ -196,7 +196,8 @@ function previewAvatar(event) {
     
     const reader = new FileReader();
     reader.onload = (e) => {
-      // Compresser l'image
+      // ✅ Compression revue à la hausse (500px / 85%, comme l'autre point d'upload avatar) —
+      // 300px/70% donnait des photos de profil floues.
       compressImage(e.target.result, (compressedImage) => {
         // Sauvegarder l'image compressée
         personalsData[currentUser.id] = personalsData[currentUser.id] || {};
@@ -208,7 +209,7 @@ function previewAvatar(event) {
         
         saveAllData();
         showNotification('📸 Photo mise à jour !', 'success');
-      });
+      }, 500, 0.85);
     };
     reader.readAsDataURL(file);
   }
@@ -274,7 +275,7 @@ function renderAllProfiles() {
         const medal = rankIdx >= 0 && rankIdx < 3 ? medals[rankIdx] : null;
         return `
           <div onclick="showPublicProfile(${user.id})" style="cursor: pointer; background: var(--bg-raised); border-radius: 14px; padding: 12px 6px; text-align: center; box-shadow: 0 2px 10px rgba(12, 47, 58, 0.07);">
-            <div style="position: relative; width: 46px; height: 46px; margin: 0 auto 6px; border-radius: 50%; background: linear-gradient(135deg, #1D5FA8, #1690A3); display: flex; align-items: center; justify-content: center; font-size: ${avatarHTML.startsWith('<img') ? '0' : '18px'}; color: white; font-weight: 700; overflow: hidden;">
+            <div style="position: relative; width: 46px; height: 46px; margin: 0 auto 6px; border-radius: 50%; background: ${avatarHTML.startsWith('<img') ? 'transparent' : (typeof getPersonGradient === 'function' ? getPersonGradient(user.id) : 'linear-gradient(135deg, #1D5FA8, #1690A3)')}; display: flex; align-items: center; justify-content: center; font-size: ${avatarHTML.startsWith('<img') ? '0' : '18px'}; color: white; font-weight: 700; overflow: hidden;">
               ${avatarHTML}
               ${medal ? `<span style="position: absolute; bottom: -2px; right: -2px; font-size: 13px; background: var(--bg-raised); border-radius: 50%; padding: 1px;">${medal}</span>` : ''}
             </div>
@@ -357,7 +358,7 @@ function showPublicProfileTab(userId, tab) {
         <div class="photo-frame" style="aspect-ratio: 1; cursor: pointer;" onclick="switchTab('gallery')">
           ${p.type === 'image'
             ? `<img src="${p.src}" alt="">`
-            : `<video src="${p.src}"></video>`}
+            : `<video src="${p.src}" playsinline muted preload="metadata"></video>`}
         </div>
       `).join('') + '</div>';
     }

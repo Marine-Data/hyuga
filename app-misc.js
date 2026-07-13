@@ -615,15 +615,15 @@ function revealSurprise() {
           <span style="opacity: 0.85; font-size: 11.5px;">Artiste, titre, paroles, suite inventée, funfact, backs, choré — 1 point chacun. Équipe perdante gère les inscriptions aux activités.</span>
         </div>
         <div style="margin-top: 16px;">
-          <div style="border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.2); background: #fff;">
-            <iframe loading="lazy" style="width: 100%; aspect-ratio: 16/9; border: none; display: block;" src="https://www.canva.com/d/DIdQVqDVX9OLnmY" allowfullscreen allow="fullscreen"></iframe>
+          <div style="position: relative; width: 100%; height: 0; padding-top: 56.25%; box-shadow: 0 6px 18px rgba(0,0,0,0.2); overflow: hidden; border-radius: 12px; background: #fff;">
+            <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0; margin: 0;" src="https://www.canva.com/design/DAHJ270_OqQ/FCzUMZxAapsdRIqkcAjP_Q/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen"></iframe>
           </div>
-          <a href="https://www.canva.com/d/DIdQVqDVX9OLnmY" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
+          <a href="https://www.canva.com/design/DAHJ270_OqQ/FCzUMZxAapsdRIqkcAjP_Q/view" target="_blank" rel="noopener" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Ouvrir en plein écran sur Canva</a>
           <br>
-          <a href="https://canva.link/saraillon" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Lien public de la surprise</a>
+          <a href="https://vacancesrue.my.canva.site/olympiades" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: white; text-decoration: underline;">🔗 Lien public de la surprise</a>
         </div>
         <div style="margin-top: 16px;" id="olympiades-video-slot">
-          <video id="olympiades-video-player" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/olympiades.mp4" controls style="width: 100%; border-radius: 12px; display: none; box-shadow: 0 6px 18px rgba(0,0,0,0.2);" onloadeddata="document.getElementById('olympiades-video-player').style.display='block'; document.getElementById('olympiades-video-upload').style.display='none';" onerror="document.getElementById('olympiades-video-upload').style.display='block';"></video>
+          <video id="olympiades-video-player" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/olympiades.mp4" controls playsinline preload="metadata" style="width: 100%; border-radius: 12px; display: none; box-shadow: 0 6px 18px rgba(0,0,0,0.2);" onloadeddata="document.getElementById('olympiades-video-player').style.display='block'; document.getElementById('olympiades-video-upload').style.display='none';" onerror="document.getElementById('olympiades-video-upload').style.display='block';"></video>
           <div id="olympiades-video-upload" style="display: none;">
             <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: white; cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.2);">
               🎥 Ajouter la version vidéo avec musique

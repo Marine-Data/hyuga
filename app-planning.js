@@ -75,6 +75,33 @@ function renderPlanningDayDetail(dayIdx) {
     </div>
     `}
   `;
+  // ✅ Résumé des inscriptions REMONTÉ tout en haut de la journée (avant la liste des
+  // activités) — auparavant la case à cocher était noyée dans chaque carte d'activité,
+  // facile à rater si on ne scrolle pas jusqu'au bout.
+  const needInscription = day.activities
+    .map((activity, actIdx) => ({ activity, actIdx }))
+    .filter(({ activity }) => activity.inscription);
+  if (needInscription.length > 0) {
+    html += `
+      <div style="background: linear-gradient(135deg, rgba(111, 184, 176, 0.14) 0%, rgba(111, 184, 176, 0.04) 100%); border-radius: 12px; padding: 14px; margin-bottom: 16px; box-shadow: inset 4px 0 0 var(--accent-cyan);">
+        <div style="font-weight: 700; font-size: 12.5px; color: var(--accent-cyan); margin-bottom: 10px;">📋 INSCRIPTIONS DE LA JOURNÉE</div>
+        ${needInscription.map(({ activity, actIdx }) => {
+          const inscrits = PARTICIPANTS.filter(p => inscriptions[`${p.id}-${dayIdx}-${actIdx}`] === true);
+          const meInscrit = inscriptions[`${currentUser.id}-${dayIdx}-${actIdx}`] === true;
+          return `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; ${actIdx < day.activities.length - 1 ? 'box-shadow: 0 1px 0 rgba(111, 184, 176, 0.2);' : ''}">
+              <span style="font-size: 18px; flex-shrink: 0;">${activity.emoji || '📌'}</span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 600; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(activity.nom)}</div>
+                <div style="font-size: 10.5px; color: var(--primary-light);">${inscrits.length === 0 ? '⚠️ Personne inscrit(e)' : `${inscrits.length} inscrit${inscrits.length > 1 ? 's' : ''}`}</div>
+              </div>
+              <button class="btn btn-small" style="flex-shrink: 0; background: ${meInscrit ? 'var(--accent-cyan)' : 'white'}; color: ${meInscrit ? 'white' : 'var(--accent-cyan)'}; border: none; box-shadow: 0 2px 6px rgba(111, 184, 176, 0.15); font-size: 11px; padding: 7px 12px;" onclick="toggleInscription(${dayIdx}, ${actIdx})">${meInscrit ? '✅ Inscrit(e)' : "✍️ S'inscrire"}</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
   html += day.activities.map((activity, actIdx) => renderActivityDetailCard(dayIdx, activity, actIdx)).join('');
   document.getElementById('planning-content').innerHTML = html;
 }
@@ -397,7 +424,6 @@ function spinRoulette() {
       });
     });
 
-    addNotification('⚡ La roue a tourné !', '⚡', 'corvees');
     btn.disabled = false;
   }, 3000);
 }
