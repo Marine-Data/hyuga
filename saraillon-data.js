@@ -135,7 +135,7 @@ let challenges = [
     xp: 20,
     completedBy: [],
     description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge1.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlMS5tcDQiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzODk5NzI4LCJleHAiOjE4MTU0MzU3Mjh9.zKOxRpi6Bew6we5MiVDjLjUAxys8QdQ_kTHi5z8glWQ" },
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge1.mp4" },
     likes: [],
     comments: [],
     timestamp: new Date()
@@ -146,7 +146,7 @@ let challenges = [
     xp: 20,
     completedBy: [],
     description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge2.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlMi5tcDQiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzODk5NzU0LCJleHAiOjE4MTU0MzU3NTR9._LIHxYn0USjckFNhFZ8tYDZMqRQTSr0xmjH6K3zIiRk" },
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge2.mp4" },
     likes: [],
     comments: [],
     timestamp: new Date()
@@ -157,7 +157,7 @@ let challenges = [
     xp: 20,
     completedBy: [],
     description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge3.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlMy5tcDQiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzODk5Nzc2LCJleHAiOjE4MTU0MzU3NzZ9.7o5lzRfjcYkFtCE74StDJtjK81KXsrMs6__MA3llKkA" },
+    media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge3.mp4" },
     likes: [],
     comments: [],
     timestamp: new Date()

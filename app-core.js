@@ -448,9 +448,25 @@ function loadAllData() {
     }
     if (parsed) {
     inscriptions = parsed.inscriptions || {};
-    // ✅ Ne restaure les challenges depuis le cache local QUE si sa version correspond au code actuel.
-    if (parsed.challengesVersion === CHALLENGES_VERSION) {
-      challenges = parsed.challenges || [];
+    // 🐛 CORRECTIF IMPORTANT : l'ancien code effaçait TOUTE la progression des défis
+    // (qui a relevé quoi, preuves, likes, commentaires) dès que challengesVersion ne
+    // correspondait plus pile à CHALLENGES_VERSION — donc à chaque mise à jour du contenu
+    // des défis, tout le monde repartait de zéro sans prévenir, même sur les défis
+    // inchangés. On fusionne maintenant par id : la progression de chaque défi déjà
+    // relevé est conservée, seuls le texte/xp viennent du code à jour, et les nouveaux
+    // défis ajoutés depuis apparaissent normalement.
+    if (parsed.challenges && Array.isArray(parsed.challenges) && parsed.challenges.length > 0) {
+      challenges = challenges.map(seedCh => {
+        const saved = parsed.challenges.find(c => c.id === seedCh.id);
+        if (!saved) return seedCh;
+        return {
+          ...seedCh,
+          completedBy: saved.completedBy || [],
+          proofs: saved.proofs || {},
+          likes: saved.likes || [],
+          comments: saved.comments || [],
+        };
+      });
     }
     shoppingList = parsed.shopping || [];
     galleryItems = parsed.gallery || [];
@@ -901,7 +917,10 @@ async function uploadChallengeVideo(challengeId, inputEl) {
   if (!ch) return;
 
   const num = (ch.creator.match(/\d+/) || ['?'])[0];
-  const path = `challenge-${num}.mp4`;
+  // 🐛 CORRECTIF : générait "challenge-1.mp4" (avec tiret) alors que les fichiers réels
+  // dans le bucket sont nommés "challenge1.mp4" (sans tiret) — un envoi depuis l'app
+  // créait un fichier différent au lieu de remplacer le bon.
+  const path = `challenge${num}.mp4`;
   const progressEl = document.getElementById(`upload-progress-${challengeId}`);
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
 
