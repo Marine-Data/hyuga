@@ -471,6 +471,52 @@ function toggleSettingsGroup(name) {
   if (chev) chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
+// ✅ Réinitialise complètement les corvées (tous les jours) — pratique en phase de
+// test pour repartir propre, sans données de tirage qui traînent depuis les essais.
+function resetAllChoreAssignments() {
+  showConfirmation('🔄 Effacer TOUS les tirages de corvées (tous les jours) pour repartir de zéro ? Action irréversible.', async () => {
+    for (const row of cloudChoreAssignments) {
+      await window.deleteFromSupabase('chore_assignments', row.id);
+    }
+    cloudChoreAssignments = [];
+    currentChoreAssignments = [];
+    choreLog = choreLog.filter(() => false);
+    if (typeof renderChoresDisplay === 'function') renderChoresDisplay();
+    if (typeof updateSpinBtnLockState === 'function') updateSpinBtnLockState();
+    saveAllData();
+    showNotification('✅ Corvées réinitialisées', 'success');
+  });
+}
+
+// ✅ Nettoyage ciblé : Marine et Mathieu ont été exclus de la rotation des corvées
+// après avoir déjà eu des lignes de test (tirages d'avant leur exclusion). On retire
+// ces anciennes lignes, SANS toucher aux vraies corvées des autres personnes, ni à
+// l'arrosage fixe de Marine (qui doit rester).
+function cleanupMarineMathieuOldChores() {
+  const mathieu = PARTICIPANTS.find(p => p.name === 'Mathieu');
+  const marine = PARTICIPANTS.find(p => p.name === 'Marine');
+  const toRemove = cloudChoreAssignments.filter(r =>
+    (mathieu && String(r.person_id) === String(mathieu.id)) ||
+    (marine && String(r.person_id) === String(marine.id) && r.chore_name !== 'Arrosage du jardin (le soir)')
+  );
+  if (toRemove.length === 0) {
+    showNotification('✅ Rien à nettoyer, Marine et Mathieu sont déjà propres', 'success');
+    return;
+  }
+  showConfirmation(`🧹 Retirer ${toRemove.length} ancienne(s) corvée(s) attribuée(s) à Marine/Mathieu avant leur exclusion ? Le reste (et l'arrosage de Marine) n'est pas touché.`, async () => {
+    for (const row of toRemove) {
+      await window.deleteFromSupabase('chore_assignments', row.id);
+    }
+    const removedIds = new Set(toRemove.map(r => r.id));
+    cloudChoreAssignments = cloudChoreAssignments.filter(r => !removedIds.has(r.id));
+    currentChoreAssignments = currentChoreAssignments.filter(a => !removedIds.has(a.id));
+    if (typeof renderChoresDisplay === 'function') renderChoresDisplay();
+    if (typeof updateSpinBtnLockState === 'function') updateSpinBtnLockState();
+    saveAllData();
+    showNotification(`✅ ${toRemove.length} ancienne(s) corvée(s) retirée(s)`, 'success');
+  });
+}
+
 function backupData() {
   const data = {
     personalsData,
