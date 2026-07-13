@@ -33,7 +33,7 @@ function renderChallenges() {
           <button class="btn-icon-small" onclick="event.stopPropagation(); duplicateChallenge(${ch.id})" title="Dupliquer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px;">📋</button>
           <button class="btn-icon-small" onclick="event.stopPropagation(); confirmDeleteChallenge(${ch.id})" title="Supprimer" style="background: var(--bg-sunken); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; color: var(--danger);">🗑️</button>
         </div>
-        ${ch.media ? `<div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; max-height: 300px;">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; height: auto;" controls playsinline preload="metadata"></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
+        ${ch.media ? `<div style="margin-bottom: 12px; border-radius: 8px; overflow: hidden; ${ch.media.type === 'video' ? 'background: #000;' : 'max-height: 300px;'}">${ch.media.type === 'video' ? `<video src="${ch.media.src}" style="width: 100%; max-height: 70vh; height: auto; display: block;" controls playsinline preload="metadata"></video>` : `<img src="${ch.media.src}" style="width: 100%; height: auto;">`}</div>` : ''}
         ${/^CHALLENGE \d+$/.test(ch.creator) ? `
         <div style="margin-bottom: 12px;">
           <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
@@ -417,4 +417,3 @@ function addChallengeComment(id) {
     }
   }
 }
-
