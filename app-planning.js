@@ -329,7 +329,9 @@ function selectDay(idx) {
 
   // ✅ Affiche les corvées déjà assignées pour ce jour (par n'importe qui du
   // groupe), au lieu de repartir d'un écran vide tant qu'on n'a pas re-tourné la roue.
-  const dayRows = cloudChoreAssignments.filter(r => r.day_idx === idx);
+  // dedupeChoreRows() protège contre d'anciennes lignes de test en double (avant le
+  // correctif anti-doublon) : une seule ligne gardée par personne, la plus récente.
+  const dayRows = dedupeChoreRows(cloudChoreAssignments.filter(r => r.day_idx === idx));
   currentChoreAssignments = dayRows
     .map(r => ({
       id: r.id,
@@ -344,6 +346,20 @@ function selectDay(idx) {
     .sort((a, b) => CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name));
   renderChoresDisplay();
   updateSpinBtnLockState();
+}
+
+// ✅ Garde-fou : une seule ligne par personne et par jour (la plus récente). Protège
+// l'affichage contre d'éventuelles vieilles lignes de test en double laissées par des
+// tirages antérieurs au correctif anti-doublon, sans devoir tout réinitialiser à la main.
+function dedupeChoreRows(rows) {
+  const byPerson = {};
+  rows.forEach(r => {
+    const existing = byPerson[r.person_id];
+    if (!existing || new Date(r.created_at || 0) >= new Date(existing.created_at || 0)) {
+      byPerson[r.person_id] = r;
+    }
+  });
+  return Object.values(byPerson);
 }
 
 // ✅ Verrouille visuellement le bouton "SPIN!" quand le jour sélectionné a déjà
@@ -599,7 +615,7 @@ async function loadChoreAssignmentsCloud() {
   if (!rows) return;
   cloudChoreAssignments = rows;
 
-  const dayRows = cloudChoreAssignments.filter(r => r.day_idx === selectedDay);
+  const dayRows = dedupeChoreRows(cloudChoreAssignments.filter(r => r.day_idx === selectedDay));
   if (dayRows.length > 0) {
     currentChoreAssignments = dayRows
       .map(r => ({
