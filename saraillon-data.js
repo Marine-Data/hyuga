@@ -19,23 +19,24 @@ const PARTICIPANTS = [
 ];
 
 // ---- Corvées (roue des corvées) ----
-// ✅ Ordre chronologique du déroulé d'une journée (matin → soir). "Café midi" a été
-// retiré (fusionné dans les instructions du petit-déjeuner) et l'arrosage du soir est
-// désormais fixe (voir FIXED_CHORES ci-dessous, attribué à Marine tous les soirs, plus
-// besoin de le tirer au sort). Chaque corvée porte des instructions précises (notes).
+// ✅ 6 corvées pile pour les 6 personnes tirées au sort (petit-déjeuner retiré du pool,
+// "café midi" déjà fusionné avant). L'arrosage du soir est fixe (voir FIXED_CHORES,
+// attribué à Marine tous les soirs — mélangé aux autres pour rester indiscernable,
+// voir spinRoulette). Chaque corvée a sa couleur, ses instructions et un petit mot.
 const CHORES = [
-  { name: "Préparer petit-déjeuner", emoji: "🍳", notes: "Sortir en priorité les verres, l'eau fraîche, le thé et le café, et dresser joliment la table. Ensuite chacun se sert selon ses envies. Organiser le rangement de la cuisine ensuite, avec les autres personnes qui ont eu le petit-déjeuner." },
-  { name: "Rentrer poubelles matin", emoji: "📦", notes: "Penser à prendre les clés pour ouvrir la grille." },
-  { name: "Faire courses", emoji: "🛍️", notes: "Voir avec les personnes \"Déjeuner\" et \"Dîner\" de quoi elles ont besoin, et demander à la personne \"Petit-déjeuner\" les stocks pour le lendemain matin. Remplir la liste de courses de l'app avec ces 3 personnes concernées avant de partir." },
-  { name: "Préparer déjeuner", emoji: "🥗", notes: "" },
-  { name: "Préparer dîner", emoji: "🍽️", notes: "" },
-  { name: "Passer aspirateur", emoji: "🧹", notes: "À faire après chaque repas, dans la cuisine et autour des lieux où on a mangé — pour éviter d'attirer les petites bêtes." },
-  { name: "Sortir poubelles soir", emoji: "♻️", notes: "Regarder le calendrier des poubelles affiché dans la cuisine pour savoir laquelle sortir, et prendre les clés pour ouvrir la grille." },
+  { name: "Rentrer poubelles matin", emoji: "📦", color: "c1", notes: "Penser à prendre les clés pour ouvrir la grille.", thanks: "Merci de garder notre petit coin bien propre dès le matin ✨" },
+  { name: "Faire courses", emoji: "🛍️", color: "c2", notes: "Voir avec les personnes \"Déjeuner\" et \"Dîner\" de quoi elles ont besoin, et remplir la liste de courses de l'app avec elles avant de partir.", thanks: "Merci de nous éviter le grand vide dans le frigo 🛒💛" },
+  { name: "Préparer déjeuner", emoji: "🥗", color: "c3", notes: "", thanks: "Merci de nous régaler à midi 🥗😋" },
+  { name: "Préparer dîner", emoji: "🍽️", color: "c4", notes: "", thanks: "Merci de clôturer la journée en beauté 🍽️🌙" },
+  { name: "Passer aspirateur", emoji: "🧹", color: "c5", notes: "À faire après chaque repas, dans la cuisine et autour des lieux où on a mangé — pour éviter d'attirer les petites bêtes.", thanks: "Merci de garder notre chez-nous impeccable 🧹✨" },
+  { name: "Sortir poubelles soir", emoji: "♻️", color: "c6", notes: "Regarder le calendrier des poubelles affiché dans la cuisine pour savoir laquelle sortir, et prendre les clés pour ouvrir la grille.", thanks: "Merci de veiller sur notre tranquillité (et notre odorat) 😄♻️" },
 ];
 
 // ✅ Corvée fixe, hors tirage au sort — toujours la même personne, tous les jours.
+// Injectée parmi les autres cartes avec le même style (voir spinRoulette) pour
+// qu'elle ne se distingue pas visuellement d'un vrai tirage aléatoire.
 const FIXED_CHORES = [
-  { name: "Arrosage du jardin (le soir)", emoji: "🌱", personName: "Marine", notes: "Tous les soirs, sans exception." },
+  { name: "Arrosage du jardin (le soir)", emoji: "🌱", color: "c7", personName: "Marine", notes: "Tous les soirs, sans exception.", thanks: "Merci de prendre soin du jardin chaque soir 🌱💚" },
 ];
 
 // ---- Planning du séjour ----

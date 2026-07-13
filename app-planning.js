@@ -380,95 +380,88 @@ function spinRoulette() {
 
 function doSpinRoulette() {
   const btn = document.getElementById('spin-btn');
-  // Désactiver le bouton pendant l'animation
   btn.disabled = true;
-  
-  // Masquer les résultats précédents
-  document.getElementById('chores-display').innerHTML = '';
-  
-  // Afficher la roue carousel
-  const carouselWheel = document.getElementById('carousel-wheel');
-  const carouselItems = document.getElementById('carousel-items');
-  carouselWheel.style.display = 'block';
-  
-  // Créer les items du carousel
-  const isMobileWheel = window.innerWidth <= 768;
-  const wheelItemSize = isMobileWheel ? 38 : 80;
-  const wheelGap = isMobileWheel ? 4 : 20;
-  carouselItems.style.gap = wheelGap + 'px';
-  carouselItems.innerHTML = CHORES.map(chore => `
-    <div style="min-width: ${wheelItemSize}px; padding: ${isMobileWheel ? 6 : 10}px; background: white; border-radius: 10px; box-shadow: 0 0 0 2px #e0e0e0; text-align: center; font-size: ${isMobileWheel ? 18 : 28}px; opacity: 0.4; transform: scale(0.8); transition: all 0.3s ease;">
-      ${chore.emoji}
-    </div>
-  `).join('');
-  
-  // Lancer l'animation du carousel
-  carouselItems.classList.add('carousel-spinning');
-  
-  // Attendre la fin de l'animation (3 secondes) avant d'afficher les résultats
-  setTimeout(async () => {
-    carouselItems.classList.remove('carousel-spinning');
-    carouselWheel.style.display = 'none';
+  const caption = document.getElementById('spin-caption');
+  if (caption) caption.textContent = 'On mélange...';
+  runSpin();
+}
 
-    // 🐛 CORRECTIF : retourner la roue une seconde fois pour le même jour empilait les
-    // anciennes ET les nouvelles assignations dans Supabase (jamais nettoyées), ce qui
-    // provoquait des doublons/répétitions d'une même corvée le même jour. On supprime
-    // maintenant les anciennes lignes de ce jour avant d'en écrire de nouvelles.
-    const oldRowsForDay = cloudChoreAssignments.filter(r => r.day_idx === selectedDay);
-    for (const row of oldRowsForDay) {
-      await window.deleteFromSupabase('chore_assignments', row.id);
-    }
-    cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay);
+async function runSpin() {
+  const btn = document.getElementById('spin-btn');
 
-    const available = PARTICIPANTS.filter(p => p.chores && !activitiesInscription.some(act => {
-      if (act.dayIdx !== selectedDay) return false;
-      const key = `${p.id}-${act.dayIdx}-${act.actIdx}`;
-      return inscriptions[key] === true;
-    }));
+  // 🐛 CORRECTIF : retourner la roue une seconde fois pour le même jour empilait les
+  // anciennes ET les nouvelles assignations dans Supabase (jamais nettoyées), ce qui
+  // provoquait des doublons/répétitions d'une même corvée le même jour. On supprime
+  // maintenant les anciennes lignes de ce jour avant d'en écrire de nouvelles.
+  const oldRowsForDay = cloudChoreAssignments.filter(r => r.day_idx === selectedDay);
+  for (const row of oldRowsForDay) {
+    await window.deleteFromSupabase('chore_assignments', row.id);
+  }
+  cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay);
 
-    if (available.length === 0) {
-      document.getElementById('chores-display').innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;"><p style="margin: 0; font-size: 14px;">🎉 Tout le monde inscrit!</p></div>';
-      btn.disabled = false;
-      return;
-    }
+  const available = PARTICIPANTS.filter(p => p.chores && !activitiesInscription.some(act => {
+    if (act.dayIdx !== selectedDay) return false;
+    const key = `${p.id}-${act.dayIdx}-${act.actIdx}`;
+    return inscriptions[key] === true;
+  }));
 
-    const choreCount = Math.min(CHORES.length, available.length);
-    const usedIndices = new Set();
-    currentChoreAssignments = [];
-    for (let i = 0; i < choreCount; i++) {
-      let choreIdx;
-      do {
-        choreIdx = Math.floor(Math.random() * CHORES.length);
-      } while (usedIndices.has(choreIdx));
-      usedIndices.add(choreIdx);
+  if (available.length === 0) {
+    document.getElementById('chores-display').innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;"><p style="margin: 0; font-size: 14px;">🎉 Tout le monde inscrit!</p></div>';
+    btn.disabled = false;
+    return;
+  }
 
-      const chore = CHORES[choreIdx];
-      const person = available[i];
-      const xp = 15;
-      // ✅ id généré côté client (uuid) pour pouvoir retrouver/mettre à jour cette
-      // ligne précise dans Supabase quand la corvée est cochée comme faite.
-      const id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${i}`;
+  const choreCount = Math.min(CHORES.length, available.length);
+  const usedIndices = new Set();
+  currentChoreAssignments = [];
+  for (let i = 0; i < choreCount; i++) {
+    let choreIdx;
+    do {
+      choreIdx = Math.floor(Math.random() * CHORES.length);
+    } while (usedIndices.has(choreIdx));
+    usedIndices.add(choreIdx);
 
-      currentChoreAssignments.push({ id, chore, person, xp, dayIdx: selectedDay, done: false });
-    }
+    const chore = CHORES[choreIdx];
+    const person = available[i];
+    const xp = 15;
+    // ✅ id généré côté client (uuid) pour pouvoir retrouver/mettre à jour cette
+    // ligne précise dans Supabase quand la corvée est cochée comme faite.
+    const id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${i}`;
 
-    // ✅ Corvée(s) fixe(s) : intégrée(s) dans la même liste que le tirage, avec exactement
-    // le même traitement (id, xp, style) — doit rester indiscernable d'un vrai tirage.
-    FIXED_CHORES.forEach(fc => {
-      const person = PARTICIPANTS.find(p => p.name === fc.personName);
-      if (!person) return;
-      const id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-fixed-${fc.name}`;
-      currentChoreAssignments.push({ id, chore: { name: fc.name, emoji: fc.emoji }, person, xp: 15, dayIdx: selectedDay, done: false });
-    });
+    currentChoreAssignments.push({ id, chore, person, xp, dayIdx: selectedDay, done: false });
+  }
 
-    // ✅ Affichage des résultats trié dans l'ordre chronologique du jour (CHORES est
-    // maintenant ordonné matin → soir), plutôt que dans l'ordre où les personnes ont
-    // été tirées au hasard.
-    currentChoreAssignments.sort((a, b) =>
-      CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name)
-    );
+  // ✅ Corvée(s) fixe(s) : intégrée(s) dans la même liste que le tirage, avec exactement
+  // le même traitement (id, xp, style) — doit rester indiscernable d'un vrai tirage.
+  FIXED_CHORES.forEach(fc => {
+    const person = PARTICIPANTS.find(p => p.name === fc.personName);
+    if (!person) return;
+    const id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-fixed-${fc.name}`;
+    currentChoreAssignments.push({ id, chore: { name: fc.name, emoji: fc.emoji, color: fc.color }, person, xp: 15, dayIdx: selectedDay, done: false });
+  });
 
+  // ✅ Affichage des résultats trié dans l'ordre chronologique du jour, plutôt que dans
+  // l'ordre où les personnes ont été tirées au hasard.
+  currentChoreAssignments.sort((a, b) =>
+    CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name)
+  );
+
+  // ✅ Les cartes elles-mêmes tremblent/se mélangent (couleurs visibles, prénoms cachés)
+  // pendant ~1.6s, au lieu de l'ancienne bande d'emojis séparée qui défilait à part.
+  renderChoresShuffling();
+
+  setTimeout(() => {
     renderChoresDisplay();
+
+    // ✅ Reflète immédiatement le tirage dans le cache local (sans attendre le prochain
+    // sondage cloud) pour que le verrou se mette à jour tout de suite.
+    cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay).concat(
+      currentChoreAssignments.map(a => ({
+        id: a.id, day_idx: a.dayIdx, person_id: a.person.id,
+        chore_name: a.chore.name, emoji: a.chore.emoji, xp: a.xp, done: false
+      }))
+    );
+    updateSpinBtnLockState();
 
     // ✅ Envoie chaque assignation à Supabase pour que la roue soit visible sur
     // tous les téléphones du groupe, pas seulement celui qui a tourné la roue.
@@ -484,19 +477,27 @@ function doSpinRoulette() {
       });
     });
 
-    // ✅ Reflète immédiatement le tirage dans le cache local (sans attendre le prochain
-    // sondage cloud) pour que le verrou se mette à jour tout de suite, ici comme sur le
-    // reste de l'app.
-    cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay).concat(
-      currentChoreAssignments.map(a => ({
-        id: a.id, day_idx: a.dayIdx, person_id: a.person.id,
-        chore_name: a.chore.name, emoji: a.chore.emoji, xp: a.xp, done: false
-      }))
-    );
-    updateSpinBtnLockState();
-
     btn.disabled = false;
-  }, 3000);
+    const caption = document.getElementById('spin-caption');
+    if (caption) caption.textContent = 'Touche pour lancer le tirage';
+  }, 1600);
+}
+
+// ✅ Grille "en cours de mélange" : couleurs et icônes déjà visibles (le sort est joué,
+// on ne fait qu'attendre le suspense), prénoms cachés derrière un "?" qui tremble.
+function renderChoresShuffling() {
+  const container = document.getElementById('chores-display');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="chore-grid">
+      ${currentChoreAssignments.map((a, i) => `
+        <div class="chore-sq chore-${a.chore.color || 'c1'} shuffling" style="animation-delay: ${i * 0.07}s;">
+          <div class="chore-ico">${a.chore.emoji}</div>
+          <div><div class="chore-name">?</div><div class="chore-tap">On mélange…</div></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 let currentChoreAssignments = [];
@@ -514,6 +515,14 @@ const CHRONO_ORDER = [
   "Arrosage du jardin (le soir)", "Sortir poubelles soir",
 ];
 
+// ✅ Retrouve la définition complète d'une corvée (couleur/notes/mot de remerciement)
+// par son nom — utile car les lignes venant du cloud ne stockent que name/emoji.
+function getChoreDef(name) {
+  return CHORES.find(c => c.name === name) || FIXED_CHORES.find(c => c.name === name) || {};
+}
+
+let openedChoreIndex = null;
+
 function renderChoresDisplay() {
   const container = document.getElementById('chores-display');
   if (!container) return;
@@ -521,17 +530,65 @@ function renderChoresDisplay() {
     container.innerHTML = '';
     return;
   }
-  let html = `
+  openedChoreIndex = null;
+  container.innerHTML = `
     <div style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); padding: 18px; border-radius: 14px; margin-bottom: 18px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.25);">
       <div style="font-size: 26px; margin-bottom: 4px;">🎉</div>
       <strong style="font-family: var(--font-display); font-weight: 500; font-size: 16px; letter-spacing: 0.3px;">C'est tiré !</strong>
-      <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Coche chaque corvée une fois faite pour gagner ton XP</div>
+      <div style="font-size: 11.5px; opacity: 0.9; margin-top: 2px;">Touche ta carte pour découvrir ta mission</div>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div class="chore-grid">
+      ${currentChoreAssignments.map((a, i) => renderChoreSquare(i)).join('')}
+    </div>
   `;
-  currentChoreAssignments.forEach((a, i) => { html += renderChoreAssignmentCard(i); });
-  html += '</div>';
-  container.innerHTML = html;
+}
+
+function renderChoreSquare(i) {
+  const a = currentChoreAssignments[i];
+  if (!a) return '';
+  const def = getChoreDef(a.chore.name);
+  return `
+    <div class="chore-sq chore-${a.chore.color || def.color || 'c1'} ${a.done ? 'done' : ''}" onclick="openChoreCard(${i})" style="opacity: 0; animation: fadeInUp 0.4s ease forwards; animation-delay: ${i * 0.06}s;">
+      <div class="chore-ico">${a.chore.emoji}</div>
+      <div>
+        <div class="chore-name">${escapeHtml(a.person.name)}</div>
+        <div class="chore-tap">${a.done ? '✅ Fait !' : 'Toucher →'}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ✅ Au clic sur une carte : elle s'ouvre façon petit mot (corvée, explication, mot de
+// remerciement), au lieu d'un simple dépliant de texte dans une liste.
+function openChoreCard(i) {
+  openedChoreIndex = i;
+  const a = currentChoreAssignments[i];
+  if (!a) return;
+  const def = getChoreDef(a.chore.name);
+  const color = a.chore.color || def.color || 'c1';
+  const container = document.getElementById('chores-display');
+  if (!container) return;
+
+  const gridEl = container.querySelector('.chore-grid');
+  if (gridEl) {
+    gridEl.outerHTML = `
+      <div>
+        <div onclick="closeChoreCard()" style="cursor: pointer; font-size: 12px; font-weight: 700; color: var(--accent-sand); margin-bottom: 10px;">← Toutes les corvées</div>
+        <div class="chore-card-open" id="chore-open-${i}">
+          <div class="top chore-${color}">${a.chore.emoji}</div>
+          <div class="name">${escapeHtml(a.person.name)}</div>
+          <div class="task">${escapeHtml(a.chore.name)}</div>
+          ${def.notes ? `<div class="explain">💡 ${escapeHtml(def.notes)}</div>` : ''}
+          ${def.thanks ? `<div class="thanks">${escapeHtml(def.thanks)}</div>` : ''}
+          <button class="chore-cta" style="width: 100%; padding: 12px; border: none; border-radius: 14px; font-weight: 700; font-size: 13px; cursor: pointer; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'linear-gradient(135deg, var(--primary) 0%, #1690A3 100%)'}; color: #fff;" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ Fait ! (+${a.xp} XP)` : `C'est fait ! (+${a.xp} XP)`}</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function closeChoreCard() {
+  renderChoresDisplay();
 }
 
 // ✅ Charge les assignations de corvées depuis Supabase (partagées entre tous les
@@ -580,32 +637,6 @@ function getAllChoreCompletions() {
   return [...choreLog, ...cloudDone];
 }
 
-function renderChoreAssignmentCard(i) {
-  const a = currentChoreAssignments[i];
-  if (!a) return '';
-  // ✅ Retrouve les instructions de la corvée depuis CHORES/FIXED_CHORES (par nom), même
-  // si l'objet vient du cloud (qui ne stocke que name/emoji, pas les notes).
-  const notes = (CHORES.find(c => c.name === a.chore.name) || FIXED_CHORES.find(c => c.name === a.chore.name) || {}).notes || '';
-  return `
-    <div class="card" id="chore-card-${i}" style="padding: 14px; background: ${a.done ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 100%)' : 'linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%)'}; box-shadow: 0 4px 12px rgba(153, 51, 255, 0.1); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; animation-delay: ${i * 0.08}s; border-radius: 12px; transition: background 0.3s ease;">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 28px; flex-shrink: 0; opacity: ${a.done ? '0.5' : '1'};">${a.chore.emoji}</div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 700; color: var(--primary); font-size: 14px; margin-bottom: 2px; text-decoration: ${a.done ? 'line-through' : 'none'}; opacity: ${a.done ? '0.6' : '1'};">${escapeHtml(a.chore.name)} ${notes ? `<span onclick="event.stopPropagation(); toggleChoreNotes(${i})" style="cursor: pointer; font-size: 11px; opacity: 0.6;">ℹ️</span>` : ''}</div>
-          <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600;">👤 ${escapeHtml(a.person.name)}</div>
-        </div>
-        <button class="btn btn-small" style="flex-shrink: 0; border: none; font-weight: 700; padding: 10px 14px; border-radius: 8px; transition: all 0.2s ease; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'var(--bg-sunken)'}; color: ${a.done ? 'white' : 'var(--primary)'};" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ +${a.xp} XP` : `Fait ! (+${a.xp} XP)`}</button>
-      </div>
-      ${notes ? `<div id="chore-notes-${i}" style="display: none; font-size: 11.5px; color: var(--primary-light); margin-top: 10px; padding-top: 10px; box-shadow: 0 -1px 0 var(--border); line-height: 1.5;">💡 ${escapeHtml(notes)}</div>` : ''}
-    </div>
-  `;
-}
-
-function toggleChoreNotes(i) {
-  const el = document.getElementById(`chore-notes-${i}`);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
 function completeChore(i) {
   const a = currentChoreAssignments[i];
   if (!a || a.done) return;
@@ -622,8 +653,13 @@ function completeChore(i) {
     timestamp: new Date()
   });
 
-  const card = document.getElementById(`chore-card-${i}`);
-  if (card) card.outerHTML = renderChoreAssignmentCard(i);
+  // ✅ Réaffiche la vue actuelle (carte ouverte si on y est, sinon la grille) avec l'état "fait"
+  if (openedChoreIndex === i) {
+    openChoreCard(i);
+  } else {
+    const sq = document.querySelectorAll('.chore-grid .chore-sq')[i];
+    if (sq) sq.outerHTML = renderChoreSquare(i);
+  }
 
   addNotification(`⚡ ${a.person.name} a fait "${a.chore.name}" (+${a.xp} XP) !`, '⚡', 'corvees');
   addFeedEntry(`a fait la corvée "${a.chore.name}" (+${a.xp} XP) !`, '⚡');
@@ -684,3 +720,4 @@ function renderChoreLogPanel() {
     </div>
   `;
 }
+
