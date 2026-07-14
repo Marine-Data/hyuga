@@ -586,7 +586,10 @@ async function loadFromSupabaseCloud() {
         creator: item.creator,
         location: item.location,
         description: item.description || '',
-        timestamp: item.timestamp || new Date(),
+        // ✅ Priorité à la date explicite envoyée par l'app (item.timestamp), qui est
+        // la vraie date de publication — created_at (géré par la base) en repli
+        // seulement pour les très vieilles photos publiées avant ce correctif.
+        timestamp: item.timestamp || item.created_at || new Date(),
         tags: item.tags || [],
         likes: item.likes || [],
         comments: item.comments || []
@@ -663,7 +666,10 @@ async function loadFromSupabaseCloud() {
             emoji: n.emoji || '📌',
             type: n.type || 'general',
             refId: n.ref_id || null,
-            timestamp: n.created_at || new Date(),
+            // ✅ Priorité à la date explicite envoyée par l'app (n.timestamp), qui est
+            // la vraie date d'origine — created_at (géré par la base) en repli
+            // seulement pour les très vieilles notifications d'avant ce correctif.
+            timestamp: n.timestamp || n.created_at || new Date(),
             read: n.author_id === (currentUser ? currentUser.id : null) // ✅ Ses propres notifs sont déjà "vues"
           });
         }
@@ -770,7 +776,7 @@ function saveAllData() {
         proofs: ch.proofs || {},
         likes: ch.likes || [],
         comments: ch.comments || [],
-        timestamp: ch.timestamp
+        timestamp: ch.timestamp instanceof Date ? ch.timestamp.toISOString() : ch.timestamp
       }).catch(err => console.error('Sync Supabase échouée:', err));
     });
 
@@ -791,7 +797,11 @@ function saveAllData() {
         image_url: imgSrc,
         tags: item.tags || [],
         likes: item.likes || [],
-        comments: item.comments || []
+        comments: item.comments || [],
+        // 🐛 CORRECTIF : jamais envoyée jusqu'ici — sans cette date explicite, la
+        // photo affichait "maintenant" à chaque rechargement au lieu de sa vraie
+        // date/heure de publication (visible différemment pour chacun, à chaque fois).
+        timestamp: item.timestamp instanceof Date ? item.timestamp.toISOString() : item.timestamp
       }).catch(err => console.error('Sync Supabase échouée:', err));
     });
     
@@ -805,7 +815,7 @@ function saveAllData() {
         text: entry.message,
         emoji: entry.emoji,
         data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [] }),
-        timestamp: entry.timestamp
+        timestamp: entry.timestamp instanceof Date ? entry.timestamp.toISOString() : entry.timestamp
       }).catch(err => console.error('Sync Supabase échouée:', err));
     });
     
@@ -1750,7 +1760,11 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
       emoji: notif.emoji,
       type: notif.type,
       ref_id: refId,
-      author_id: currentUser ? currentUser.id : null
+      author_id: currentUser ? currentUser.id : null,
+      // 🐛 CORRECTIF : jamais envoyée jusqu'ici — sans cette date explicite, une
+      // notification affichait "maintenant" à chaque rechargement (25s, autre
+      // téléphone...) au lieu de sa vraie date/heure d'origine.
+      timestamp: notif.timestamp instanceof Date ? notif.timestamp.toISOString() : notif.timestamp
     }).catch(err => console.error('Sync Supabase échouée:', err));
   }
 }
