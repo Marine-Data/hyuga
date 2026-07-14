@@ -289,7 +289,11 @@ async function completeSecretMissionInfo() {
   showNotification(`🕵️ Mission accomplie ! +${todaySecretMission.xp} XP`, 'success');
   if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
   renderSecretMission();
-  if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+  // 🐛 CORRECTIF : refreshSecretMissionXpCache() recharge le cache ET redessine le
+  // classement/HUD une fois à jour — appeler renderHomeLeaderboard() seul ici
+  // affichait l'ancien total, sans la mission qu'on vient de valider.
+  if (typeof refreshSecretMissionXpCache === 'function') refreshSecretMissionXpCache();
+  if (typeof renderHomeHud === 'function') renderHomeHud();
 }
 
 async function completeSecretMissionAction(inputEl) {
@@ -312,7 +316,10 @@ async function completeSecretMissionAction(inputEl) {
     showNotification(`🕵️ Mission accomplie ! +${todaySecretMission.xp} XP`, 'success');
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
     renderSecretMission();
-    if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+    // 🐛 CORRECTIF : idem que pour la validation texte — on rafraîchit le cache
+    // des XP de missions secrètes avant de redessiner classement/HUD.
+    if (typeof refreshSecretMissionXpCache === 'function') refreshSecretMissionXpCache();
+    if (typeof renderHomeHud === 'function') renderHomeHud();
   } catch (err) {
     console.error('Échec upload mission secrète:', err);
     if (progressEl) progressEl.textContent = '❌ Échec, réessaie.';
@@ -480,7 +487,12 @@ function resetAllChoreAssignments() {
     }
     cloudChoreAssignments = [];
     currentChoreAssignments = [];
-    choreLog = choreLog.filter(() => false);
+    // 🐛 CORRECTIF : choreLog.filter(() => false) effaçait TOUT l'historique local,
+    // y compris l'XP des tâches du jour de départ (toggleDepartureTask, app-planning.js)
+    // qui partage ce même tableau et n'a rien à voir avec le Grand Tirage des corvées.
+    // On ne garde que les entrées "Départ : ..." et on retire uniquement celles des
+    // vraies corvées.
+    choreLog = choreLog.filter(entry => String(entry.choreName || '').startsWith('Départ : '));
     if (typeof renderChoresDisplay === 'function') renderChoresDisplay();
     if (typeof updateSpinBtnLockState === 'function') updateSpinBtnLockState();
     saveAllData();
