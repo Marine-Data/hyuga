@@ -306,7 +306,7 @@ function toggleTresorItem(id) {
   }).catch(err => console.error('Sync trésor échouée:', err));
 
   if (nowFound) {
-    addNotification(`🗺️ ${currentUser.name} a trouvé "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor');
+    addNotification(`🗺️ ${currentUser.name} a trouvé "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
     addFeedEntry(`a trouvé un trésor : "${item.item}" (+${item.xp} XP) !`, '🗺️');
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
   }
@@ -345,7 +345,7 @@ async function uploadTresorPhoto(id, inputEl) {
       photo_url: publicUrl
     }).catch(err => console.error('Sync trésor échouée:', err));
 
-    addNotification(`🗺️📸 ${currentUser.name} a trouvé "${item.item}" avec une photo à l'appui (+${item.xp} XP) !`, '🗺️', 'tresor');
+    addNotification(`🗺️📸 ${currentUser.name} a trouvé "${item.item}" avec une photo à l'appui (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
     addFeedEntry(`a trouvé un trésor avec une photo : "${item.item}" (+${item.xp} XP) !`, '🗺️');
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
 
@@ -381,7 +381,7 @@ function renderTresor() {
 
   treasureHuntItems.forEach(item => {
     html += `
-      <div class="card" style="padding: 12px; margin-bottom: 10px; background: ${item.found ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%)' : 'var(--bg-sunken)'}; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); opacity: ${item.found ? 0.9 : 1};">
+      <div class="card" id="tresor-item-${item.id}" style="padding: 12px; margin-bottom: 10px; background: ${item.found ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%)' : 'var(--bg-sunken)'}; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); opacity: ${item.found ? 0.9 : 1};">
         <div style="display: flex; gap: 12px; align-items: center;">
           <input type="checkbox" ${item.found ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
           <span style="font-size: 20px;">${item.emoji || '🗺️'}</span>

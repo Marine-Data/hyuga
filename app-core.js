@@ -1697,6 +1697,7 @@ function renderNotifications() {
     }
     else if (n.type === 'feed') navAction = "switchTab('feed');";
     else if (n.type === 'challenge') navAction = n.refId ? `openChallengeNotification(${n.refId});` : "switchTab('challenges');";
+    else if (n.type === 'tresor') navAction = n.refId ? `openTresorNotification(${n.refId});` : "switchTab('challenges'); switchQuestPanel('tresor');";
     else if (n.type === 'shopping') navAction = "switchTab('shopping');";
     else if (n.type === 'planning') navAction = "switchTab('planning');";
     else if (n.type === 'corvees') navAction = "switchTab('corvees');";
@@ -1728,6 +1729,18 @@ function openGalleryNotification(itemId, openComments = false) {
   }, 100);
 }
 
+// ✅ Depuis une notification de Trésor trouvé : ouvre Défis > Trésor et défile
+// jusqu'à l'objet précis concerné.
+function openTresorNotification(itemId) {
+  toggleNotifications();
+  switchTab('challenges');
+  switchQuestPanel('tresor');
+  setTimeout(() => {
+    const el = document.getElementById(`tresor-item-${itemId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
+}
+
 // ✅ Depuis une notification de Défi relevé : ouvre Défis et déplie directement la
 // carte du défi concerné, au lieu d'atterrir sur la liste générale.
 function openChallengeNotification(challengeId) {
@@ -1749,3 +1762,4 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
+
