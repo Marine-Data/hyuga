@@ -1125,6 +1125,11 @@ function getTodayProverb() {
 }
 
 function maybeShowProverbCrawl() {
+  // ✅ Pas le jour de l'installation : la personne est déjà en train de découvrir
+  // l'app et de renseigner ses infos (onboarding) — lui montrer aussi le générique
+  // le même jour fait doublon, ce n'est pas agréable.
+  if (!localStorage.getItem('saraillon_onboarding_seen')) return;
+
   const todayStr = new Date().toDateString();
   const lastShown = localStorage.getItem('saraillon_proverb_last_shown');
   if (lastShown === todayStr) return; // déjà vu aujourd'hui sur cet appareil
@@ -1133,6 +1138,14 @@ function maybeShowProverbCrawl() {
   document.getElementById('proverb-crawl-body').textContent = proverb.text;
   document.getElementById('proverb-crawl-origin').textContent = `— ${proverb.origin} —`;
   document.getElementById('proverb-crawl-overlay').style.display = 'block';
+  document.getElementById('proverb-crawl-next-btn').style.display = 'none';
+
+  // ✅ Le texte défile puis reste figé (lisible) — le bouton "Suivant" n'apparaît
+  // qu'une fois l'animation terminée, pour laisser le temps de lire avant de fermer.
+  setTimeout(() => {
+    const btn = document.getElementById('proverb-crawl-next-btn');
+    if (btn) btn.style.display = 'block';
+  }, 3400);
 
   localStorage.setItem('saraillon_proverb_last_shown', todayStr);
 }
