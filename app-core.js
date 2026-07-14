@@ -300,10 +300,6 @@ async function enterMainApp() {
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
       safe(refreshSecretMissionXpCache);
-      // 🐛 CORRECTIF : renderHomeHud() (le compteur "🏆 X XP" affiché sur l'accueil)
-      // manquait de ce cycle de rafraîchissement — ton propre total XP pouvait rester
-      // figé sur l'écran d'accueil tant que tu ne changeais pas d'onglet.
-      safe(renderHomeHud);
     }, 25000);
   }
 
@@ -615,7 +611,13 @@ async function loadFromSupabaseCloud() {
           emoji: entry.emoji,
           timestamp: entry.timestamp,
           likes: parsedData.likes || [],
-          comments: parsedData.comments || []
+          comments: parsedData.comments || [],
+          // 🐛 CORRECTIF : refType/refId n'étaient ni envoyés ni relus depuis Supabase,
+          // donc le lien "Voir →" du fil d'activité (renderFeed) disparaissait dès que
+          // la page rechargeait ou que le polling 25s re-fetchait le fil. On les stocke
+          // dans le même blob JSON que likes/comments (pas de colonne dédiée nécessaire).
+          refType: parsedData.refType || null,
+          refId: parsedData.refId || null
         };
       });
     }
@@ -818,7 +820,10 @@ function saveAllData() {
         user_name: entry.user,
         text: entry.message,
         emoji: entry.emoji,
-        data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [] }),
+        // 🐛 CORRECTIF : refType/refId n'étaient jamais envoyés vers Supabase — le lien
+        // "Voir →" du fil d'activité (renderFeed) n'existait donc que le temps de la
+        // session en cours, avant le premier rechargement ou le premier polling 25s.
+        data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [], refType: entry.refType || null, refId: entry.refId || null }),
         timestamp: entry.timestamp instanceof Date ? entry.timestamp.toISOString() : entry.timestamp
       }).catch(err => console.error('Sync Supabase échouée:', err));
     });
@@ -1886,4 +1891,3 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
-
