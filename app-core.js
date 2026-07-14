@@ -499,16 +499,6 @@ function loadAllData() {
   });
 
   updateNotifBadge();
-
-  // ✅ Réinitialisation unique des avatars (photos mélangées entre profils).
-  // Chaque personne pourra ré-uploader la sienne. Ne s'exécute qu'une fois.
-  if (!localStorage.getItem('avatarsResetV1')) {
-    Object.keys(personalsData).forEach(id => {
-      if (personalsData[id]) personalsData[id].avatar = null;
-    });
-    localStorage.setItem('avatarsResetV1', '1');
-    saveAllData();
-  }
 }
 
 // 🌐 Load data from Supabase (async)
@@ -1822,4 +1812,3 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
-
