@@ -266,7 +266,7 @@ function renderSecretMission() {
       ` : `
         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
           📷 Ajouter la preuve en photo
-          <input type="file" accept="image/*" capture="environment" style="display: none;" onchange="completeSecretMissionAction(this)">
+          <input type="file" accept="image/*" style="display: none;" onchange="completeSecretMissionAction(this)">
         </label>
         <span id="secret-mission-progress" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
       `}

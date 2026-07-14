@@ -245,7 +245,7 @@ function renderTripRecap() {
         </div>
       ` : ''}
       <div style="margin-top: 10px; font-size: 11px; color: var(--primary-light); font-style: italic;">Merci pour ce séjour, à très vite pour le prochain 🏝️</div>
-      <button class="btn" onclick="exportTripSouvenir()" style="width: 100%; margin-top: 14px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none;">📖 Télécharger le souvenir du séjour</button>
+      <button class="btn btn-cta" onclick="exportTripSouvenir()" style="width: 100%; margin-top: 14px;">📖 Télécharger le souvenir du séjour</button>
     </div>
   `;
 }
@@ -399,7 +399,7 @@ function renderTresor() {
           <div style="margin-top: 10px;">
             <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 6px 10px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
               📷 Ajouter une photo-preuve
-              <input type="file" accept="image/*" capture="environment" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
+              <input type="file" accept="image/*" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
             </label>
             <span id="tresor-progress-${item.id}" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
           </div>

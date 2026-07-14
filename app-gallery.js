@@ -105,7 +105,7 @@ function renderGallery() {
         ${item.type === 'image'
           ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
           : `<video src="${item.src}" controls playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
-        <div class="ig-location-badge">📍 ${escapeHtml(item.location)}</div>
+        ${item.location ? `<div class="ig-location-badge">📍 ${escapeHtml(item.location)}</div>` : ''}
       </div>
 
       <!-- Barre d'actions SOUS la photo -->
@@ -164,7 +164,9 @@ function uploadGallery() {
   const location = document.getElementById('gallery-location').value;
   const desc = document.getElementById('gallery-desc').value;
   
-  if (!input.files[0] || !location) { showNotification('Remplis les champs!', 'error'); return; }
+  // ✅ Seule la photo/vidéo est obligatoire — le lieu, la description et les tags
+  // restent possibles mais ne doivent jamais bloquer un envoi rapide et simple.
+  if (!input.files[0]) { showNotification('Choisis une photo ou vidéo !', 'error'); return; }
   
   // Récupérer les tags cochés
   const tags = [];
