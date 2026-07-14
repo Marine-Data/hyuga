@@ -198,9 +198,23 @@ function computeXpLeaderboard() {
     });
   });
   // ✅ L'XP des corvées accomplies compte aussi dans le classement global
-  choreLog.forEach(entry => {
-    if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15);
-  });
+  // 🐛 CORRECTIF : on lisait uniquement choreLog (historique local à CET appareil),
+  // donc les corvées cochées par les autres participantes (ou sur un autre appareil)
+  // n'apparaissaient jamais dans le classement. cloudChoreAssignments (rempli par
+  // loadChoreAssignmentsCloud, rafraîchi toutes les 25s) reflète TOUTES les corvées
+  // "done" de tout le groupe, y compris les tiennes une fois synchronisées — on
+  // n'utilise donc plus choreLog ici pour éviter aussi de compter deux fois tes
+  // propres corvées (une fois via choreLog local, une fois via le cloud).
+  if (typeof cloudChoreAssignments !== 'undefined' && Array.isArray(cloudChoreAssignments)) {
+    cloudChoreAssignments.filter(r => r.done).forEach(r => {
+      if (totals[r.person_id] !== undefined) totals[r.person_id] += (r.xp || 15);
+    });
+  } else {
+    // Filet de sécurité si cloudChoreAssignments n'est pas encore chargé
+    choreLog.forEach(entry => {
+      if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15);
+    });
+  }
   // 🐛 CORRECTIF : l'XP des missions secrètes (secretMissionXpCache, rempli par
   // refreshSecretMissionXpCache) n'était jamais additionné ici — les missions secrètes
   // rapportaient de l'XP en base mais il n'apparaissait jamais dans le classement.
@@ -422,4 +436,3 @@ function addChallengeComment(id) {
     }
   }
 }
-
