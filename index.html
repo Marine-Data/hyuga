@@ -1017,19 +1017,33 @@ window.deleteFromSupabase = async (table, id) => {
 };
 </script>
 
-<!-- Données statiques du séjour (participants, planning, corvées, avatars par défaut, quêtes) -->
-<script src="./saraillon-data.js"></script>
+  <!-- Données statiques et tous les scripts de l'application -->
+  <script src="./saraillon-data.js"></script>
+  <script src="./app-core.js"></script>
+  <script src="./app-planning.js"></script>
+  <script src="./app-challenges.js"></script>
+  <script src="./app-activities.js"></script>
+  <script src="./app-gallery.js"></script>
+  <script src="./app-social.js"></script>
+  <script src="./app-misc.js"></script>
+  <script src="./app-anim.js"></script>
+  <script src="./app-features.js"></script>
+  <script src="./app-init.js"></script>
 
-<script src="./app-core.js"></script>
-<script src="./app-planning.js"></script>
-<script src="./app-challenges.js"></script>
-<script src="./app-activities.js"></script>
-<script src="./app-gallery.js"></script>
-<script src="./app-social.js"></script>
-<script src="./app-misc.js"></script>
-<script src="./app-anim.js"></script>
-<script src="./app-features.js"></script>
-<script src="./app-init.js"></script>
+  <!-- Enregistrement du Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function(registration) {
+            console.log('Service Worker enregistré avec succès :', registration);
+          })
+          .catch(function(error) {
+            console.log('Échec de l\'enregistrement du Service Worker :', error);
+          });
+      });
+    }
+  </script>
 
 </body>
 </html>
