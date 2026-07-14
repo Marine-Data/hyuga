@@ -1,4 +1,4 @@
-    :root {
+:root {
       /* SARAILLON — AMBIANCE MÉDITERRANÉE (refonte) */
       --primary: #0c2f3a;           /* Encre marine profonde, texte principal */
       --primary-soft: #0e7a90;      /* Eau profonde, texte secondaire */
@@ -212,6 +212,17 @@
       color: white;
       box-shadow: 0 6px 16px rgba(29, 95, 168, 0.25);
       transform: scale(1.05);
+    }
+
+    /* 🐛 CORRECTIF : #headerAvatarBtn a la classe .btn-header (comme les autres boutons
+       d'en-tête) et héritait donc du dégradé bleu au survol/tap — sur mobile, l'état
+       :hover reste souvent actif après un tap, donnant l'impression d'un cercle bleu
+       permanent autour de la photo de profil. La photo n'a besoin que de son anneau
+       or (box-shadow inline), pas d'un fond au survol. */
+    #headerAvatarBtn:hover {
+      background: transparent;
+      box-shadow: 0 0 0 2px var(--accent-gold, #f4b942);
+      transform: none;
     }
 
     .notif-badge {
