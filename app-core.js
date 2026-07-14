@@ -1689,7 +1689,12 @@ function renderNotifications() {
     // ✅ Quand on connaît l'élément précis concerné (refId), on y va directement au
     // lieu de juste ouvrir l'onglet général — avant, une notif "X a commenté ta photo"
     // ouvrait la Galerie mais fallait chercher soi-même la bonne photo.
-    if (n.type === 'gallery') navAction = n.refId ? `openGalleryNotification(${n.refId});` : "switchTab('gallery');";
+    if (n.type === 'gallery') {
+      // ✅ Un like mène juste à la photo ; un commentaire ou une mention doit aussi
+      // ouvrir le modal des commentaires, sinon on ne voit jamais le commentaire lui-même.
+      const isComment = /comment|mentionné/i.test(n.message);
+      navAction = n.refId ? `openGalleryNotification(${n.refId}, ${isComment});` : "switchTab('gallery');";
+    }
     else if (n.type === 'feed') navAction = "switchTab('feed');";
     else if (n.type === 'challenge') navAction = n.refId ? `openChallengeNotification(${n.refId});` : "switchTab('challenges');";
     else if (n.type === 'shopping') navAction = "switchTab('shopping');";
@@ -1709,14 +1714,17 @@ function renderNotifications() {
 }
 
 // ✅ Depuis une notification de Galerie (like/commentaire/mention) : ouvre la Galerie
-// en mode Fil et défile jusqu'à la photo précise concernée.
-function openGalleryNotification(itemId) {
+// en mode Fil, défile jusqu'à la photo précise concernée, et ouvre directement le
+// modal des commentaires si la notif concerne un commentaire ou une mention — sinon
+// on n'aurait retrouvé que la photo, pas le commentaire lui-même.
+function openGalleryNotification(itemId, openComments = false) {
   toggleNotifications();
   switchTab('gallery');
   if (typeof setGalleryViewMode === 'function') setGalleryViewMode('feed');
   setTimeout(() => {
     const el = document.getElementById(`gal-item-${itemId}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (openComments) setTimeout(() => toggleGalleryComments(itemId), 350);
   }, 100);
 }
 
@@ -1741,4 +1749,3 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
-
