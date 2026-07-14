@@ -300,6 +300,10 @@ async function enterMainApp() {
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
       safe(refreshSecretMissionXpCache);
+      // 🐛 CORRECTIF : renderHomeHud() (le compteur "🏆 X XP" affiché sur l'accueil)
+      // manquait de ce cycle de rafraîchissement — ton propre total XP pouvait rester
+      // figé sur l'écran d'accueil tant que tu ne changeais pas d'onglet.
+      safe(renderHomeHud);
     }, 25000);
   }
 
