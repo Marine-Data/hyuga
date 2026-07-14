@@ -220,6 +220,7 @@ let _lastKnownRank = null; // ✅ pour détecter un dépassement au classement X
 
 function renderHomeLeaderboard() {
   const container = document.getElementById('classement-content');
+  if (typeof renderProfileXpStats === 'function') { try { renderProfileXpStats(); } catch (e) {} }
   if (!container) return;
 
   const ranking = computeXpLeaderboard();

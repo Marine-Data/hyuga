@@ -17,6 +17,31 @@ function showAllProfiles() {
   renderAllProfiles();
 }
 
+// ✅ XP total + rang, calculés à la volée depuis computeXpLeaderboard() (la même
+// source que le Classement de l'onglet Défis) — jamais une valeur figée séparée qui
+// pourrait se désynchroniser.
+function renderProfileXpStats() {
+  const el = document.getElementById('profile-xp-stats');
+  if (!el) return;
+  if (typeof computeXpLeaderboard !== 'function') { el.innerHTML = ''; return; }
+
+  const ranking = computeXpLeaderboard();
+  const myRankIdx = ranking.findIndex(r => r.p.id === currentUser.id);
+  const myXp = myRankIdx !== -1 ? ranking[myRankIdx].xp : 0;
+  const myRank = myRankIdx !== -1 ? myRankIdx + 1 : '—';
+
+  el.innerHTML = `
+    <div style="flex: 1; background: var(--bg-raised); border-radius: 12px; box-shadow: 0 2px 8px rgba(12,47,58,0.08); text-align: center; padding: 10px 4px;">
+      <div style="font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--primary);">${myXp}</div>
+      <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary-light);">XP total</div>
+    </div>
+    <div onclick="switchTab('challenges'); setTimeout(() => switchQuestPanel('classement'), 60);" style="cursor: pointer; flex: 1; background: var(--bg-raised); border-radius: 12px; box-shadow: 0 2px 8px rgba(12,47,58,0.08); text-align: center; padding: 10px 4px;">
+      <div style="font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--primary);">#${myRank}</div>
+      <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary-light);">Rang</div>
+    </div>
+  `;
+}
+
 function renderMyProfile() {
   const user = currentUser;
   const personalData = personalsData[user.id] || {};
@@ -40,9 +65,14 @@ function renderMyProfile() {
         <span style="position: absolute; bottom: 4px; right: 4px; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-gold); border: 3px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 15px;">📷</span>
       </div>
       <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
-      <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 24px;">
+      <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 18px;">
         "${officialBio || 'Aventurier(e) du groupe'}"
       </div>
+
+      <!-- ✅ XP et rang : n'apparaissaient nulle part sur le profil (seulement dans
+           Défis > Classement), donnant l'impression que rien ne se passait en validant
+           un défi. Recalculé à chaque affichage du profil, jamais figé. -->
+      <div id="profile-xp-stats" style="display: flex; gap: 10px; margin-bottom: 24px;"></div>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
         <button class="btn btn-primary" onclick="showMyProfileTab('infos')" id="btn-infos" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2);">📋 Infos</button>
@@ -64,6 +94,7 @@ function renderMyProfile() {
   `;
   
   document.getElementById('my-profile-content').innerHTML = html;
+  renderProfileXpStats();
   showMyProfileTab('infos');
 }
 
