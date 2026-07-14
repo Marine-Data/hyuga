@@ -173,6 +173,10 @@ function toggleDepartureTask(dayIdx, actIdx) {
 
   saveAllData();
   renderDepartureDayChecklist(dayIdx);
+  // 🐛 CORRECTIF : cocher une tâche du jour de départ ajoutait bien l'XP à choreLog,
+  // mais rien ne redessinait le classement — il fallait attendre le prochain cycle
+  // de polling (25s) ou changer d'onglet pour voir le total mis à jour.
+  if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
 }
 
 function renderActivityDetailCard(dayIdx, activity, actIdx) {

@@ -198,29 +198,41 @@ function computeXpLeaderboard() {
     });
   });
   // ✅ L'XP des corvées accomplies compte aussi dans le classement global
-  // 🐛 CORRECTIF : on lisait uniquement choreLog (historique local à CET appareil),
-  // donc les corvées cochées par les autres participantes (ou sur un autre appareil)
-  // n'apparaissaient jamais dans le classement. cloudChoreAssignments (rempli par
-  // loadChoreAssignmentsCloud, rafraîchi toutes les 25s) reflète TOUTES les corvées
-  // "done" de tout le groupe, y compris les tiennes une fois synchronisées — on
-  // n'utilise donc plus choreLog ici pour éviter aussi de compter deux fois tes
-  // propres corvées (une fois via choreLog local, une fois via le cloud).
+  // 🐛 CORRECTIF (v2) : on lisait uniquement choreLog (historique local à CET
+  // appareil), donc les corvées cochées par les autres participantes n'apparaissaient
+  // jamais. Mon premier correctif est passé à cloudChoreAssignments SEUL pour éviter
+  // un doublon — mais ça a cassé l'XP des tâches du jour de départ (toggleDepartureTask,
+  // app-planning.js), qui ne sont JAMAIS synchronisées vers Supabase et n'existent
+  // donc que dans choreLog. On fusionne maintenant les deux sources, en dédoublonnant
+  // par (personne + jour + nom de corvée) pour ne pas compter deux fois une corvée du
+  // Grand Tirage déjà comptée via le cloud.
+  const cloudChoreKeys = new Set();
   if (typeof cloudChoreAssignments !== 'undefined' && Array.isArray(cloudChoreAssignments)) {
     cloudChoreAssignments.filter(r => r.done).forEach(r => {
       if (totals[r.person_id] !== undefined) totals[r.person_id] += (r.xp || 15);
-    });
-  } else {
-    // Filet de sécurité si cloudChoreAssignments n'est pas encore chargé
-    choreLog.forEach(entry => {
-      if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15);
+      cloudChoreKeys.add(`${r.person_id}-${r.day_idx}-${r.chore_name}`);
     });
   }
+  choreLog.forEach(entry => {
+    const key = `${entry.personId}-${entry.dayIdx}-${entry.choreName}`;
+    if (cloudChoreKeys.has(key)) return; // déjà compté via le cloud, on évite le doublon
+    if (totals[entry.personId] !== undefined) totals[entry.personId] += (entry.xp || 15);
+  });
   // 🐛 CORRECTIF : l'XP des missions secrètes (secretMissionXpCache, rempli par
   // refreshSecretMissionXpCache) n'était jamais additionné ici — les missions secrètes
   // rapportaient de l'XP en base mais il n'apparaissait jamais dans le classement.
   if (typeof secretMissionXpCache === 'object' && secretMissionXpCache) {
     Object.keys(secretMissionXpCache).forEach(pid => {
       if (totals[pid] !== undefined) totals[pid] += secretMissionXpCache[pid];
+    });
+  }
+  // 🐛 CORRECTIF : la chasse au trésor n'était jamais comptée dans le classement.
+  // treasureHuntItems.found_by stocke un NOM (currentUser.name), pas un person_id —
+  // il faut le faire correspondre au bon participant avant d'additionner son XP.
+  if (typeof treasureHuntItems !== 'undefined' && Array.isArray(treasureHuntItems)) {
+    treasureHuntItems.filter(i => i.found && i.found_by).forEach(i => {
+      const person = PARTICIPANTS.find(p => p.name === i.found_by);
+      if (person && totals[person.id] !== undefined) totals[person.id] += (i.xp || 10);
     });
   }
   return PARTICIPANTS
@@ -436,3 +448,4 @@ function addChallengeComment(id) {
     }
   }
 }
+
