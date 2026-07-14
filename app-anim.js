@@ -101,7 +101,7 @@ const MedAnim = (() => {
     spawn(`<div class="anim-shootingstar" style="top:${topPct}%; left:${leftPct}%;"></div>`, 1800);
   }
 
-  return { dolphin, seagull, boat, plane, fish, confetti, shootingStar, prefersReduced };
+  return { dolphin, seagull, boat, plane, fish, confetti, shootingStar, prefersReduced, spawn };
 })();
 
 // ✅ Point d'entrée global court, appelé depuis les complétions de corvées,
@@ -265,14 +265,14 @@ function rainOverlay() {
     const duration = (0.9 + Math.random() * 0.5).toFixed(2);
     drops += `<div class="anim-rain-drop" style="left:${left}%; animation-delay:${delay}s; animation-duration:${duration}s;"></div>`;
   }
-  spawn(drops, 2200);
+  MedAnim.spawn(drops, 2200);
 }
 MedAnim.rain = rainOverlay;
 
 // 🏆 Éclat doré quand l'utilisateur dépasse quelqu'un au classement XP
 function rankOvertakeFlash() {
   if (MedAnim.prefersReduced) return;
-  spawn('<div class="anim-rankflash"></div>', 1500);
+  MedAnim.spawn('<div class="anim-rankflash"></div>', 1500);
 }
 MedAnim.rankFlash = rankOvertakeFlash;
 
@@ -294,7 +294,6 @@ function lanterns() {
       </svg>
     </div>`;
   }
-  spawn(html, 6300);
+  MedAnim.spawn(html, 6300);
 }
 MedAnim.lanterns = lanterns;
-
