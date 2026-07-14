@@ -110,6 +110,9 @@ function confirmDeleteChallenge(id) {
   const label = ch.isQuest ? (ch.questLabel || 'cette quête') : 'ce challenge';
   showConfirmation(`Supprimer ${label} ? Cette action est définitive.`, () => {
     challenges = challenges.filter(c => c.id !== id);
+    if (window.supabaseReady) {
+      window.deleteFromSupabase('challenges', id).catch(err => console.error('Suppression cloud échouée:', err));
+    }
     saveAllData();
     renderChallenges();
     showNotification('🗑️ Supprimé', 'success');

@@ -289,6 +289,7 @@ async function enterMainApp() {
       const safe = (fn) => { try { fn(); } catch (e) { /* écran non actif, ignoré */ } };
       safe(renderFeed);
       safe(renderGallery);
+      safe(renderChallenges);
       safe(renderInscriptions);
       safe(renderPolls);
       safe(renderExpenses);
@@ -540,6 +541,41 @@ async function loadFromSupabaseCloud() {
     }
     
     // Load gallery
+    // ✅ Charge l'état partagé des défis (qui a relevé quoi, preuves, likes,
+    // commentaires) depuis Supabase — corrige le fait que ça ne se synchronisait
+    // jamais entre appareils. Le texte/xp restent ceux du code (saraillon-data.js),
+    // seul l'état "vécu" vient du cloud, pour ne jamais perdre un défi créé en local
+    // avant que la synchro n'existe.
+    const challengesData = await window.loadFromSupabase('challenges');
+    if (challengesData && challengesData.length > 0) {
+      challengesData.forEach(row => {
+        const existing = challenges.find(c => c.id === row.id);
+        if (existing) {
+          existing.completedBy = row.completed_by || [];
+          existing.proofs = row.proofs || {};
+          existing.likes = row.likes || [];
+          existing.comments = row.comments || [];
+        } else {
+          // Défi créé par quelqu'un d'autre, jamais vu sur cet appareil.
+          challenges.push({
+            id: row.id,
+            creator: row.creator,
+            isQuest: row.is_quest || false,
+            questLabel: row.quest_label || null,
+            xp: row.xp || 20,
+            description: row.description || '',
+            media: row.media || null,
+            completedBy: row.completed_by || [],
+            proofs: row.proofs || {},
+            likes: row.likes || [],
+            comments: row.comments || [],
+            timestamp: row.timestamp || new Date()
+          });
+        }
+      });
+      console.log(`✅ Loaded ${challengesData.length} challenges state from Supabase`);
+    }
+
     const galleryData = await window.loadFromSupabase('gallery_items');
     if (galleryData && galleryData.length > 0) {
       console.log(`✅ Loaded ${galleryData.length} gallery items from Supabase`);
@@ -718,6 +754,26 @@ function saveAllData() {
       }
     });
     
+    // ✅ Sync challenges — jusqu'ici, qui a relevé quoi/likes/commentaires n'était
+    // JAMAIS synchronisé entre appareils (contrairement à la galerie/corvées) : un
+    // commentaire posté par quelqu'un d'autre pouvait ne jamais apparaître ailleurs.
+    challenges.forEach(ch => {
+      window.syncToSupabase('challenges', {
+        id: ch.id,
+        creator: ch.creator || null,
+        is_quest: ch.isQuest || false,
+        quest_label: ch.questLabel || null,
+        xp: ch.xp || 20,
+        description: ch.description || '',
+        media: ch.media || null,
+        completed_by: ch.completedBy || [],
+        proofs: ch.proofs || {},
+        likes: ch.likes || [],
+        comments: ch.comments || [],
+        timestamp: ch.timestamp
+      }).catch(err => console.error('Sync Supabase échouée:', err));
+    });
+
     // Sync gallery items
     galleryItems.forEach(item => {
       const imgSrc = item.src || item.image || '';
@@ -1812,3 +1868,4 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
+
