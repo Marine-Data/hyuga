@@ -635,6 +635,7 @@ async function loadFromSupabaseCloud() {
             message: n.message,
             emoji: n.emoji || '📌',
             type: n.type || 'general',
+            refId: n.ref_id || null,
             timestamp: n.created_at || new Date(),
             read: n.author_id === (currentUser ? currentUser.id : null) // ✅ Ses propres notifs sont déjà "vues"
           });
@@ -1617,12 +1618,13 @@ function showNotification(msg, type = 'success') {
   setTimeout(() => notif.remove(), 3000);
 }
 
-function addNotification(msg, emoji = '📌', type = 'general', sync = true) {
+function addNotification(msg, emoji = '📌', type = 'general', sync = true, refId = null) {
   const notif = {
     id: Date.now(),
     message: msg,
     emoji: emoji,
     type: type,
+    refId: refId,
     timestamp: new Date(),
     read: false
   };
@@ -1641,6 +1643,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true) {
       message: notif.message,
       emoji: notif.emoji,
       type: notif.type,
+      ref_id: refId,
       author_id: currentUser ? currentUser.id : null
     }).catch(err => console.error('Sync Supabase échouée:', err));
   }
@@ -1683,9 +1686,12 @@ function toggleNotifications() {
 function renderNotifications() {
   const html = notifications.slice(0, 30).map(n => {
     let navAction = "switchTab('home');";
-    if (n.type === 'gallery') navAction = "switchTab('gallery');";
+    // ✅ Quand on connaît l'élément précis concerné (refId), on y va directement au
+    // lieu de juste ouvrir l'onglet général — avant, une notif "X a commenté ta photo"
+    // ouvrait la Galerie mais fallait chercher soi-même la bonne photo.
+    if (n.type === 'gallery') navAction = n.refId ? `openGalleryNotification(${n.refId});` : "switchTab('gallery');";
     else if (n.type === 'feed') navAction = "switchTab('feed');";
-    else if (n.type === 'challenge') navAction = "switchTab('challenges');";
+    else if (n.type === 'challenge') navAction = n.refId ? `openChallengeNotification(${n.refId});` : "switchTab('challenges');";
     else if (n.type === 'shopping') navAction = "switchTab('shopping');";
     else if (n.type === 'planning') navAction = "switchTab('planning');";
     else if (n.type === 'corvees') navAction = "switchTab('corvees');";
@@ -1700,6 +1706,32 @@ function renderNotifications() {
   `;
   }).join('');
   document.getElementById('notif-content').innerHTML = html || '<div style="padding: 20px; text-align: center; color: var(--primary-light);">Aucune notification</div>';
+}
+
+// ✅ Depuis une notification de Galerie (like/commentaire/mention) : ouvre la Galerie
+// en mode Fil et défile jusqu'à la photo précise concernée.
+function openGalleryNotification(itemId) {
+  toggleNotifications();
+  switchTab('gallery');
+  if (typeof setGalleryViewMode === 'function') setGalleryViewMode('feed');
+  setTimeout(() => {
+    const el = document.getElementById(`gal-item-${itemId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+// ✅ Depuis une notification de Défi relevé : ouvre Défis et déplie directement la
+// carte du défi concerné, au lieu d'atterrir sur la liste générale.
+function openChallengeNotification(challengeId) {
+  toggleNotifications();
+  switchTab('challenges');
+  setTimeout(() => {
+    const el = document.getElementById(`ch-detail-${challengeId}`);
+    if (el) {
+      el.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el.style.display === 'none' && typeof toggleChallengeDetail === 'function') toggleChallengeDetail(challengeId);
+    }
+  }, 100);
 }
 
 function markRead(id) {

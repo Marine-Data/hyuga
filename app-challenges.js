@@ -161,7 +161,7 @@ function submitChallengeProof(id, inputEl) {
     ch.proofs[currentUser.id] = { type: isVideo ? 'video' : 'image', src, timestamp: new Date().toISOString() };
 
     const xp = ch.xp || 20;
-    addNotification(`🏆 ${currentUser.name} a relevé "${(ch.questLabel || ch.creator)}" (+${xp} XP) !`, '🏆', 'challenge');
+    addNotification(`🏆 ${currentUser.name} a relevé "${(ch.questLabel || ch.creator)}" (+${xp} XP) !`, '🏆', 'challenge', true, ch.id);
     addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP), preuve à l'appui !`, '🏆');
     showNotification(`🏆 Défi relevé ! +${xp} XP`, 'success');
     celebrateWithConfetti();
@@ -417,3 +417,4 @@ function addChallengeComment(id) {
     }
   }
 }
+

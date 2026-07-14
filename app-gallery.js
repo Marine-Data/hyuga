@@ -228,10 +228,10 @@ function likeGalleryItem(itemId) {
   
   if (idx > -1) {
     item.likes.splice(idx, 1);
-    addNotification(`vous a retiré un ❤️`, '❌', 'gallery');
+    addNotification(`vous a retiré un ❤️`, '❌', 'gallery', true, item.id);
   } else {
     item.likes.push(currentUser.id);
-    addNotification(`❤️ ${currentUser.name} a aimé votre photo`, '❤️', 'gallery');
+    addNotification(`❤️ ${currentUser.name} a aimé votre photo`, '❤️', 'gallery', true, item.id);
     addFeedEntry(`a aimé la photo de ${item.creator} (${item.location})`, '❤️');
   }
   
@@ -331,7 +331,7 @@ function addGalleryComment(itemId) {
   });
   
   saveAllData();
-  addNotification(`💬 ${currentUser.name} a commenté la photo`, '💬', 'gallery');
+  addNotification(`💬 ${currentUser.name} a commenté la photo`, '💬', 'gallery', true, item.id);
   addFeedEntry(`a commenté la photo de ${item.creator}: "${input.value.substring(0, 40)}"`, '💬');
   
   // Fermer et réouvrir pour voir le nouveau commentaire
@@ -372,7 +372,7 @@ function checkGalleryMentions() {
       if (c.mentions && c.mentions.includes(currentUser.id) && c.userId !== currentUser.id) {
         const cId = String(c.id || `${item.id}-${c.timestamp}`);
         if (!notifiedIds.includes(cId)) {
-          addNotification(`${c.user} vous a mentionné(e) dans un commentaire: "${c.text.substring(0, 40)}"`, '🔔', 'gallery', false);
+          addNotification(`${c.user} vous a mentionné(e) dans un commentaire: "${c.text.substring(0, 40)}"`, '🔔', 'gallery', false, item.id);
           newlyNotified.push(cId);
         }
       }
