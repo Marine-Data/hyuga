@@ -179,7 +179,7 @@ function saveMyProfile() {
   
   saveAllData();
   showNotification('✅ Profil mis à jour !', 'success');
-  addFeedEntry(`👤 ${currentUser.name} a mis à jour son profil`, '✨');
+  addFeedEntry(`👤 ${currentUser.name} a mis à jour son profil`, '✨', 'profile', currentUser.id);
   renderMyProfile();
   if (typeof renderHeaderAvatar === 'function') renderHeaderAvatar();
 }
@@ -385,13 +385,15 @@ function showPublicProfileFromFeed(userId) {
 }
 
 // ============== ENHANCED FEED ==============
-function addFeedEntry(message, emoji = '📌') {
+function addFeedEntry(message, emoji = '📌', refType = null, refId = null) {
   const entry = {
     id: Date.now(),
     message,
     user: currentUser.name,
     userId: currentUser.id,
     emoji,
+    refType,
+    refId: refId !== null ? String(refId) : null,
     timestamp: new Date(),
     likes: [],
     comments: []
@@ -434,6 +436,7 @@ function renderFeed() {
               <div style="font-size: 11px; background: var(--bg-sunken); padding: 4px 8px; border-radius: 4px; color: var(--primary-light); font-weight: 500;">${timeStr}</div>
             </div>
             <div style="font-size: 13px; color: var(--primary); margin-bottom: 10px; line-height: 1.4;">${escapeHtml(entry.message)}</div>
+            ${entry.refType ? `<div onclick="openFeedEntry('${entry.refType}', '${escapeHtml(String(entry.refId))}')" style="cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--accent-sand); margin: -4px 0 10px;">Voir →</div>` : ''}
             <div style="display: flex; gap: 12px;">
               <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️ ${entry.likes.length}</button>
               <button onclick="commentFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); font-weight: 500; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)'; this.style.color='var(--primary)';" onmouseout="this.style.transform='scale(1)'; this.style.color='var(--primary-light)';">💬 ${entry.comments.length}</button>

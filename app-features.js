@@ -307,7 +307,7 @@ function toggleTresorItem(id) {
 
   if (nowFound) {
     addNotification(`🗺️ ${currentUser.name} a trouvé "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
-    addFeedEntry(`a trouvé un trésor : "${item.item}" (+${item.xp} XP) !`, '🗺️');
+    addFeedEntry(`a trouvé un trésor : "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', item.id);
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
   }
 
@@ -346,7 +346,7 @@ async function uploadTresorPhoto(id, inputEl) {
     }).catch(err => console.error('Sync trésor échouée:', err));
 
     addNotification(`🗺️📸 ${currentUser.name} a trouvé "${item.item}" avec une photo à l'appui (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
-    addFeedEntry(`a trouvé un trésor avec une photo : "${item.item}" (+${item.xp} XP) !`, '🗺️');
+    addFeedEntry(`a trouvé un trésor avec une photo : "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', item.id);
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
 
     renderTresor();

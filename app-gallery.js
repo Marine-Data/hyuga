@@ -204,8 +204,8 @@ function uploadGallery() {
       input.value = '';
       document.getElementById('gallery-tags-checkboxes').innerHTML = '';
       
-      addNotification('📸 Nouvelle preuve versée au dossier.', '📸', 'gallery');
-      addFeedEntry(`a partagé une photo: "${location}"`, '📸');
+      addNotification('📸 Nouvelle preuve versée au dossier.', '📸', 'gallery', true, item.id);
+      addFeedEntry(`a partagé une photo: "${location}"`, '📸', 'gallery', item.id);
     };
 
     if (isImage) {
@@ -232,7 +232,7 @@ function likeGalleryItem(itemId) {
   } else {
     item.likes.push(currentUser.id);
     addNotification(`❤️ ${currentUser.name} a aimé votre photo`, '❤️', 'gallery', true, item.id);
-    addFeedEntry(`a aimé la photo de ${item.creator} (${item.location})`, '❤️');
+    addFeedEntry(`a aimé la photo de ${item.creator} (${item.location})`, '❤️', 'gallery', item.id);
   }
   
   saveAllData();
@@ -332,7 +332,7 @@ function addGalleryComment(itemId) {
   
   saveAllData();
   addNotification(`💬 ${currentUser.name} a commenté la photo`, '💬', 'gallery', true, item.id);
-  addFeedEntry(`a commenté la photo de ${item.creator}: "${input.value.substring(0, 40)}"`, '💬');
+  addFeedEntry(`a commenté la photo de ${item.creator}: "${input.value.substring(0, 40)}"`, '💬', 'gallery-comment', item.id);
   
   // Fermer et réouvrir pour voir le nouveau commentaire
   closeGalleryCommentsModal(itemId);

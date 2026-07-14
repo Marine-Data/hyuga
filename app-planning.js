@@ -678,7 +678,7 @@ function completeChore(i) {
   }
 
   addNotification(`⚡ ${a.person.name} a fait "${a.chore.name}" (+${a.xp} XP) !`, '⚡', 'corvees');
-  addFeedEntry(`a fait la corvée "${a.chore.name}" (+${a.xp} XP) !`, '⚡');
+  addFeedEntry(`a fait la corvée "${a.chore.name}" (+${a.xp} XP) !`, '⚡', 'corvees');
   showNotification(`⚡ Tirage réussi ! +${a.xp} XP`, 'success');
 
   // ✅ Marque cette corvée comme faite côté Supabase (upsert sur l'id) pour que

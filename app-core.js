@@ -1154,6 +1154,25 @@ function closeProverbCrawl() {
   document.getElementById('proverb-crawl-overlay').style.display = 'none';
 }
 
+// ✅ Depuis le fil d'activité : navigue vers l'élément précis concerné (photo,
+// commentaire, défi, trésor, activité inscrite...) plutôt que de rester sur place.
+function openFeedEntry(refType, refId) {
+  const id = parseInt(refId, 10);
+  if (refType === 'gallery') openGalleryNotification(id, false);
+  else if (refType === 'gallery-comment') openGalleryNotification(id, true);
+  else if (refType === 'challenge') openChallengeNotification(id);
+  else if (refType === 'tresor') openTresorNotification(id);
+  else if (refType === 'profile') showPublicProfile(id);
+  else if (refType === 'planning') {
+    const [dayIdx, actIdx] = String(refId).split(':').map(n => parseInt(n, 10));
+    switchTab('planning');
+    setTimeout(() => { if (typeof openPlanningDay === 'function') openPlanningDay(dayIdx); }, 100);
+  }
+  else if (refType === 'polls') switchTab('polls');
+  else if (refType === 'expenses') switchTab('expenses');
+  else if (refType === 'corvees') switchTab('corvees');
+}
+
 function renderHeaderAvatar() {
   const el = document.getElementById('headerAvatarContent');
   if (!el || !currentUser) return;
@@ -1206,7 +1225,7 @@ function renderHome() {
   feedItems.forEach(item => {
     const timeago = getTimeAgo(item.timestamp);
     html += `
-      <div style="padding: 10px 12px; background: var(--bg-sunken); border-radius: 12px; box-shadow: inset 4px 0 0 var(--accent-cyan); font-size: 13px; line-height: 1.4;">
+      <div ${item.refType ? `onclick="openFeedEntry('${item.refType}', '${escapeHtml(String(item.refId))}')" style="cursor: pointer;` : `style="`}padding: 10px 12px; background: var(--bg-sunken); border-radius: 12px; box-shadow: inset 4px 0 0 var(--accent-cyan); font-size: 13px; line-height: 1.4;">
         <strong>${item.emoji || ''} ${escapeHtml(item.user)}</strong> ${escapeHtml(item.message)}
         <div style="color: var(--primary-light); font-size: 11px; margin-top: 3px;">${timeago}</div>
       </div>

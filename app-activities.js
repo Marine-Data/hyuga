@@ -63,12 +63,12 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
     // Désinscrire
     delete inscriptions[key];
     addNotification(`❌ ${person.name} désinscrite de ${activity.nom}`, '❌', 'inscriptions');
-    addFeedEntry(`s'est désinscrite de ${activity.nom}`, '❌');
+    addFeedEntry(`s'est désinscrite de ${activity.nom}`, '❌', 'planning', `${dayIdx}:${actIdx}`);
   } else {
     // Inscrire
     inscriptions[key] = true;
     addNotification(`✍️ ${person.name} inscrite à ${activity.nom}`, '✍️', 'inscriptions');
-    addFeedEntry(`s'est inscrite à ${activity.nom}`, '✍️');
+    addFeedEntry(`s'est inscrite à ${activity.nom}`, '✍️', 'planning', `${dayIdx}:${actIdx}`);
     if (typeof MedAnim !== 'undefined') MedAnim.dolphin(); // 🐬 saut de célébration
     // ✅ Private joke : réaction spéciale quand Inès s'inscrit à une activité
     if (person.name === 'Inès') {
@@ -221,7 +221,7 @@ function createPoll() {
   renderPolls();
   closeModal('createPollModal');
   addNotification(`🗳️ ${currentUser.name} a lancé un sondage : "${question}"`, '🗳️', 'general');
-  addFeedEntry(`a lancé un sondage : "${question}"`, '🗳️');
+  addFeedEntry(`a lancé un sondage : "${question}"`, '🗳️', 'polls');
   showNotification('🗳️ Sondage lancé !', 'success');
 }
 
@@ -395,7 +395,7 @@ function createExpense() {
   closeModal('createExpenseModal');
   const payerName = PARTICIPANTS.find(p => p.id === payer)?.name || '?';
   addNotification(`💰 ${payerName} a ajouté une dépense : ${desc || ''} (${amount.toFixed(2)} €)`, '💰', 'general');
-  addFeedEntry(`a ajouté une dépense : "${desc || 'dépense'}" (${amount.toFixed(2)} €)`, '💰');
+  addFeedEntry(`a ajouté une dépense : "${desc || 'dépense'}" (${amount.toFixed(2)} €)`, '💰', 'expenses');
   showNotification('💰 Dépense ajoutée !', 'success');
 }
 

@@ -162,7 +162,7 @@ function submitChallengeProof(id, inputEl) {
 
     const xp = ch.xp || 20;
     addNotification(`🏆 ${currentUser.name} a relevé "${(ch.questLabel || ch.creator)}" (+${xp} XP) !`, '🏆', 'challenge', true, ch.id);
-    addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP), preuve à l'appui !`, '🏆');
+    addFeedEntry(`a relevé le défi ${ch.isQuest ? ch.questLabel : ''} (+${xp} XP), preuve à l'appui !`, '🏆', 'challenge', ch.id);
     showNotification(`🏆 Défi relevé ! +${xp} XP`, 'success');
     celebrateWithConfetti();
 
@@ -342,8 +342,9 @@ function createChallenge() {
       currentEditChallenge = null;
     } else {
       // Mode création
+      const newId = Date.now();
       challenges.unshift({
-        id: Date.now(),
+        id: newId,
         creator: creator.toUpperCase(),
         description: desc,
         media: media,
@@ -354,7 +355,7 @@ function createChallenge() {
         timestamp: new Date()
       });
       addNotification(`🎯 ${creator.toUpperCase()} a créé un nouveau challenge !`, '🎯', 'challenge');
-      addFeedEntry(`a créé un nouveau challenge: "${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}"`, '🎯');
+      addFeedEntry(`a créé un nouveau challenge: "${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}"`, '🎯', 'challenge', newId);
     }
 
     saveAllData();
@@ -390,7 +391,7 @@ function likeCh(id) {
     } else {
       ch.likes.push(currentUser.id);
       addNotification(`❤️ ${currentUser.name} a aimé le challenge de ${ch.creator}`, '❤️', 'challenge');
-      addFeedEntry(`a aimé le challenge de ${ch.creator}`, '❤️');
+      addFeedEntry(`a aimé le challenge de ${ch.creator}`, '❤️', 'challenge', ch.id);
     }
     saveAllData();
     renderChallenges();
@@ -413,7 +414,7 @@ function addChallengeComment(id) {
       input.value = '';
       renderChallenges();
       addNotification(`💬 ${currentUser.name} a commenté le challenge de ${ch.creator}`, '💬', 'challenge');
-      addFeedEntry(`a commenté le challenge de ${ch.creator}: "${commentText.substring(0, 40)}"`, '💬');
+      addFeedEntry(`a commenté le challenge de ${ch.creator}: "${commentText.substring(0, 40)}"`, '💬', 'challenge', ch.id);
     }
   }
 }
