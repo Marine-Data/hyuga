@@ -771,6 +771,19 @@
       </div>
     </div>
   </div>
+  <!-- ✅ PROVERBE DU JOUR — générique plein écran façon Star Wars, une fois par jour -->
+  <div id="proverb-crawl-overlay" style="display: none; position: fixed; inset: 0; z-index: 20000; background: #000; overflow: hidden;" onclick="closeProverbCrawl()">
+    <div class="proverb-stars"></div>
+    <div class="proverb-crawl-viewport">
+      <div class="proverb-crawl-text" id="proverb-crawl-text">
+        <div class="proverb-crawl-title">Proverbe du jour</div>
+        <p id="proverb-crawl-body"></p>
+        <p class="proverb-crawl-origin" id="proverb-crawl-origin"></p>
+      </div>
+    </div>
+    <div style="position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.5); font-size: 11px; letter-spacing: 1px; z-index: 2;">Toucher l'écran pour continuer</div>
+  </div>
+
   <!-- NOTIFICATIONS PANEL -->
   <div class="notif-panel" id="notifPanel">
     <div class="notif-header">

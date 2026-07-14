@@ -262,6 +262,7 @@ async function enterMainApp() {
   renderPolls();
   renderExpenses();
   showMorningWisdomIfDue(); // ✅ Message du matin (sagesse + programme du jour), une fois par jour
+  setTimeout(() => maybeShowProverbCrawl(), 900); // ✅ Proverbe du jour, une fois par jour, générique plein écran
 
   showNotification(`👋 Bienvenue ${currentUser.name}!`, 'success');
 
@@ -1111,6 +1112,33 @@ function getPersonGradient(personId) {
   const idx = PARTICIPANTS.findIndex(p => p.id === personId);
   const [c1, c2] = PERSON_DEFAULT_COLORS[(idx >= 0 ? idx : personId) % PERSON_DEFAULT_COLORS.length];
   return `linear-gradient(135deg, ${c1}, ${c2})`;
+}
+
+// ✅ Proverbe du jour : même proverbe pour tout le monde le même jour (calculé à
+// partir de la date calendaire, pas aléatoire), affiché une seule fois par jour et
+// par appareil en générique plein écran façon Star Wars.
+function getTodayProverb() {
+  const today = new Date();
+  const daysSinceEpoch = Math.floor(today.getTime() / 86400000);
+  const idx = ((daysSinceEpoch % PROVERBS.length) + PROVERBS.length) % PROVERBS.length;
+  return PROVERBS[idx];
+}
+
+function maybeShowProverbCrawl() {
+  const todayStr = new Date().toDateString();
+  const lastShown = localStorage.getItem('saraillon_proverb_last_shown');
+  if (lastShown === todayStr) return; // déjà vu aujourd'hui sur cet appareil
+
+  const proverb = getTodayProverb();
+  document.getElementById('proverb-crawl-body').textContent = proverb.text;
+  document.getElementById('proverb-crawl-origin').textContent = `— ${proverb.origin} —`;
+  document.getElementById('proverb-crawl-overlay').style.display = 'block';
+
+  localStorage.setItem('saraillon_proverb_last_shown', todayStr);
+}
+
+function closeProverbCrawl() {
+  document.getElementById('proverb-crawl-overlay').style.display = 'none';
 }
 
 function renderHeaderAvatar() {
