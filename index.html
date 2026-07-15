@@ -10,14 +10,67 @@
   <meta name="description" content="🏝️ SARAILLON - L'app ultime de gestion de séjour">
   <link rel="manifest" href="./manifest.json">
   <!-- Icône iOS "Ajouter à l'écran d'accueil" -->
-<link rel="apple-touch-icon" href="./appletouchicon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="./favicon32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="./favicon16x16.png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <!-- Favicon / icônes Chrome & Firefox -->
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
   <title>🏝️ SARAILLON ULTIMATE</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,500;0,600;1,500&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+
+<!-- ============== VERROU D'ACCÈS (code partagé) ==============
+     🔒 Petit filet de sécurité léger : évite que quelqu'un qui tombe sur le lien
+     GitHub Pages par hasard atterrisse directement dans l'app. Ce n'est PAS une
+     vraie protection (le code est visible dans le source, et quelqu'un qui appelle
+     l'API Supabase directement n'est pas bloqué par ceci) — juste un frein simple
+     pour un usage privé entre amies. -->
+<div id="accessGateOverlay" style="position: fixed; inset: 0; z-index: 999999; background: linear-gradient(160deg, #0c2f3a 0%, #164a63 100%); display: flex; align-items: center; justify-content: center; padding: 24px;">
+  <div style="width: 100%; max-width: 340px; text-align: center;">
+    <div style="font-size: 44px; margin-bottom: 12px;">🏝️</div>
+    <div style="color: #f6f3ea; font-family: var(--font-display, 'Josefin Sans', sans-serif); font-size: 22px; font-weight: 700; margin-bottom: 6px;">SARAILLON</div>
+    <div style="color: #bfe3f5; font-size: 14px; margin-bottom: 24px;">Entrez le code d'accès pour continuer</div>
+    <input id="accessGateInput" type="password" inputmode="text" autocomplete="off" placeholder="Code d'accès"
+      style="width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 12px; border: none; font-size: 16px; text-align: center; margin-bottom: 12px;">
+    <div id="accessGateError" style="color: #ff8a8a; font-size: 13px; height: 18px; margin-bottom: 8px;"></div>
+    <button id="accessGateBtn" style="width: 100%; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #f4b942, #c9821f); color: #0c2f3a; font-weight: 700; font-size: 15px; cursor: pointer;">Entrer 🌊</button>
+  </div>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'saraillon_access_granted';
+  var CODE = 'marhaba';
+  var overlay = document.getElementById('accessGateOverlay');
+
+  if (localStorage.getItem(STORAGE_KEY) === 'true') {
+    overlay.style.display = 'none';
+    return;
+  }
+
+  var input = document.getElementById('accessGateInput');
+  var errorEl = document.getElementById('accessGateError');
+  var btn = document.getElementById('accessGateBtn');
+
+  function tryUnlock() {
+    var value = (input.value || '').trim().toLowerCase();
+    if (value === CODE) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+      overlay.style.display = 'none';
+    } else {
+      errorEl.textContent = 'Code incorrect, réessaie 🙂';
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  btn.addEventListener('click', tryUnlock);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') tryUnlock();
+  });
+  setTimeout(function () { input.focus(); }, 300);
+})();
+</script>
 
 <!-- MODAL: SÉLECTION DE PROFIL -->
 <div id="modalProfileSelect" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #bfe3f5; display: none; z-index: 9999; overflow: hidden;">
@@ -1017,33 +1070,19 @@ window.deleteFromSupabase = async (table, id) => {
 };
 </script>
 
-  <!-- Données statiques et tous les scripts de l'application -->
-  <script src="./saraillon-data.js"></script>
-  <script src="./app-core.js"></script>
-  <script src="./app-planning.js"></script>
-  <script src="./app-challenges.js"></script>
-  <script src="./app-activities.js"></script>
-  <script src="./app-gallery.js"></script>
-  <script src="./app-social.js"></script>
-  <script src="./app-misc.js"></script>
-  <script src="./app-anim.js"></script>
-  <script src="./app-features.js"></script>
-  <script src="./app-init.js"></script>
+<!-- Données statiques du séjour (participants, planning, corvées, avatars par défaut, quêtes) -->
+<script src="./saraillon-data.js"></script>
 
-  <!-- Enregistrement du Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js')
-          .then(function(registration) {
-            console.log('Service Worker enregistré avec succès :', registration);
-          })
-          .catch(function(error) {
-            console.log('Échec de l\'enregistrement du Service Worker :', error);
-          });
-      });
-    }
-  </script>
+<script src="./app-core.js"></script>
+<script src="./app-planning.js"></script>
+<script src="./app-challenges.js"></script>
+<script src="./app-activities.js"></script>
+<script src="./app-gallery.js"></script>
+<script src="./app-social.js"></script>
+<script src="./app-misc.js"></script>
+<script src="./app-anim.js"></script>
+<script src="./app-features.js"></script>
+<script src="./app-init.js"></script>
 
 </body>
 </html>
