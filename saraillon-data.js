@@ -68,11 +68,9 @@ const PROVERBS = [
   { text: "L'aiguille trouée arrive pourtant à faire des trous.", origin: "Proverbe tunisien" },
   { text: "SE AN LANMEN KA LAVE LOT. (Il faut savoir s'entraider.)", origin: "Proverbe créole antillais" },
   { text: "Le bonheur n'est pas une destination, mais une manière de voyager.", origin: "Proverbe chinois" },
-  
   { text: "L'unione fa la forza. (L'union fait la force.)", origin: "Proverbe italien" },
-  
   { text: "Quand on conduit le pauvre en terre, la cloche de la paroisse est sourde.", origin: "Proverbe breton" },
-  { text: "Qui veut de belles choses doit veiller toute la nuit.", origin: "Proverbe tunisien" }
+  { text: "Qui veut de belles choses doit veiller toute la nuit.", origin: "Proverbe tunisien" },
   { text: "Celui qui sait qu'il ne sait pas, éduque-le.", origin: "Proverbe chinois" },
   { text: "Si tu ne peux pas mordre, ne montre pas tes dents.", origin: "Proverbe provençal" },
   { text: "Chi semina vento, raccoglie tempesta. (Qui sème le vent, récolte la tempête.)", origin: "Proverbe italien" },
@@ -81,7 +79,6 @@ const PROVERBS = [
   
   { text: "DEBROUYA PA PECHE. (On ne blâme pas quelqu'un qui se débrouille.)", origin: "Proverbe créole antillais" },
   { text: "Tout bonheur commence par un petit-déjeuner tranquille.", origin: "Proverbe chinois" },
-  ñ
   { text: "Can che abbaia non morde. (Chien qui aboie ne mord pas.)", origin: "Proverbe italien" },
   { text: "La queue du loup ne peut être le témoin du loup.", origin: "Proverbe algérien" },
   { text: "Plutôt la mort que la souillure.", origin: "Proverbe breton" },
