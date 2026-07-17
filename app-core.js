@@ -1891,3 +1891,4 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
+
