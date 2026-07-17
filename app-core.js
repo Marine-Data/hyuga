@@ -1289,10 +1289,17 @@ function renderHome() {
   let html = '';
   feedItems.forEach(item => {
     const timeago = getTimeAgo(item.timestamp);
+    // 🐛 CORRECTIF : la ligne était déjà cliquable techniquement (onclick présent)
+    // quand item.refType existe, mais sans AUCUN indice visuel — pas de texte,
+    // pas de flèche. Sur mobile (pas de survol), impossible de deviner que c'est
+    // tapable. On ajoute le même repère "Voir →" que dans la vue "Actualité" complète.
     html += `
       <div ${item.refType ? `onclick="openFeedEntry('${item.refType}', '${escapeHtml(String(item.refId))}')" style="cursor: pointer;` : `style="`}padding: 10px 12px; background: var(--bg-sunken); border-radius: 12px; box-shadow: inset 4px 0 0 var(--accent-cyan); font-size: 13px; line-height: 1.4;">
         <strong>${item.emoji || ''} ${escapeHtml(item.user)}</strong> ${escapeHtml(item.message)}
-        <div style="color: var(--primary-light); font-size: 11px; margin-top: 3px;">${timeago}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 3px;">
+          <div style="color: var(--primary-light); font-size: 11px;">${timeago}</div>
+          ${item.refType ? `<div style="font-size: 11px; font-weight: 700; color: var(--accent-sand);">Voir →</div>` : ''}
+        </div>
       </div>
     `;
   });
@@ -1891,4 +1898,3 @@ function markRead(id) {
   renderNotifications();
   saveAllData();
 }
-
