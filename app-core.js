@@ -243,7 +243,14 @@ async function enterMainApp() {
 
   await loadFromSupabaseCloud(); // ✅ ATTEND avant de render, plus d'écran vide
 
-  loadAllData();
+  // 🐛 CORRECTIF MAJEUR : un second loadAllData() était appelé ici juste après
+  // loadFromSupabaseCloud() — il écrasait sans fusion feed/notifications/galleryItems/
+  // shoppingList/inscriptions/challenges avec la vieille copie locale de CET appareil,
+  // annulant instantanément ce que le cloud venait de fournir. Résultat : au premier
+  // affichage, l'app montrait des données obsolètes (fil d'activité, galerie, courses...)
+  // jusqu'au prochain polling 25s. Ce second appel était redondant : currentUser,
+  // PARTICIPANTS, planningData, choreLog et departureTasksDone sont déjà chargés par le
+  // premier loadAllData() (ligne 240) et non touchés par loadFromSupabaseCloud().
   renderPlanning();
   showMyProfile();
   renderShopping();
@@ -288,6 +295,11 @@ async function enterMainApp() {
       // écrans de se rafraîchir dans le même cycle.
       const safe = (fn) => { try { fn(); } catch (e) { /* écran non actif, ignoré */ } };
       safe(renderFeed);
+      // 🐛 CORRECTIF : le mini fil d'activité de l'accueil (#home-feed) n'était rafraîchi
+      // qu'une seule fois à l'ouverture de l'app. Si on restait sur l'accueil, il ne reflétait
+      // plus jamais les nouvelles activités des autres (ni les liens cliquables ajoutés depuis) —
+      // c'est ce qui donnait l'impression que le fil d'activité "ne marche pas".
+      safe(renderHome);
       safe(renderGallery);
       safe(renderChallenges);
       safe(renderInscriptions);
@@ -1252,6 +1264,53 @@ function renderHeaderAvatar() {
   }
 }
 
+// ============== BANNIÈRE URGENCE INSCRIPTIONS ==============
+// ✅ Reprend exactement la même logique que la fonction Supabase send-inscription-reminder
+// (mêmes activités, mêmes exemptions) pour rester cohérente avec le message push envoyé
+// le même jour. Visible seulement à partir du 1er août 2026 (J-20), disparaît toute seule
+// dès que la personne connectée est inscrite partout où elle doit l'être.
+const INSCRIPTION_REMINDER_START = new Date(2026, 7, 1);
+const INSCRIPTION_ACTIVITIES = [
+  { key: 'plongee', dayIdx: 3, actIdx: 0, label: 'Plongée' },
+  { key: 'bateau', dayIdx: 4, actIdx: 0, label: 'Bateau' },
+  { key: 'viaFerrata', dayIdx: 6, actIdx: 0, label: 'Via Ferrata' },
+];
+const INSCRIPTION_EXEMPTIONS = {
+  2: ['viaFerrata', 'plongee'], // Chunfei
+  6: ['viaFerrata'], // Inès
+};
+const INSCRIPTION_EXEMPTION_NOTES = {
+  2: "Via Ferrata & Plongée c'est pas ton trip — grasse mat' + piscine au programme, on se recroise dans la journée 😄",
+  6: "Via Ferrata c'est dodo pour toi, ton activité préférée 😌 — Chunfei te tient compagnie",
+};
+
+function renderInscriptionUrgencyBanner() {
+  const container = document.getElementById('home-inscription-alert');
+  if (!container) return;
+
+  if (new Date() < INSCRIPTION_REMINDER_START) { container.innerHTML = ''; return; }
+
+  const exempt = INSCRIPTION_EXEMPTIONS[currentUser.id] || [];
+  const missing = INSCRIPTION_ACTIVITIES.filter(a => {
+    if (exempt.includes(a.key)) return false;
+    return inscriptions[`${currentUser.id}-${a.dayIdx}-${a.actIdx}`] !== true;
+  });
+
+  if (missing.length === 0) { container.innerHTML = ''; return; }
+
+  const note = INSCRIPTION_EXEMPTION_NOTES[currentUser.id];
+  container.innerHTML = `
+    <div class="card" onclick="switchTab('inscriptions')" style="cursor: pointer; padding: 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(224, 122, 150, 0.16) 0%, rgba(224, 122, 150, 0.06) 100%); box-shadow: inset 4px 0 0 var(--accent-pink); display: flex; gap: 14px; align-items: center;">
+      <img src="./flare-signal.webp" alt="" style="width: 56px; height: 56px; object-fit: contain; flex-shrink: 0;">
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-weight: 800; font-size: 13.5px; color: var(--accent-pink); margin-bottom: 4px;">🚨 Il te manque : ${missing.map(a => a.label).join(', ')}</div>
+        ${note ? `<div style="font-size: 11px; color: var(--primary-light); margin-bottom: 4px;">${escapeHtml(note)}</div>` : ''}
+        <div style="font-size: 11px; color: var(--primary-light);">Dernier jour pour t'inscrire, après c'est mort 👀 — touche pour y aller</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderHome() {
   renderHeaderAvatar();
   // Greeting
@@ -1265,6 +1324,7 @@ function renderHome() {
   renderSyncStatus();
   renderSecretMission();
   renderHomeGroupSpirit();
+  renderInscriptionUrgencyBanner();
   renderWeatherBanner();
   renderCountdownBanner();
   renderTripRecap();
