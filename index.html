@@ -665,8 +665,24 @@
           <!-- Installation : mise en avant, pas repliée -->
           <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.12) 0%, rgba(227, 185, 79, 0.04) 100%); padding: 18px; margin-bottom: 12px;">
             <div class="card-title" style="margin-bottom: 16px;">📱 Installation</div>
-            <button id="pwa-install-btn" class="btn btn-primary" onclick="installPWA()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.25); background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary);">📲 Installer l'application</button>
-            <p style="font-size: 11px; color: var(--primary-light); margin: 10px 0 0; line-height: 1.5;">Sur iPhone : bouton Partager → "Sur l'écran d'accueil". Sur Android/Chrome : le bouton apparaît automatiquement si dispo, sinon menu ⋮ → "Installer l'application".</p>
+
+            <!-- Bouton Android -->
+            <button id="pwa-install-android-btn" class="btn btn-primary" onclick="installAndroid()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(227, 185, 79, 0.25); background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: var(--primary);">🤖 Installer sur Android</button>
+            <div style="font-size: 11.5px; color: var(--primary-light); margin: 10px 0 18px; line-height: 1.7; background: rgba(255,255,255,0.5); border-radius: 10px; padding: 10px 12px;">
+              1️⃣ Touche le bouton <strong>« Installer sur Android »</strong> ci-dessus<br>
+              2️⃣ Une fenêtre s'affiche en bas de l'écran<br>
+              3️⃣ Touche <strong>« Installer »</strong> dans cette fenêtre<br>
+              <span style="opacity:0.8;">Si rien ne se passe : ouvre le menu ⋮ (en haut à droite de Chrome) puis touche « Installer l'application ».</span>
+            </div>
+
+            <!-- Bouton iOS -->
+            <button id="pwa-install-ios-btn" class="btn btn-primary" onclick="installIOS()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2); background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white;">🍏 Installer sur iPhone / iPad</button>
+            <div style="font-size: 11.5px; color: var(--primary-light); margin: 10px 0 0; line-height: 1.7; background: rgba(255,255,255,0.5); border-radius: 10px; padding: 10px 12px;">
+              1️⃣ Touche l'icône <strong>Partager</strong> ⬆️ en bas de Safari (pas ce bouton — l'icône de Safari)<br>
+              2️⃣ Fais défiler la liste et choisis <strong>« Sur l'écran d'accueil »</strong><br>
+              3️⃣ Touche <strong>« Ajouter »</strong> en haut à droite<br>
+              <span style="opacity:0.8;">⚠️ Ça ne marche que dans Safari, pas dans Chrome sur iPhone.</span>
+            </div>
           </div>
 
           <!-- Personnalisation visuelle : tous les uploads de photos/vidéo regroupés, repliés par défaut -->
