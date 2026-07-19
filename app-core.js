@@ -177,7 +177,17 @@ function urlBase64ToUint8Array(base64String) {
 async function activerNotificationsPush() {
   if (!currentUser) { showNotification('⚠️ Sélectionne ton profil d\'abord', 'error'); return; }
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    showNotification('⚠️ Notifications push non supportées sur cet appareil/navigateur', 'error');
+    // 🐛 CORRECTIF : sur iPhone, PushManager n'existe QUE si l'app a été ajoutée à
+    // l'écran d'accueil ET ouverte depuis cette icône (jamais depuis Safari directement) —
+    // l'ancien message générique ("non supportées") ne l'expliquait pas et laissait croire
+    // à un bug plutôt qu'à une étape manquante.
+    if (typeof isIOSDevice === 'function' && isIOSDevice() && !isAlreadyInstalled()) {
+      showNotification('📲 Sur iPhone, installe d\'abord l\'app (bouton 🍏 ci-dessus), puis ouvre-la depuis l\'écran d\'accueil pour activer les notifs', 'error');
+    } else if (typeof isIOSDevice === 'function' && isIOSDevice()) {
+      showNotification('⚠️ Notifications non supportées : version iOS trop ancienne (16.4 minimum requis)', 'error');
+    } else {
+      showNotification('⚠️ Notifications push non supportées sur cet appareil/navigateur', 'error');
+    }
     return;
   }
   try {
@@ -448,11 +458,13 @@ function renderPushToggleCard() {
   const el = document.getElementById('settings-push-toggle');
   if (!el) return;
   const active = !!localStorage.getItem('pushActivated');
+  const needsIOSInstallFirst = typeof isIOSDevice === 'function' && isIOSDevice() &&
+    typeof isAlreadyInstalled === 'function' && !isAlreadyInstalled() && !active;
   el.innerHTML = `
     <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderPushToggleCard, 300);" style="width: 100%; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: ${active ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)'}; color: ${active ? 'var(--primary)' : 'white'};">
       ${active ? '🔕 Désactiver les notifs push' : '🔔 Activer les notifs push'}
     </button>
-    <div style="font-size: 11px; color: var(--primary-light); margin-top: 8px; line-height: 1.5;">${active ? 'Tu recevras les rappels et alertes importantes sur ce téléphone.' : "Active pour recevoir les rappels d'inscriptions et les alertes du groupe, même app fermée."}</div>
+    ${needsIOSInstallFirst ? `<div style="font-size: 11px; color: var(--accent-pink); margin-top: 8px; line-height: 1.5; font-weight: 600;">⚠️ Sur iPhone : installe d'abord l'app (bouton 🍏 juste au-dessus) et ouvre-la depuis l'écran d'accueil, sinon ça ne marchera pas.</div>` : `<div style="font-size: 11px; color: var(--primary-light); margin-top: 8px; line-height: 1.5;">${active ? 'Tu recevras les rappels et alertes importantes sur ce téléphone.' : "Active pour recevoir les rappels d'inscriptions et les alertes du groupe, même app fermée."}</div>`}
   `;
 }
 
