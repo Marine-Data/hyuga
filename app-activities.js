@@ -64,6 +64,15 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
     delete inscriptions[key];
     addNotification(`❌ ${person.name} désinscrite de ${activity.nom}`, '❌', 'inscriptions');
     addFeedEntry(`s'est désinscrite de ${activity.nom}`, '❌', 'planning', `${dayIdx}:${actIdx}`);
+    // 🐛 CORRECTIF : syncToSupabase('inscriptions', ...) ne fait qu'un upsert — il n'y avait
+    // AUCUNE suppression correspondante ici. La ligne restait donc en base pour toujours, et
+    // au prochain rechargement (ou polling 25s), loadFromSupabaseCloud() reconstruit
+    // `inscriptions` intégralement depuis Supabase : la désinscription "revenait" toute seule.
+    if (window.supabase) {
+      window.supabase.from('inscriptions').delete()
+        .match({ person_id: personId, day_idx: dayIdx, act_idx: actIdx })
+        .then(({ error }) => { if (error) console.error('Erreur suppression inscription Supabase:', error); });
+    }
   } else {
     // Inscrire
     inscriptions[key] = true;
