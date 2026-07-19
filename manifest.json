@@ -1,7 +1,9 @@
 {
   "name": "Sarailon Ultimate",
   "short_name": "Sarailon",
-  "start_url": "/",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4A90D9",
