@@ -436,6 +436,21 @@ function switchToOtherProfile() {
 }
 
 // ============== INIT ==============
+// ✅ Même logique que le bouton déjà existant dans "Mon Profil" (activerNotificationsPush /
+// desactiverNotificationsPush), dupliquée ici pour Réglages où on s'attend naturellement
+// à trouver ce genre de préférence.
+function renderPushToggleCard() {
+  const el = document.getElementById('settings-push-toggle');
+  if (!el) return;
+  const active = !!localStorage.getItem('pushActivated');
+  el.innerHTML = `
+    <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderPushToggleCard, 300);" style="width: 100%; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: ${active ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)'}; color: ${active ? 'var(--primary)' : 'white'};">
+      ${active ? '🔕 Désactiver les notifs push' : '🔔 Activer les notifs push'}
+    </button>
+    <div style="font-size: 11px; color: var(--primary-light); margin-top: 8px; line-height: 1.5;">${active ? 'Tu recevras les rappels et alertes importantes sur ce téléphone.' : "Active pour recevoir les rappels d'inscriptions et les alertes du groupe, même app fermée."}</div>
+  `;
+}
+
 function loadAllData() {
   // ✅ On garde une copie des avatars par défaut codés en dur (photos ajoutées récemment)
   // pour ne jamais les perdre face à un vieux cache localStorage sans photo.

@@ -466,6 +466,8 @@ function renderSettings() {
   if (content) {
     content.style.display = 'block';
   }
+
+  if (typeof renderPushToggleCard === 'function') renderPushToggleCard();
 }
 
 // ✅ Ouvre/ferme un groupe de réglages repliable (Personnalisation visuelle, Données, Compte...)
