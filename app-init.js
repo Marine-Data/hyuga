@@ -8,6 +8,37 @@ window.addEventListener('load', () => {
   setTimeout(checkUpcomingActivityReminders, 2000);
 });
 
+// 🆕 Clic sur une notif alors que l'app est déjà ouverte quelque part : le service worker
+// nous prévient par ce message, on navigue directement vers l'onglet concerné.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'navigate' && event.data.tab) {
+      navigateToTabWhenReady(event.data.tab);
+    }
+  });
+}
+
+// 🆕 Clic sur une notif alors que l'app n'était pas ouverte : le service worker l'ouvre avec
+// ?openTab=xxx dans l'URL, on lit ce paramètre au démarrage.
+window.addEventListener('load', () => {
+  const openTab = new URLSearchParams(window.location.search).get('openTab');
+  if (openTab) navigateToTabWhenReady(openTab);
+});
+
+// ✅ L'app met un moment à charger le profil + les données avant que switchTab() soit
+// utilisable ; on réessaie à intervalles courts plutôt que de risquer un appel trop tôt
+// qui échouerait silencieusement (appContainer pas encore affiché, currentUser pas prêt).
+function navigateToTabWhenReady(tab, attempt) {
+  attempt = attempt || 0;
+  const ready = typeof switchTab === 'function' && typeof currentUser !== 'undefined' && currentUser &&
+    document.getElementById('appContainer') && document.getElementById('appContainer').style.display === 'block';
+  if (ready) {
+    switchTab(tab);
+  } else if (attempt < 30) {
+    setTimeout(() => navigateToTabWhenReady(tab, attempt + 1), 300);
+  }
+}
+
 // ============== PWA INSTALL PROMPT (2 boutons distincts Android / iOS) ==============
 let deferredInstallPrompt = null;
 
