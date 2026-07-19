@@ -1099,19 +1099,24 @@ window.deleteFromSupabase = async (table, id) => {
 };
 </script>
 
+<!-- 🐛 CORRECTIF : sans paramètre de version, Safari/Chrome peuvent garder ces fichiers JS
+     en cache indéfiniment — désinstaller/réinstaller l'app ne vide PAS ce cache navigateur,
+     donc une mise à jour du code pouvait rester invisible pour certains téléphones pendant
+     des jours (cause du bug "Mardi manquant" qui persistait malgré le correctif déployé).
+     ⚠️ Penser à incrémenter ce numéro (BUILD) à chaque déploiement de fichier JS modifié. -->
 <!-- Données statiques du séjour (participants, planning, corvées, avatars par défaut, quêtes) -->
-<script src="./saraillon-data.js"></script>
+<script src="./saraillon-data.js?v=5"></script>
 
-<script src="./app-core.js"></script>
-<script src="./app-planning.js"></script>
-<script src="./app-challenges.js"></script>
-<script src="./app-activities.js"></script>
-<script src="./app-gallery.js"></script>
-<script src="./app-social.js"></script>
-<script src="./app-misc.js"></script>
-<script src="./app-anim.js"></script>
-<script src="./app-features.js"></script>
-<script src="./app-init.js"></script>
+<script src="./app-core.js?v=5"></script>
+<script src="./app-planning.js?v=5"></script>
+<script src="./app-challenges.js?v=5"></script>
+<script src="./app-activities.js?v=5"></script>
+<script src="./app-gallery.js?v=5"></script>
+<script src="./app-social.js?v=5"></script>
+<script src="./app-misc.js?v=5"></script>
+<script src="./app-anim.js?v=5"></script>
+<script src="./app-features.js?v=5"></script>
+<script src="./app-init.js?v=5"></script>
 
 </body>
 </html>
