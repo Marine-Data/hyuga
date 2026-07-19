@@ -569,6 +569,10 @@ async function runSpin() {
     btn.disabled = false;
     const caption = document.getElementById('spin-caption');
     if (caption) caption.textContent = 'Touche pour lancer le tirage';
+
+    // 🆕 Petit clin d'œil coréen à chaque tirage, demandé pour accompagner le "안녕하세요"
+    // déjà présent sur l'accueil.
+    showNotification('시발 ! Tirage fait 🎡', 'success');
   }, 1600);
 }
 
