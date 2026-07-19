@@ -105,7 +105,12 @@ const FIXED_CHORES = [
 // ---- Planning du séjour ----
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de planningData,
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-const PLANNING_VERSION = 3;
+// 🐛 CORRECTIF : passé de 3 à 4 pour forcer l'invalidation du planning en cache sur les
+// téléphones qui l'avaient enregistré avant l'ajout/correction de Mardi (Balade en bateau).
+// Sans ce bump, Object.assign(planningData, parsed.planning) fusionnait l'ancien planning
+// PAR POSITION dans le tableau, donc un ancien planning à 9 jours écrasait silencieusement
+// Mardi (et tous les jours suivants, décalés) avec le contenu d'un autre jour.
+const PLANNING_VERSION = 4;
 
 const planningData = [
   { jour: "Vendredi", date: "21 août 2026", activities: [
