@@ -367,20 +367,65 @@ function dedupeChoreRows(rows) {
   return Object.values(byPerson);
 }
 
+// ============== ROTATION DU TIRAGE (qui a le droit de tirer, par jour) ==============
+// ✅ Un jour = une personne désignée pour tirer (roulement dans l'ordre des personnes
+// éligibles aux corvées), pour éviter qu'une seule personne tire tous les jours d'affilée
+// et prive les autres du geste. Après 09h00 le jour même, si elle n'a pas tiré, n'importe
+// qui peut prendre le relais. Marine (id 8) peut toujours débloquer, quel que soit le jour/l'heure.
+const CHORE_ELIGIBLE = PARTICIPANTS.filter(p => p.chores);
+const CHORE_ADMIN_ID = 8; // Marine
+
+function getDesignatedSpinner(dayIdx) {
+  if (CHORE_ELIGIBLE.length === 0) return null;
+  return CHORE_ELIGIBLE[dayIdx % CHORE_ELIGIBLE.length];
+}
+
+// ✅ Même base de date que getTripDayIndex/updateTodayPlaneBanner (21 août 2026 = jour 0)
+function getDaySpinUnlockTime(dayIdx) {
+  const t = new Date(2026, 7, 21 + dayIdx);
+  t.setHours(9, 0, 0, 0);
+  return t;
+}
+
+function isSpinOpenToEveryone(dayIdx) {
+  return new Date() >= getDaySpinUnlockTime(dayIdx);
+}
+
+function canCurrentUserSpin(dayIdx) {
+  if (currentUser.id === CHORE_ADMIN_ID) return true; // ✅ Marine débloque toujours
+  const designated = getDesignatedSpinner(dayIdx);
+  if (designated && currentUser.id === designated.id) return true;
+  return isSpinOpenToEveryone(dayIdx); // ✅ 9h passées : ouvert à tout le monde
+}
+
 // ✅ Verrouille visuellement le bouton "SPIN!" quand le jour sélectionné a déjà
 // un tirage — évite même la tentation de cliquer dessus pour rien.
 function updateSpinBtnLockState() {
   const btn = document.getElementById('spin-btn');
   if (!btn) return;
+  const caption = document.getElementById('spin-caption');
   const alreadyDrawn = cloudChoreAssignments.some(r => r.day_idx === selectedDay);
+
   if (alreadyDrawn) {
     btn.textContent = '🔒 Déjà tiré';
     btn.style.opacity = '0.55';
     btn.style.cursor = 'not-allowed';
-  } else {
+    if (caption) caption.textContent = 'Le tirage de ce jour est déjà fait';
+    return;
+  }
+
+  // 🆕 Rotation : ce n'est pas forcément le tour de la personne connectée
+  if (canCurrentUserSpin(selectedDay)) {
     btn.textContent = '🎡 SPIN!';
     btn.style.opacity = '1';
     btn.style.cursor = 'pointer';
+    if (caption) caption.textContent = 'Touche pour lancer le tirage';
+  } else {
+    const designated = getDesignatedSpinner(selectedDay);
+    btn.textContent = '⏳ Pas ton tour';
+    btn.style.opacity = '0.55';
+    btn.style.cursor = 'not-allowed';
+    if (caption) caption.textContent = designated ? `C'est au tour de ${designated.name} de tirer (à partir de 9h, ouvert à tous)` : 'En attente...';
   }
 }
 
@@ -396,6 +441,17 @@ function spinRoulette() {
     showNotification('🔒 Ce jour est déjà tiré — le résultat est verrouillé.', 'error');
     return;
   }
+
+  // 🆕 CORRECTIF : rien n'empêchait une seule personne motivée de tirer tous les
+  // jours d'affilée avant que les autres n'aient pu essayer. Chaque jour a maintenant
+  // une personne désignée (roulement), débloqué à tout le monde après 9h si elle n'a
+  // pas tiré, et Marine peut toujours débloquer manuellement.
+  if (!canCurrentUserSpin(selectedDay)) {
+    const designated = getDesignatedSpinner(selectedDay);
+    showNotification(designated ? `⏳ C'est au tour de ${designated.name} de tirer aujourd'hui !` : '⏳ Pas encore ton tour.', 'error');
+    return;
+  }
+
   doSpinRoulette();
 }
 
