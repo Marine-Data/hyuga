@@ -205,6 +205,8 @@ async function activerNotificationsPush() {
     if (ok) {
       localStorage.setItem('pushActivated', 'true');
       showNotification('🔔 Notifications push activées sur cet appareil !', 'success');
+      // 🆕 Visible dans le fil d'activité, comme une inscription ou une corvée faite.
+      if (typeof addFeedEntry === 'function') addFeedEntry('a activé les notifications 🔔', '🔔');
     } else {
       showNotification('⚠️ Erreur lors de l\'activation', 'error');
     }

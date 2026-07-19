@@ -109,12 +109,23 @@ function showIOSInstallInstructions() {
           2️⃣ Fais défiler et choisis <strong>« Sur l'écran d'accueil »</strong><br>
           3️⃣ Touche <strong>« Ajouter »</strong> en haut à droite
         </div>
-        <button onclick="document.getElementById('ios-install-modal').remove()" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#1D5FA8,#1690A3);color:#fff;font-weight:700;cursor:pointer;">J'ai compris !</button>
+        <button onclick="closeIOSInstallModal()" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#1D5FA8,#1690A3);color:#fff;font-weight:700;cursor:pointer;">J'ai compris !</button>
       </div>
     `;
     document.body.appendChild(modal);
   }
   modal.style.display = 'flex';
+}
+
+// ✅ iOS n'a aucun événement fiable équivalent à 'appinstalled' — on ne peut donc pas
+// confirmer que la personne a réellement terminé les 3 étapes. On log honnêtement
+// qu'elle a suivi les instructions, pas qu'elle a "installé" à coup sûr.
+function closeIOSInstallModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (modal) modal.remove();
+  if (typeof addFeedEntry === 'function' && typeof currentUser !== 'undefined' && currentUser) {
+    addFeedEntry('a suivi les instructions d\'installation iOS 🍏', '🍏');
+  }
 }
 
 // ✅ Les deux boutons sont visibles pour tout le monde par défaut (au cas où la détection
@@ -138,5 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('appinstalled', () => {
   showNotification('✅ Application installée !', 'success');
+  // 🆕 Visible dans le fil d'activité. Fiable sur Android (vrai événement navigateur) —
+  // iOS n'a pas d'équivalent, voir showIOSInstallInstructions() pour ce cas.
+  if (typeof addFeedEntry === 'function' && typeof currentUser !== 'undefined' && currentUser) {
+    addFeedEntry('a installé l\'application 📲', '📲');
+  }
 });
 
