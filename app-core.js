@@ -310,6 +310,9 @@ async function enterMainApp() {
       safe(renderShopping);
       safe(renderTresor);
       safe(renderNotifications);
+      // 🆕 Si la checklist du jour de départ est ouverte, la rafraîchir aussi — sinon
+      // une coche faite par quelqu'un d'autre n'apparaîtrait pas avant de rouvrir l'écran.
+      safe(() => { if (selectedPlanningDay !== null) renderPlanning(); });
       safe(updateNotifBadge);
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
@@ -740,6 +743,16 @@ async function loadFromSupabaseCloud() {
         splitAmong: e.split_among || [],
         timestamp: e.created_at || new Date()
       }));
+    }
+
+    // 🆕 Load checklist du jour de départ — partagée entre tout le monde (contrairement
+    // à la checklist valise qui est personnelle), donc pas de filtre par person_id ici.
+    const departureData = await window.loadFromSupabase('departure_tasks');
+    if (departureData && departureData.length > 0) {
+      console.log(`✅ Loaded ${departureData.length} departure tasks from Supabase`);
+      departureData.forEach(row => {
+        if (row.done) departureTasksDone[`${row.day_idx}-${row.act_idx}`] = true;
+      });
     }
 
     console.log('✅ Données chargées depuis Supabase!');

@@ -1047,6 +1047,8 @@ window.syncToSupabase = async (table, data, isRetry) => {
       onConflict = 'person_id';
     } else if (table === 'push_subscriptions') {
       onConflict = 'endpoint';
+    } else if (table === 'departure_tasks') {
+      onConflict = 'day_idx,act_idx';
     }
     
     // Spécifier la colonne de matching pour le upsert

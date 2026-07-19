@@ -172,6 +172,18 @@ function toggleDepartureTask(dayIdx, actIdx) {
   }
 
   saveAllData();
+
+  // 🆕 Synchro directe (comme les corvées) : sans ça, cette checklist restait purement
+  // locale à chaque téléphone — personne d'autre ne voyait ce qui était déjà fait.
+  if (window.syncToSupabase) {
+    window.syncToSupabase('departure_tasks', {
+      day_idx: dayIdx,
+      act_idx: actIdx,
+      done: departureTasksDone[key],
+      done_by: currentUser.name
+    }).catch(err => console.error('Sync Supabase échouée:', err));
+  }
+
   renderDepartureDayChecklist(dayIdx);
   // 🐛 CORRECTIF : cocher une tâche du jour de départ ajoutait bien l'XP à choreLog,
   // mais rien ne redessinait le classement ni le compteur XP de l'accueil — il fallait
