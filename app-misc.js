@@ -4,6 +4,10 @@ async function uploadHeroBackground(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('hero-bg-upload-progress');
+
+  if (!(await confirmOverwrite('le fond d\'écran (photo de jour)'))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', 'hero-login.jpg');
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
 
   try {
@@ -29,6 +33,10 @@ async function uploadHeroBackgroundNight(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('hero-bg-night-upload-progress');
+
+  if (!(await confirmOverwrite('le fond d\'écran (photo de nuit)'))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', 'hero-login-night.jpg');
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
 
   try {
@@ -52,6 +60,10 @@ async function uploadTexturePaper(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('texture-paper-upload-progress');
+
+  if (!(await confirmOverwrite('la texture papier (fond des cartes)'))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', 'texture-paper.jpg');
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
   try {
     await uploadFileToStorage('app-assets', 'texture-paper.jpg', file);
@@ -70,6 +82,10 @@ async function uploadDetailWater(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('detail-water-upload-progress');
+
+  if (!(await confirmOverwrite('la photo bandeau Explorer'))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', 'detail-water.jpg');
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
   try {
     const publicUrl = await uploadFileToStorage('app-assets', 'detail-water.jpg', file);
@@ -89,9 +105,13 @@ async function uploadBandPhoto(key, inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById(`band-${key}-upload-progress`);
+  const path = `band-${key}.jpg`;
+
+  if (!(await confirmOverwrite(`le bandeau "${key}"`))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', path);
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
   try {
-    const path = `band-${key}.jpg`;
     const publicUrl = await uploadFileToStorage('app-assets', path, file);
     document.querySelectorAll(`img[src*="${path}"]`).forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
     if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
@@ -109,9 +129,13 @@ async function uploadDayPhoto(key, inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById(`day-${key}-upload-progress`);
+  const path = `day-${key}.jpg`;
+
+  if (!(await confirmOverwrite(`la photo du jour "${key}"`))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', path);
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
   try {
-    const path = `day-${key}.jpg`;
     const publicUrl = await uploadFileToStorage('app-assets', path, file);
     document.querySelectorAll(`img[src*="${path}"]`).forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
     if (progressEl) progressEl.textContent = '✅ Photo mise en ligne !';
@@ -130,6 +154,10 @@ async function uploadTirageVideo(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('tirage-video-upload-progress');
+
+  if (!(await confirmOverwrite('la vidéo du Grand Tirage'))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('challenge-videos', 'tirage-wheel.mp4');
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
   try {
     const publicUrl = await uploadFileToStorage('challenge-videos', 'tirage-wheel.mp4', file);
@@ -149,9 +177,13 @@ async function uploadSeal(size, inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById(`seal-${size}-upload-progress`);
+  const path = `seal-${size}.png`;
+
+  if (!(await confirmOverwrite(`le sceau (${size})`))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('app-assets', path);
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
   try {
-    const path = `seal-${size}.png`;
     const publicUrl = await uploadFileToStorage('app-assets', path, file);
     document.querySelectorAll(`img[src*="${path}"]`).forEach(img => { img.src = `${publicUrl}?t=${Date.now()}`; });
     if (progressEl) progressEl.textContent = '✅ Sceau mis à jour !';
@@ -466,8 +498,6 @@ function renderSettings() {
   if (content) {
     content.style.display = 'block';
   }
-
-  if (typeof renderPushToggleCard === 'function') renderPushToggleCard();
 }
 
 // ✅ Ouvre/ferme un groupe de réglages repliable (Personnalisation visuelle, Données, Compte...)
@@ -632,6 +662,10 @@ async function uploadOlympiadesVideo(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('olympiades-video-progress');
+
+  if (!(await confirmOverwrite('la vidéo des Olympiades'))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('challenge-videos', 'olympiades.mp4');
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
 
   try {

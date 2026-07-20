@@ -974,6 +974,65 @@ async function uploadFileToStorage(bucket, path, file) {
   return `${window.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
 }
 
+// ============== GARDE-FOU ANTI-ÉCRASEMENT (uploads à chemin fixe) ==============
+// 🐛 Incident du 19/07 : un upload dans les Réglages (fond d'écran...) a remplacé
+// un fichier à un chemin FIXE — visible instantanément par tout le monde — sans
+// laisser aucune trace de l'ancienne version, qui a donc été perdue. Ces deux
+// fonctions ajoutent : 1) une confirmation explicite avant tout remplacement,
+// 2) une copie automatique horodatée de l'ancien fichier (dossier backups/ du
+// même bucket) avant l'écrasement, pour pouvoir restaurer en cas d'erreur.
+
+// ✅ Modal de confirmation dédiée (indépendante de showConfirmation) : on a besoin
+// ici d'un vrai résultat true/false via Promise, y compris en cas d'annulation.
+function confirmOverwrite(label) {
+  return new Promise((resolve) => {
+    const id = `overwrite-confirm-${Date.now()}`;
+    const modal = document.createElement('div');
+    modal.id = id;
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;';
+    modal.innerHTML = `
+      <div style="background: var(--bg-raised); padding: 24px; border-radius: 12px; width: 90%; max-width: 360px; box-shadow: 0 0 0 2px var(--border), 0 20px 50px rgba(0,0,0,0.35); text-align: center;">
+        <div style="font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 14px;">⚠️ Remplacer pour tout le monde ?</div>
+        <div style="font-size: 13.5px; color: var(--primary-soft); margin-bottom: 20px; line-height: 1.5;">Tu es sur le point de remplacer <strong>${escapeHtml(label)}</strong>. Une copie horodatée de l'ancienne version sera sauvegardée automatiquement, mais elle disparaîtra immédiatement de l'app pour tout le monde.</div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" style="flex: 1;" id="${id}-yes">✅ Remplacer</button>
+          <button class="btn" style="flex: 1; background: var(--bg-sunken); color: var(--primary);" id="${id}-no">❌ Annuler</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById(`${id}-yes`).onclick = () => { modal.remove(); resolve(true); };
+    document.getElementById(`${id}-no`).onclick = () => { modal.remove(); resolve(false); };
+  });
+}
+
+// ✅ Best-effort : si le fichier n'existe pas encore (tout premier upload à ce chemin)
+// ou que la copie échoue pour une autre raison, on ne bloque jamais l'upload principal
+// pour ça — juste un avertissement en console. Le dossier backups/ n'est jamais purgé
+// automatiquement (à nettoyer manuellement de temps en temps si besoin d'espace).
+async function backupBeforeOverwrite(bucket, path) {
+  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return;
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const dotIdx = path.lastIndexOf('.');
+    const backupPath = dotIdx === -1
+      ? `backups/${path}-${stamp}`
+      : `backups/${path.slice(0, dotIdx)}-${stamp}${path.slice(dotIdx)}`;
+    const res = await fetch(`${window.SUPABASE_URL}/storage/v1/object/copy`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+        'apikey': window.SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ bucketId: bucket, sourceKey: path, destinationKey: backupPath })
+    });
+    if (!res.ok) console.warn(`Sauvegarde avant écrasement ignorée pour ${bucket}/${path} (probablement pas encore de fichier existant).`);
+  } catch (e) {
+    console.warn(`Sauvegarde avant écrasement échouée pour ${bucket}/${path} (ignorée) :`, e);
+  }
+}
+
 // ✅ Upload direct de la vidéo d'un challenge CHALLENGE 1-4, au bon nom de fichier
 // dans le bucket 'challenge-videos' — le chemin correspond exactement à l'URL déjà
 // codée dans saraillon-data.js, donc dès l'upload terminé, tout le monde voit la
@@ -991,6 +1050,10 @@ async function uploadChallengeVideo(challengeId, inputEl) {
   // créait un fichier différent au lieu de remplacer le bon.
   const path = `challenge${num}.mp4`;
   const progressEl = document.getElementById(`upload-progress-${challengeId}`);
+
+  if (!(await confirmOverwrite(`la vidéo de ${ch.creator}`))) { inputEl.value = ''; return; }
+  if (progressEl) progressEl.textContent = '⏳ Sauvegarde de l\'ancienne version...';
+  await backupBeforeOverwrite('challenge-videos', path);
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
 
   try {
