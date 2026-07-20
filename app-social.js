@@ -87,6 +87,8 @@ function renderMyProfile() {
         </button>
       </div>
       
+      ${user.name === 'Marine' ? renderPrivateMessageComposer() : ''}
+
       <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
         <button class="btn btn-primary" onclick="showAllProfiles()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">👥 Voir les autres</button>
       </div>
@@ -96,6 +98,85 @@ function renderMyProfile() {
   document.getElementById('my-profile-content').innerHTML = html;
   renderProfileXpStats();
   showMyProfileTab('infos');
+}
+
+// ============== MESSAGE PRIVÉ (réservé au profil de Marine) ==============
+// ✅ Formulaire visible seulement sur le profil de Marine : choisir un
+// destinataire, écrire un message libre, choisir une heure d'envoi (ou
+// "maintenant"). Le message n'est jamais visible que par le destinataire
+// choisi (ni broadcast, ni fil d'activité) — voir checkPrivateMessages()
+// côté réception. Envoyé en push même si le destinataire a fermé l'app,
+// via la table private_messages + la tâche planifiée send-private-message.
+function renderPrivateMessageComposer() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // format datetime-local en heure locale
+  const nowLocal = now.toISOString().slice(0, 16);
+  const others = PARTICIPANTS.filter(p => p.id !== currentUser.id);
+
+  return `
+    <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); text-align: left;">
+      <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--primary); margin-bottom: 12px;">💌 Envoyer un message privé</div>
+
+      <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">À qui ?</label>
+      <select id="pm-target" style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 14px;">
+        ${others.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
+      </select>
+
+      <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Message</label>
+      <textarea id="pm-message" placeholder="Passe une belle journée..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 70px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 14px;"></textarea>
+
+      <div style="display: grid; grid-template-columns: 70px 1fr; gap: 10px; margin-bottom: 14px;">
+        <div>
+          <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Emoji</label>
+          <input type="text" id="pm-emoji" value="❤️" maxlength="4" style="width: 100%; padding: 12px; text-align: center; font-size: 16px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08);">
+        </div>
+        <div>
+          <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Quand ?</label>
+          <input type="datetime-local" id="pm-when" value="${nowLocal}" style="width: 100%; padding: 11px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary);">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="sendPrivateMessage()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15); background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white; font-weight: 700;">💌 Envoyer</button>
+      <div id="pm-status" style="font-size: 11.5px; color: var(--primary-light); margin-top: 8px; text-align: center;"></div>
+    </div>
+  `;
+}
+
+async function sendPrivateMessage() {
+  const targetId = parseInt(document.getElementById('pm-target').value, 10);
+  const message = document.getElementById('pm-message').value.trim();
+  const emoji = document.getElementById('pm-emoji').value.trim() || '❤️';
+  const whenLocal = document.getElementById('pm-when').value;
+  const statusEl = document.getElementById('pm-status');
+
+  if (!message) { showNotification('⚠️ Écris un message avant d\'envoyer', 'error'); return; }
+  if (!whenLocal) { showNotification('⚠️ Choisis une heure d\'envoi', 'error'); return; }
+
+  const scheduledAt = new Date(whenLocal); // interprété en heure locale du navigateur
+  if (statusEl) statusEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    const { error } = await window.supabase.from('private_messages').insert({
+      sender_id: currentUser.id,
+      target_id: targetId,
+      message,
+      emoji,
+      scheduled_at: scheduledAt.toISOString()
+    });
+    if (error) throw error;
+
+    const targetName = PARTICIPANTS.find(p => p.id === targetId)?.name || 'la personne choisie';
+    const isNow = scheduledAt.getTime() <= Date.now() + 30000; // marge de 30s
+    if (statusEl) statusEl.textContent = isNow
+      ? `✅ Message envoyé à ${targetName} !`
+      : `✅ Programmé pour ${targetName} le ${scheduledAt.toLocaleString('fr-FR')}`;
+    showNotification('💌 Message privé enregistré !', 'success');
+    document.getElementById('pm-message').value = '';
+  } catch (err) {
+    console.error('Échec envoi message privé:', err);
+    if (statusEl) statusEl.textContent = '❌ Échec de l\'envoi, réessaie.';
+    showNotification('❌ Échec de l\'envoi du message privé', 'error');
+  }
 }
 
 function showMyProfileTab(tab) {

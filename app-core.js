@@ -177,17 +177,7 @@ function urlBase64ToUint8Array(base64String) {
 async function activerNotificationsPush() {
   if (!currentUser) { showNotification('⚠️ Sélectionne ton profil d\'abord', 'error'); return; }
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    // 🐛 CORRECTIF : sur iPhone, PushManager n'existe QUE si l'app a été ajoutée à
-    // l'écran d'accueil ET ouverte depuis cette icône (jamais depuis Safari directement) —
-    // l'ancien message générique ("non supportées") ne l'expliquait pas et laissait croire
-    // à un bug plutôt qu'à une étape manquante.
-    if (typeof isIOSDevice === 'function' && isIOSDevice() && !isAlreadyInstalled()) {
-      showNotification('📲 Sur iPhone, installe d\'abord l\'app (bouton 🍏 ci-dessus), puis ouvre-la depuis l\'écran d\'accueil pour activer les notifs', 'error');
-    } else if (typeof isIOSDevice === 'function' && isIOSDevice()) {
-      showNotification('⚠️ Notifications non supportées : version iOS trop ancienne (16.4 minimum requis)', 'error');
-    } else {
-      showNotification('⚠️ Notifications push non supportées sur cet appareil/navigateur', 'error');
-    }
+    showNotification('⚠️ Notifications push non supportées sur cet appareil/navigateur', 'error');
     return;
   }
   try {
@@ -215,8 +205,6 @@ async function activerNotificationsPush() {
     if (ok) {
       localStorage.setItem('pushActivated', 'true');
       showNotification('🔔 Notifications push activées sur cet appareil !', 'success');
-      // 🆕 Visible dans le fil d'activité, comme une inscription ou une corvée faite.
-      if (typeof addFeedEntry === 'function') addFeedEntry('a activé les notifications 🔔', '🔔');
     } else {
       showNotification('⚠️ Erreur lors de l\'activation', 'error');
     }
@@ -255,14 +243,7 @@ async function enterMainApp() {
 
   await loadFromSupabaseCloud(); // ✅ ATTEND avant de render, plus d'écran vide
 
-  // 🐛 CORRECTIF MAJEUR : un second loadAllData() était appelé ici juste après
-  // loadFromSupabaseCloud() — il écrasait sans fusion feed/notifications/galleryItems/
-  // shoppingList/inscriptions/challenges avec la vieille copie locale de CET appareil,
-  // annulant instantanément ce que le cloud venait de fournir. Résultat : au premier
-  // affichage, l'app montrait des données obsolètes (fil d'activité, galerie, courses...)
-  // jusqu'au prochain polling 25s. Ce second appel était redondant : currentUser,
-  // PARTICIPANTS, planningData, choreLog et departureTasksDone sont déjà chargés par le
-  // premier loadAllData() (ligne 240) et non touchés par loadFromSupabaseCloud().
+  loadAllData();
   renderPlanning();
   showMyProfile();
   renderShopping();
@@ -270,6 +251,7 @@ async function enterMainApp() {
   renderFeed();
   renderHome(); // ✅ Rafraîchir le widget d'activité récente sur Home
   checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
+  checkPrivateMessages(); // ✅ Notifie si un message privé (voir profil de Marine) est arrivé
   renderDaySelector();
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
@@ -301,17 +283,13 @@ async function enterMainApp() {
       await loadChoreAssignmentsCloud();
       await loadTresorFromCloud();
       await loadFromSupabaseCloud();
+      await checkPrivateMessages(); // ✅ Message privé (profil de Marine) arrivé entre-temps
       // ✅ Chaque appel est isolé : si l'onglet correspondant n'est pas monté dans
       // le DOM (utilisateur sur un autre écran), certaines fonctions de rendu
       // plantent sur un élément introuvable — ça ne doit pas empêcher les autres
       // écrans de se rafraîchir dans le même cycle.
       const safe = (fn) => { try { fn(); } catch (e) { /* écran non actif, ignoré */ } };
       safe(renderFeed);
-      // 🐛 CORRECTIF : le mini fil d'activité de l'accueil (#home-feed) n'était rafraîchi
-      // qu'une seule fois à l'ouverture de l'app. Si on restait sur l'accueil, il ne reflétait
-      // plus jamais les nouvelles activités des autres (ni les liens cliquables ajoutés depuis) —
-      // c'est ce qui donnait l'impression que le fil d'activité "ne marche pas".
-      safe(renderHome);
       safe(renderGallery);
       safe(renderChallenges);
       safe(renderInscriptions);
@@ -320,9 +298,6 @@ async function enterMainApp() {
       safe(renderShopping);
       safe(renderTresor);
       safe(renderNotifications);
-      // 🆕 Si la checklist du jour de départ est ouverte, la rafraîchir aussi — sinon
-      // une coche faite par quelqu'un d'autre n'apparaîtrait pas avant de rouvrir l'écran.
-      safe(() => { if (selectedPlanningDay !== null) renderPlanning(); });
       safe(updateNotifBadge);
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
@@ -451,23 +426,6 @@ function switchToOtherProfile() {
 }
 
 // ============== INIT ==============
-// ✅ Même logique que le bouton déjà existant dans "Mon Profil" (activerNotificationsPush /
-// desactiverNotificationsPush), dupliquée ici pour Réglages où on s'attend naturellement
-// à trouver ce genre de préférence.
-function renderPushToggleCard() {
-  const el = document.getElementById('settings-push-toggle');
-  if (!el) return;
-  const active = !!localStorage.getItem('pushActivated');
-  const needsIOSInstallFirst = typeof isIOSDevice === 'function' && isIOSDevice() &&
-    typeof isAlreadyInstalled === 'function' && !isAlreadyInstalled() && !active;
-  el.innerHTML = `
-    <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderPushToggleCard, 300);" style="width: 100%; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: ${active ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)'}; color: ${active ? 'var(--primary)' : 'white'};">
-      ${active ? '🔕 Désactiver les notifs push' : '🔔 Activer les notifs push'}
-    </button>
-    ${needsIOSInstallFirst ? `<div style="font-size: 11px; color: var(--accent-pink); margin-top: 8px; line-height: 1.5; font-weight: 600;">⚠️ Sur iPhone : installe d'abord l'app (bouton 🍏 juste au-dessus) et ouvre-la depuis l'écran d'accueil, sinon ça ne marchera pas.</div>` : `<div style="font-size: 11px; color: var(--primary-light); margin-top: 8px; line-height: 1.5;">${active ? 'Tu recevras les rappels et alertes importantes sur ce téléphone.' : "Active pour recevoir les rappels d'inscriptions et les alertes du groupe, même app fermée."}</div>`}
-  `;
-}
-
 function loadAllData() {
   // ✅ On garde une copie des avatars par défaut codés en dur (photos ajoutées récemment)
   // pour ne jamais les perdre face à un vieux cache localStorage sans photo.
@@ -755,16 +713,6 @@ async function loadFromSupabaseCloud() {
         splitAmong: e.split_among || [],
         timestamp: e.created_at || new Date()
       }));
-    }
-
-    // 🆕 Load checklist du jour de départ — partagée entre tout le monde (contrairement
-    // à la checklist valise qui est personnelle), donc pas de filtre par person_id ici.
-    const departureData = await window.loadFromSupabase('departure_tasks');
-    if (departureData && departureData.length > 0) {
-      console.log(`✅ Loaded ${departureData.length} departure tasks from Supabase`);
-      departureData.forEach(row => {
-        if (row.done) departureTasksDone[`${row.day_idx}-${row.act_idx}`] = true;
-      });
     }
 
     console.log('✅ Données chargées depuis Supabase!');
@@ -1306,53 +1254,6 @@ function renderHeaderAvatar() {
   }
 }
 
-// ============== BANNIÈRE URGENCE INSCRIPTIONS ==============
-// ✅ Reprend exactement la même logique que la fonction Supabase send-inscription-reminder
-// (mêmes activités, mêmes exemptions) pour rester cohérente avec le message push envoyé
-// le même jour. Visible seulement à partir du 1er août 2026 (J-20), disparaît toute seule
-// dès que la personne connectée est inscrite partout où elle doit l'être.
-const INSCRIPTION_REMINDER_START = new Date(2026, 7, 1);
-const INSCRIPTION_ACTIVITIES = [
-  { key: 'plongee', dayIdx: 3, actIdx: 0, label: 'Plongée' },
-  { key: 'bateau', dayIdx: 4, actIdx: 0, label: 'Bateau' },
-  { key: 'viaFerrata', dayIdx: 6, actIdx: 0, label: 'Via Ferrata' },
-];
-const INSCRIPTION_EXEMPTIONS = {
-  2: ['viaFerrata', 'plongee'], // Chunfei
-  6: ['viaFerrata'], // Inès
-};
-const INSCRIPTION_EXEMPTION_NOTES = {
-  2: "Via Ferrata & Plongée c'est pas ton trip — grasse mat' + piscine au programme, on se recroise dans la journée 😄",
-  6: "Via Ferrata c'est dodo pour toi, ton activité préférée 😌 — Chunfei te tient compagnie",
-};
-
-function renderInscriptionUrgencyBanner() {
-  const container = document.getElementById('home-inscription-alert');
-  if (!container) return;
-
-  if (new Date() < INSCRIPTION_REMINDER_START) { container.innerHTML = ''; return; }
-
-  const exempt = INSCRIPTION_EXEMPTIONS[currentUser.id] || [];
-  const missing = INSCRIPTION_ACTIVITIES.filter(a => {
-    if (exempt.includes(a.key)) return false;
-    return inscriptions[`${currentUser.id}-${a.dayIdx}-${a.actIdx}`] !== true;
-  });
-
-  if (missing.length === 0) { container.innerHTML = ''; return; }
-
-  const note = INSCRIPTION_EXEMPTION_NOTES[currentUser.id];
-  container.innerHTML = `
-    <div class="card" onclick="switchTab('inscriptions')" style="cursor: pointer; padding: 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(224, 122, 150, 0.16) 0%, rgba(224, 122, 150, 0.06) 100%); box-shadow: inset 4px 0 0 var(--accent-pink); display: flex; gap: 14px; align-items: center;">
-      <img src="./flare-signal.webp" alt="" style="width: 56px; height: 56px; object-fit: contain; flex-shrink: 0;">
-      <div style="flex: 1; min-width: 0;">
-        <div style="font-weight: 800; font-size: 13.5px; color: var(--accent-pink); margin-bottom: 4px;">🚨 Il te manque : ${missing.map(a => a.label).join(', ')}</div>
-        ${note ? `<div style="font-size: 11px; color: var(--primary-light); margin-bottom: 4px;">${escapeHtml(note)}</div>` : ''}
-        <div style="font-size: 11px; color: var(--primary-light);">Dernier jour pour t'inscrire, après c'est mort 👀 — touche pour y aller</div>
-      </div>
-    </div>
-  `;
-}
-
 function renderHome() {
   renderHeaderAvatar();
   // Greeting
@@ -1366,7 +1267,6 @@ function renderHome() {
   renderSyncStatus();
   renderSecretMission();
   renderHomeGroupSpirit();
-  renderInscriptionUrgencyBanner();
   renderWeatherBanner();
   renderCountdownBanner();
   renderTripRecap();
@@ -1884,6 +1784,41 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
       // téléphone...) au lieu de sa vraie date/heure d'origine.
       timestamp: notif.timestamp instanceof Date ? notif.timestamp.toISOString() : notif.timestamp
     }).catch(err => console.error('Sync Supabase échouée:', err));
+  }
+}
+
+// ✅ Messages privés (voir sendPrivateMessage dans app-social.js, réservé au profil
+// de Marine) : contrairement à addNotification (broadcast), on ne va chercher QUE
+// les messages où currentUser est le destinataire — jamais ceux des autres. Un
+// message n'est récupéré qu'une fois envoyé (colonne "sent", gérée par la tâche
+// planifiée send-private-message une fois l'heure programmée atteinte), et n'est
+// jamais rejoué deux fois grâce au dédup local (comme checkGalleryMentions).
+async function checkPrivateMessages() {
+  if (!currentUser || !window.supabaseReady) return;
+  const notifiedKey = 'notifiedPrivateMessageIds';
+  let notifiedIds = [];
+  try { notifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]'); } catch (e) { notifiedIds = []; }
+
+  const { data, error } = await window.supabase
+    .from('private_messages')
+    .select('*')
+    .eq('target_id', currentUser.id)
+    .eq('sent', true);
+
+  if (error || !data) return;
+
+  const newlyNotified = [];
+  data.forEach(msg => {
+    if (!notifiedIds.includes(msg.id)) {
+      // sync=false : cette notif est strictement locale au destinataire, jamais
+      // renvoyée vers Supabase ni visible par les autres.
+      addNotification(msg.message, msg.emoji || '❤️', 'private', false);
+      newlyNotified.push(msg.id);
+    }
+  });
+
+  if (newlyNotified.length > 0) {
+    localStorage.setItem(notifiedKey, JSON.stringify([...notifiedIds, ...newlyNotified]));
   }
 }
 
