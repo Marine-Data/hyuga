@@ -445,6 +445,7 @@ function renderAllProfiles() {
   const medals = ['🥇', '🥈', '🥉'];
 
   section.innerHTML = `
+    <div id="shuttle-recap" style="margin-bottom: 16px;"></div>
     <div style="margin-bottom: 15px; font-size: 12px; color: var(--primary-light); font-weight: 600;">👥 ${PARTICIPANTS.length} participants</div>
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
       ${PARTICIPANTS.map(user => {
@@ -468,6 +469,7 @@ function renderAllProfiles() {
       }).join('')}
     </div>
   `;
+  loadShuttleRecap(); // ✅ 🚐 Récap des arrivées/départs de tout le monde
 }
 
 function showPublicProfile(userId) {
@@ -1264,4 +1266,71 @@ function deleteTravelTicket(ticketId) {
     }
     loadTravelSection();
   });
+}
+
+// ============== 🚐 RÉCAP NAVETTES (visible par tout le monde) ==============
+// En haut de "Voir les autres" : toutes les arrivées et tous les départs renseignés
+// dans les fiches "Mon voyage", triés par date puis heure, avec la note navette de
+// chacun — LA page pour organiser les allers-retours gare/aéroports. Les personnes
+// qui n'ont encore rien renseigné sont listées en bas (pratique pour les relancer).
+async function loadShuttleRecap() {
+  const box = document.getElementById('shuttle-recap');
+  if (!box) return;
+  if (!window.supabaseReady) { box.innerHTML = ''; return; }
+
+  let rows = [];
+  try {
+    const { data } = await window.supabase.from('travel_info').select('*');
+    if (data) rows = data;
+  } catch (e) { box.innerHTML = ''; return; }
+
+  const fmtDay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  const placeEmoji = (p) => !p ? '' : (p.includes('Gare') ? '🚉' : (p.includes('Aéroport') ? '✈️' : '📍'));
+
+  const buildLeg = (prefix) => rows
+    .filter(r => r[prefix + '_date'] || r[prefix + '_place'] || r[prefix + '_time'])
+    .map(r => ({
+      name: PARTICIPANTS.find(p => p.id === r.person_id)?.name || '?',
+      date: r[prefix + '_date'] || '9999-12-31',
+      time: r[prefix + '_time'] || '99:99',
+      place: r[prefix + '_place'] || '',
+      note: r[prefix + '_note'] || ''
+    }))
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+  const legHtml = (entries) => entries.length === 0
+    ? '<div style="font-size: 11px; color: var(--primary-light); padding: 4px 0;">Rien de renseigné pour le moment 🏖️</div>'
+    : entries.map(e => `
+      <div style="display: flex; gap: 8px; align-items: flex-start; background: #f2fbfa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px;">
+        <div style="flex-shrink: 0; text-align: center; min-width: 58px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--sea-deep);">${e.date !== '9999-12-31' ? fmtDay(e.date) : '📅 ?'}</div>
+          <div style="font-size: 12.5px; font-weight: 700; color: var(--primary);">${e.time !== '99:99' ? e.time : '—'}</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 12px; color: var(--primary);"><strong>${escapeHtml(e.name)}</strong>${e.place ? ` · ${placeEmoji(e.place)} ${escapeHtml(e.place.replace('Aéroport de ', ''))}` : ''}</div>
+          ${e.note ? `<div style="font-size: 10.5px; color: #8a6a3b; background: #fdf3e3; border-radius: 6px; padding: 3px 7px; margin-top: 3px;">🚕 ${escapeHtml(e.note)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+  const filledIds = new Set(rows.filter(r => r.arrival_date || r.arrival_place || r.departure_date || r.departure_place).map(r => r.person_id));
+  const missing = PARTICIPANTS.filter(p => !filledIds.has(p.id));
+
+  box.innerHTML = `
+    <div style="border-radius: 18px; overflow: hidden; background: var(--bg-raised); box-shadow: 0 6px 20px rgba(12, 47, 58, 0.12);">
+      <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 12px 14px;">
+        <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🚐 Récap navettes</div>
+        <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour organiser les trajets 🐚</div>
+      </div>
+      <div style="padding: 12px 14px;">
+        <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin-bottom: 6px;">🛬 Arrivées</div>
+        ${legHtml(buildLeg('arrival'))}
+        <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin: 10px 0 6px;">🛫 Départs</div>
+        ${legHtml(buildLeg('departure'))}
+        ${missing.length > 0 ? `
+          <div style="font-size: 10.5px; color: var(--primary-light); margin-top: 10px;">✍️ Pas encore renseigné : ${missing.map(p => escapeHtml(p.name)).join(', ')} — remplissez votre fiche 🧳 sur votre profil !</div>
+        ` : '<div style="font-size: 10.5px; color: var(--accent-green); margin-top: 10px; font-weight: 700;">✅ Tout le monde a renseigné son voyage !</div>'}
+      </div>
+    </div>
+  `;
 }
