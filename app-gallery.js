@@ -116,7 +116,7 @@ function renderGallery() {
 
       <!-- Likes, légende, commentaires -->
       <div style="padding: 0 16px 16px;">
-        ${likesCount > 0 ? `<div style="font-weight: 700; font-size: 12.5px; color: var(--primary); margin-bottom: 6px;">${likesCount} mention${likesCount > 1 ? 's' : ''} J'aime</div>` : ''}
+        ${likesCount > 0 ? `<div onclick="showGalleryLikers(${item.id})" style="font-weight: 700; font-size: 12.5px; color: var(--primary); margin-bottom: 6px; cursor: pointer;">${likesCount} mention${likesCount > 1 ? 's' : ''} J'aime</div>` : ''}
         ${item.description ? `<div style="font-size: 12.5px; color: var(--primary); margin-bottom: 8px; line-height: 1.5;"><strong>${escapeHtml(item.creator)}</strong> ${escapeHtml(item.description)}</div>` : ''}
         ${taggedUsers.length > 0 ? `
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
@@ -497,6 +497,46 @@ function confirmDeleteGalleryItem(itemId) {
   });
 }
 
+// ✅ Affiche la liste des personnes qui ont aimé une photo (panneau glissant, même
+// style que celui des commentaires) — le compteur "X mentions J'aime" est cliquable.
+function showGalleryLikers(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item || !item.likes || item.likes.length === 0) return;
+
+  const existing = document.getElementById('gallery-likers-modal');
+  if (existing) { existing.remove(); document.getElementById('gallery-likers-backdrop')?.remove(); }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'gallery-likers-backdrop';
+  backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998;';
+  backdrop.onclick = () => { document.getElementById('gallery-likers-modal')?.remove(); backdrop.remove(); };
+
+  const container = document.createElement('div');
+  container.id = 'gallery-likers-modal';
+  container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); padding: 12px 20px 24px; border-radius: 16px 16px 0 0; max-height: 60vh; overflow-y: auto; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); z-index: 9999;';
+
+  const names = item.likes
+    .map(id => PARTICIPANTS.find(p => p.id === id))
+    .filter(Boolean);
+
+  container.innerHTML = `
+    <div style="width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px;"></div>
+    <div style="font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+      ❤️ Aimé par
+      <button onclick="document.getElementById('gallery-likers-modal').remove(); document.getElementById('gallery-likers-backdrop').remove();" style="background: none; border: none; font-size: 18px; color: var(--primary-light); cursor: pointer;">✕</button>
+    </div>
+    ${names.map(p => `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13.5px; color: var(--primary); cursor: pointer;" onclick="document.getElementById('gallery-likers-modal').remove(); document.getElementById('gallery-likers-backdrop').remove(); showPublicProfileFromFeed(${p.id});">
+        <span style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-sunken); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-pink);">${escapeHtml(p.name.charAt(0))}</span>
+        <strong>${escapeHtml(p.name)}</strong>
+      </div>
+    `).join('')}
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
+}
+
 function filterGalleryByTag(tagName) {
   const person = PARTICIPANTS.find(p => p.name === tagName);
   if (!person) return;
@@ -540,4 +580,3 @@ function viewGallery(idx) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 60);
 }
-
