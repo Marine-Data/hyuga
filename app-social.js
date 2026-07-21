@@ -87,6 +87,8 @@ function renderMyProfile() {
         </button>
       </div>
       
+      <div id="travel-section" style="margin-top: 16px;"></div>
+
       ${user.name === 'Marine' ? renderPrivateMessageComposer() : ''}
 
       <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
@@ -98,6 +100,7 @@ function renderMyProfile() {
   document.getElementById('my-profile-content').innerHTML = html;
   renderProfileXpStats();
   showMyProfileTab('infos');
+  loadTravelSection(); // ✅ 🧳 Infos d'arrivée/départ + billets
   if (user.name === 'Marine') loadPendingPrivateMessages(); // ✅ Liste des envois programmés
 }
 
@@ -1064,3 +1067,201 @@ function updateChatUnreadDot() {
     }, 60000);
   }, 500);
 })();
+
+// ============== 🧳 MON VOYAGE (arrivée / départ / billets) ==============
+// Chaque personne renseigne sur SON profil : jour, heure et lieu d'arrivée et de
+// départ (Gare de Toulon / Aéroport de Marseille / Aéroport de Hyères / Autre),
+// une note navette ("venez me chercher à..."), et peut téléverser ses billets
+// (PDF ou photo). 100% cloud-natif : lecture/écriture directes dans Supabase,
+// jamais dans saveAllData → aucun risque d'écrasement entre appareils.
+const TRAVEL_PLACES = ['Gare de Toulon', 'Aéroport de Marseille', 'Aéroport de Hyères', 'Autre'];
+
+async function loadTravelSection() {
+  const box = document.getElementById('travel-section');
+  if (!box || !currentUser) return;
+  if (!window.supabaseReady) { box.innerHTML = ''; return; }
+
+  let info = {};
+  let tickets = [];
+  try {
+    const { data } = await window.supabase.from('travel_info').select('*').eq('person_id', currentUser.id).maybeSingle();
+    if (data) info = data;
+    const { data: tk } = await window.supabase.from('travel_tickets').select('*').eq('person_id', currentUser.id).order('created_at');
+    if (tk) tickets = tk;
+  } catch (e) { /* hors-ligne : section vide */ }
+
+  // ✅ Design "Méditerranée" validé le 21/07 : bandeau mer avec vague, cartes blanches
+  // arrondies, lieux en "galets" tapables, note navette sur sable doré, bouton en
+  // dégradé mer (eau profonde → turquoise lagon, couleurs officielles de l'app —
+  // pas d'orange/corail sur ce bouton, à la demande de Marine), frise de coquillages.
+  const inputStyle = 'width: 100%; padding: 9px 10px; border: 1px solid rgba(31, 182, 201, 0.25); border-radius: 10px; background: #f2fbfa; color: var(--primary); font-size: 12.5px;';
+  const labelStyle = 'font-weight: 700; display: block; margin-bottom: 3px; color: var(--sea-deep); font-size: 10px; letter-spacing: 0.5px;';
+
+  const placeChips = (prefix, selected) => {
+    const isCustom = selected && !TRAVEL_PLACES.slice(0, 3).includes(selected);
+    return `
+      <div id="travel-${prefix}-chips" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+        ${TRAVEL_PLACES.slice(0, 3).map(p => {
+          const sel = selected === p;
+          const emo = p.includes('Gare') ? '🚉' : '✈️';
+          return `<button type="button" onclick="selectTravelPlace('${prefix}', '${p.replace(/'/g, "\\'")}')" data-place="${escapeHtml(p)}" style="border: none; cursor: pointer; font-size: 11px; padding: 6px 11px; border-radius: 14px; font-weight: ${sel ? '700' : '500'}; background: ${sel ? 'var(--sea-deep)' : '#eef6f5'}; color: ${sel ? '#ffffff' : 'var(--primary-light)'};">${emo} ${escapeHtml(p.replace('Aéroport de ', ''))}</button>`;
+        }).join('')}
+        <button type="button" onclick="selectTravelPlace('${prefix}', 'Autre')" data-place="Autre" style="border: none; cursor: pointer; font-size: 11px; padding: 6px 11px; border-radius: 14px; font-weight: ${isCustom ? '700' : '500'}; background: ${isCustom ? 'var(--sea-deep)' : '#eef6f5'}; color: ${isCustom ? '#ffffff' : 'var(--primary-light)'};">📍 Autre</button>
+      </div>
+      <input type="hidden" id="travel-${prefix}-place" value="${escapeHtml(selected || '')}">
+      <input type="text" id="travel-${prefix}-place-custom" value="${isCustom ? escapeHtml(selected) : ''}" placeholder="Précise le lieu..." style="${inputStyle} margin-bottom: 8px; display: ${isCustom ? 'block' : 'none'};" oninput="document.getElementById('travel-${prefix}-place').value = this.value;">
+    `;
+  };
+
+  const legBlock = (prefix, title, emoji, emojiBg) => `
+    <div style="background: var(--bg-raised); border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(14, 95, 116, 0.08);">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+        <span style="width: 30px; height: 30px; border-radius: 50%; background: ${emojiBg}; display: inline-flex; align-items: center; justify-content: center; font-size: 15px;">${emoji}</span>
+        <span style="font-weight: 700; font-size: 13.5px; color: var(--sea-deep);">${title}</span>
+      </div>
+      <div style="font-size: 10px; color: var(--primary-light); margin-bottom: 10px;">${prefix === 'arrival'
+        ? 'Ta destination finale — là où on vient te chercher 🌊 (avion + train ? mets la dernière étape ici, le reste dans la note)'
+        : 'Ton point de départ — là où on doit te déposer'}</div>
+      <div style="display: grid; grid-template-columns: 1fr 90px; gap: 8px; margin-bottom: 8px;">
+        <div><label style="${labelStyle}">JOUR</label><input type="date" id="travel-${prefix}-date" value="${info[prefix + '_date'] || ''}" style="${inputStyle}"></div>
+        <div><label style="${labelStyle}">HEURE</label><input type="time" id="travel-${prefix}-time" value="${info[prefix + '_time'] || ''}" style="${inputStyle}"></div>
+      </div>
+      ${placeChips(prefix, info[prefix + '_place'])}
+      <div style="background: #fdf3e3; border-radius: 10px; padding: 8px 10px;">
+        <label style="${labelStyle} color: var(--accent-sand);">${prefix === 'arrival' ? '🚕 OÙ / QUAND VENIR ME CHERCHER ?' : '🚕 OÙ / QUAND ME DÉPOSER ?'}</label>
+        <input type="text" id="travel-${prefix}-note" value="${escapeHtml(info[prefix + '_note'] || '')}" placeholder="${prefix === 'arrival' ? 'Ex : avion à Marseille 18h40 puis train, récup sortie gare 22h05' : 'Ex : dépose à 13h30 devant le hall 1'}" style="width: 100%; border: none; background: transparent; color: #8a6a3b; font-size: 11.5px; padding: 2px 0;">
+      </div>
+    </div>
+  `;
+
+  box.innerHTML = `
+    <div style="border-radius: 22px; overflow: hidden; background: var(--bg); box-shadow: 0 10px 30px rgba(12, 47, 58, 0.14); text-align: left;">
+      <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 16px 16px 0;">
+        <div style="font-family: var(--font-display); font-size: 17px; font-weight: 500; color: #ffffff; letter-spacing: 0.3px;">🧳 Mon voyage</div>
+        <div style="font-size: 11.5px; color: #d7f4ef; margin-top: 2px;">Dis-nous quand et où — on s'occupe de la navette 🚕</div>
+        <div style="text-align: right; font-size: 14px; letter-spacing: 6px;">🐚⭐🐚</div>
+        <svg viewBox="0 0 340 22" preserveAspectRatio="none" style="display: block; width: calc(100% + 32px); margin: 0 -16px; height: 22px;" aria-hidden="true"><path d="M0 12 Q 28 0 56 12 T 112 12 T 168 12 T 224 12 T 280 12 T 336 12 L 340 12 L 340 22 L 0 22 Z" fill="var(--bg)"/></svg>
+      </div>
+      <div style="padding: 6px 14px 16px;">
+        ${legBlock('arrival', 'Mon arrivée', '🛬', '#e1f5f2')}
+        ${legBlock('departure', 'Mon départ', '🛫', '#fdeee6')}
+
+        <div style="background: var(--bg-raised); border-radius: 16px; padding: 13px 14px; margin-bottom: 14px; box-shadow: 0 3px 10px rgba(14, 95, 116, 0.08);">
+          <div style="font-weight: 700; font-size: 13px; color: var(--sea-deep); margin-bottom: 8px;">🎫 Mes billets</div>
+          ${tickets.map(t => `
+            <div style="display: flex; align-items: center; gap: 8px; background: #f2fbfa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px;">
+              <a href="${t.url}" target="_blank" rel="noopener" style="flex: 1; min-width: 0; color: var(--primary); font-weight: 600; font-size: 11.5px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📄 ${escapeHtml(t.file_name)}</a>
+              <button onclick="deleteTravelTicket(${t.id})" title="Supprimer" style="background: none; color: var(--accent-pink); border: none; font-size: 13px; cursor: pointer; flex-shrink: 0; padding: 2px 4px;">✕</button>
+            </div>
+          `).join('') || '<div style="font-size: 11px; color: var(--primary-light); margin-bottom: 8px;">Aucun billet pour le moment 🏖️</div>'}
+          <label style="display: inline-block; cursor: pointer; font-size: 11px; padding: 7px 12px; border-radius: 14px; border: 1.5px dashed var(--accent-cyan); color: var(--sea-deep); font-weight: 700;">
+            📎 Ajouter un billet (PDF ou photo)
+            <input type="file" accept="application/pdf,image/*" style="display: none;" onchange="uploadTravelTicket(this)">
+          </label>
+          <span id="ticket-upload-status" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
+        </div>
+
+        <button onclick="saveTravelInfo()" style="width: 100%; border: none; cursor: pointer; background: linear-gradient(135deg, var(--sea-deep) 0%, var(--accent-cyan) 100%); border-radius: 14px; padding: 12px; text-align: center; color: #ffffff; font-weight: 700; font-size: 13.5px; box-shadow: 0 5px 14px rgba(31, 182, 201, 0.35);">🐚 Enregistrer mon voyage</button>
+        <div id="travel-status" style="font-size: 11.5px; color: var(--primary-light); margin-top: 6px; text-align: center;"></div>
+        <div style="text-align: center; font-size: 13px; letter-spacing: 8px; margin-top: 10px;">🌊🐚⭐🐚🌊</div>
+      </div>
+    </div>
+  `;
+}
+
+// ✅ Sélection d'un "galet" de lieu : met à jour le champ caché + les styles des chips,
+// et affiche le champ libre si "Autre" est choisi.
+function selectTravelPlace(prefix, place) {
+  const hidden = document.getElementById(`travel-${prefix}-place`);
+  const customInput = document.getElementById(`travel-${prefix}-place-custom`);
+  const chips = document.querySelectorAll(`#travel-${prefix}-chips button`);
+  const isOther = place === 'Autre';
+
+  hidden.value = isOther ? (customInput.value || '') : place;
+  customInput.style.display = isOther ? 'block' : 'none';
+  if (isOther) customInput.focus();
+
+  chips.forEach(btn => {
+    const sel = btn.dataset.place === place;
+    btn.style.background = sel ? 'var(--sea-deep)' : '#eef6f5';
+    btn.style.color = sel ? '#ffffff' : 'var(--primary-light)';
+    btn.style.fontWeight = sel ? '700' : '500';
+  });
+}
+
+async function saveTravelInfo() {
+  if (!currentUser || !window.supabaseReady) { showNotification('⚠️ Hors ligne — réessaie plus tard', 'error'); return; }
+  const val = (id) => (document.getElementById(id)?.value || '').trim() || null;
+  const statusEl = document.getElementById('travel-status');
+  if (statusEl) statusEl.textContent = '⏳ Enregistrement...';
+  try {
+    const { error } = await window.supabase.from('travel_info').upsert({
+      person_id: currentUser.id,
+      arrival_date: val('travel-arrival-date'),
+      arrival_time: val('travel-arrival-time'),
+      arrival_place: val('travel-arrival-place'),
+      arrival_note: val('travel-arrival-note'),
+      departure_date: val('travel-departure-date'),
+      departure_time: val('travel-departure-time'),
+      departure_place: val('travel-departure-place'),
+      departure_note: val('travel-departure-note'),
+      updated_at: new Date().toISOString()
+    });
+    if (error) throw error;
+    if (statusEl) statusEl.textContent = '✅ Voyage enregistré !';
+    showNotification('🧳 Infos de voyage enregistrées !', 'success');
+  } catch (e) {
+    console.error('Enregistrement voyage échoué:', e);
+    if (statusEl) statusEl.textContent = '❌ Échec, réessaie.';
+    showNotification('❌ Enregistrement impossible', 'error');
+  }
+}
+
+async function uploadTravelTicket(inputEl) {
+  const file = inputEl.files[0];
+  if (!file || !currentUser) return;
+  if (!window.supabaseReady) { showNotification('⚠️ Hors ligne — réessaie plus tard', 'error'); return; }
+  const statusEl = document.getElementById('ticket-upload-status');
+  if (statusEl) statusEl.textContent = '⏳ Envoi...';
+  try {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${currentUser.id}/${Date.now()}-${safeName}`;
+    const url = await uploadFileToStorage('travel-tickets', path, file);
+    const { error } = await window.supabase.from('travel_tickets').insert({
+      person_id: currentUser.id,
+      file_name: file.name,
+      url
+    });
+    if (error) throw error;
+    showNotification('🎫 Billet ajouté !', 'success');
+    loadTravelSection();
+  } catch (e) {
+    console.error('Upload billet échoué:', e);
+    if (statusEl) statusEl.textContent = '❌ Échec';
+    showNotification('❌ Envoi du billet impossible', 'error');
+  }
+}
+
+function deleteTravelTicket(ticketId) {
+  showConfirmation('Supprimer ce billet ?', async () => {
+    try {
+      // Récupérer l'URL pour supprimer aussi le fichier du Storage
+      const { data } = await window.supabase.from('travel_tickets').select('url').eq('id', ticketId).eq('person_id', currentUser.id).maybeSingle();
+      const { error } = await window.supabase.from('travel_tickets').delete().eq('id', ticketId).eq('person_id', currentUser.id);
+      if (error) throw error;
+      if (data && data.url) {
+        const path = data.url.split('/travel-tickets/')[1];
+        if (path) {
+          fetch(`${window.SUPABASE_URL}/storage/v1/object/travel-tickets/${path}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`, 'apikey': window.SUPABASE_ANON_KEY }
+          }).catch(() => {});
+        }
+      }
+      showNotification('🗑️ Billet supprimé', 'success');
+    } catch (e) {
+      showNotification('❌ Suppression impossible', 'error');
+    }
+    loadTravelSection();
+  });
+}
