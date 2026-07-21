@@ -243,7 +243,15 @@ async function enterMainApp() {
 
   await loadFromSupabaseCloud(); // ✅ ATTEND avant de render, plus d'écran vide
 
-  loadAllData();
+  // 🐛 CORRECTIF : un second appel à loadAllData() était fait ici juste après le
+  // chargement cloud. Comme loadAllData() recharge TOUT depuis le stockage local du
+  // téléphone (notifications, shopping, galerie, fil d'activité...), il écrasait
+  // silencieusement la fusion fraîchement faite par loadFromSupabaseCloud() par
+  // l'ancienne version locale. Symptôme observé : le badge de notifications restait
+  // bloqué à un nombre élevé même après avoir ouvert/lu les notifs concernées, car
+  // elles n'existaient déjà plus dans le tableau au moment du clic — puis réapparaissaient
+  // à chaque rafraîchissement 25s suivant. Le premier loadAllData() (avant le chargement
+  // cloud) suffit à amorcer l'état local ; pas besoin de le refaire après.
   renderPlanning();
   showMyProfile();
   renderShopping();
