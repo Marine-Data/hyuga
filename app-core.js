@@ -1555,6 +1555,14 @@ function goToValiseFromPratique() {
   setTimeout(() => { if (typeof showMyProfileTab === 'function') showMyProfileTab('valise'); }, 50);
 }
 
+// ✅ Depuis "Vie pratique" : accès direct au récap arrivées/départs (adresse de la
+// maison, lien bus, qui vient quand) — avant, il fallait aller sur son profil PUIS
+// cliquer "Voir les autres" pour le trouver, pas intuitif pour une info aussi utile.
+function goToTravelRecapFromPratique() {
+  switchTab('profile');
+  setTimeout(() => { if (typeof showAllProfiles === 'function') showAllProfiles(); }, 50);
+}
+
 // ✅ Onglet "Vie pratique" — regroupe Dépenses / Valise / Grand Tirage / Courses / Sondages
 // avec un aperçu chiffré réel sur chaque carte (montant, %, corvée du jour, nb d'articles),
 // pour ne pas avoir à ouvrir chaque outil juste pour savoir où on en est.
@@ -1598,6 +1606,12 @@ function renderViePratique() {
       tab: 'expenses', icon: '💰', bg: 'linear-gradient(135deg,#fdeccf,#f4b942)',
       title: 'Dépenses', detail: `${expenses.length} dépense${expenses.length > 1 ? 's' : ''} enregistrée${expenses.length > 1 ? 's' : ''}`,
       right: `${totalSpent.toFixed(0)} €`
+    },
+    {
+      direct: 'goToTravelRecapFromPratique()',
+      icon: '🗺️', bg: 'linear-gradient(135deg,#dff0f2,#0e7a90)',
+      title: 'Arrivées et départs', detail: 'Adresse de la maison, horaires, billets...',
+      right: '→'
     },
     {
       tab: 'profile', direct: 'goToValiseFromPratique()',
