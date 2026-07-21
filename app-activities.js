@@ -64,15 +64,6 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
     delete inscriptions[key];
     addNotification(`❌ ${person.name} désinscrite de ${activity.nom}`, '❌', 'inscriptions');
     addFeedEntry(`s'est désinscrite de ${activity.nom}`, '❌', 'planning', `${dayIdx}:${actIdx}`);
-    // 🐛 CORRECTIF : syncToSupabase('inscriptions', ...) ne fait qu'un upsert — il n'y avait
-    // AUCUNE suppression correspondante ici. La ligne restait donc en base pour toujours, et
-    // au prochain rechargement (ou polling 25s), loadFromSupabaseCloud() reconstruit
-    // `inscriptions` intégralement depuis Supabase : la désinscription "revenait" toute seule.
-    if (window.supabase) {
-      window.supabase.from('inscriptions').delete()
-        .match({ person_id: personId, day_idx: dayIdx, act_idx: actIdx })
-        .then(({ error }) => { if (error) console.error('Erreur suppression inscription Supabase:', error); });
-    }
   } else {
     // Inscrire
     inscriptions[key] = true;
@@ -100,10 +91,18 @@ function renderShopping() {
   if (items.length > 0) {
     html += '<div style="margin-bottom: 20px;"><div style="font-size: 14px; color: var(--primary); font-weight: 700; margin-bottom: 12px;">À faire</div>';
     items.forEach(item => {
+      const assignee = item.assignedTo ? PARTICIPANTS.find(p => p.id === item.assignedTo) : null;
+      const mineAssign = assignee && currentUser && assignee.id === currentUser.id;
+      // ✅ "Je m'en occupe" : un tap pour se l'attribuer (évite les achats en double),
+      // re-tap pour se désister si c'est le sien ; tap sur le chip de quelqu'un d'autre = reprise.
+      const assignChip = assignee
+        ? `<button onclick="toggleShopAssign(${item.id})" title="${mineAssign ? 'Me désister' : 'Reprendre'}" style="border: none; cursor: pointer; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; background: ${mineAssign ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-raised)'}; color: ${mineAssign ? 'white' : 'var(--primary)'}; flex-shrink: 0;">🙋 ${escapeHtml(assignee.name)}</button>`
+        : `<button onclick="toggleShopAssign(${item.id})" style="border: none; cursor: pointer; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--bg-raised); color: var(--primary-light); flex-shrink: 0;">🙋 Je m'en occupe</button>`;
       html += `
         <div class="card" style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px; padding: 12px; background: var(--bg-sunken); box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">
           <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleShop(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
           <span style="flex: 1; font-size: 13px; font-weight: 500; color: var(--primary);">${escapeHtml(item.item)}</span>
+          ${assignChip}
           <button class="btn btn-small btn-danger" style="border: none; background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 6px 10px; border-radius: 6px; cursor: pointer;" onclick="confirmRemoveShop(${item.id})">🗑️</button>
         </div>
       `;
@@ -148,6 +147,15 @@ function toggleShop(id) {
   renderShopping();
 }
 
+function toggleShopAssign(id) {
+  const item = shoppingList.find(i => i.id === id);
+  if (!item || !currentUser) return;
+  // Se désister si c'est déjà le sien, sinon se l'attribuer (reprise autorisée)
+  item.assignedTo = (item.assignedTo === currentUser.id) ? null : currentUser.id;
+  saveAllData();
+  renderShopping();
+}
+
 function confirmRemoveShop(id) {
   const item = shoppingList.find(i => i.id === id);
   if (!item) return;
@@ -161,6 +169,44 @@ function removeShop(id) {
 }
 
 // ============== SONDAGES ==============
+// ✅ Sondage clos si son échéance est passée
+function isPollClosed(poll) {
+  return !!(poll.closesAt && new Date(poll.closesAt) <= new Date());
+}
+
+function pollWinnerText(poll) {
+  const max = Math.max(...poll.options.map(o => o.votes.length));
+  if (max === 0) return 'aucun vote';
+  const winners = poll.options.filter(o => o.votes.length === max).map(o => o.text);
+  return winners.length > 1 ? `égalité : ${winners.join(' / ')}` : `"${winners[0]}" gagne`;
+}
+
+// ✅ Appelée par la boucle de synchro (25s) : dès qu'un sondage à échéance est passé,
+// UN SEUL appareil "réclame" l'annonce (update conditionnel côté base : premier arrivé,
+// premier servi) et publie la notification du résultat — pas de doublons.
+async function checkClosedPolls() {
+  if (!window.supabaseReady || !window.supabase) return;
+  for (const poll of polls) {
+    if (isPollClosed(poll) && !poll.resultNotified) {
+      poll.resultNotified = true; // local d'abord, pour ne pas retenter à chaque cycle
+      try {
+        const { data } = await window.supabase
+          .from('polls')
+          .update({ result_notified: true })
+          .eq('id', poll.id)
+          .eq('result_notified', false)
+          .select();
+        if (data && data.length > 0) {
+          // Cet appareil a gagné la réclamation → il annonce pour tout le monde
+          addNotification(`🗳️ Sondage terminé : ${pollWinnerText(poll)} — "${poll.question}"`, '🏁', 'general');
+          addFeedEntry(`Sondage terminé : ${pollWinnerText(poll)} ("${poll.question}")`, '🏁', 'polls');
+          renderPolls();
+        }
+      } catch (e) { /* réseau : on retentera au prochain cycle via le rechargement cloud */ }
+    }
+  }
+}
+
 function renderPolls() {
   const container = document.getElementById('polls-content');
   if (!container) return;
@@ -173,20 +219,27 @@ function renderPolls() {
   const html = polls.slice().reverse().map(poll => {
     const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
     const myVoteIdx = poll.options.findIndex(o => o.votes.includes(currentUser.id));
+    const closed = isPollClosed(poll);
+    const maxVotes = Math.max(...poll.options.map(o => o.votes.length));
 
     const optionsHtml = poll.options.map((opt, idx) => {
       const pct = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0;
       const isMyVote = idx === myVoteIdx;
+      const isWinner = closed && opt.votes.length === maxVotes && maxVotes > 0;
       return `
-        <div onclick="voteOnPoll(${poll.id}, ${idx})" style="cursor: pointer; position: relative; margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: var(--bg-sunken); box-shadow: ${isMyVote ? 'inset 0 0 0 2px #e35b2e' : 'inset 0 1px 3px rgba(12, 47, 58, 0.05)'};">
-          <div style="position: absolute; top: 0; left: 0; height: 100%; width: ${pct}%; background: linear-gradient(135deg, rgba(255, 157, 92, 0.35) 0%, rgba(227, 91, 46, 0.2) 100%); transition: width 0.4s ease;"></div>
+        <div ${closed ? '' : `onclick="voteOnPoll(${poll.id}, ${idx})"`} style="cursor: ${closed ? 'default' : 'pointer'}; position: relative; margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: var(--bg-sunken); ${closed ? `opacity: ${isWinner ? '1' : '0.55'};` : ''} box-shadow: ${isWinner ? 'inset 0 0 0 2px #10b981' : (isMyVote ? 'inset 0 0 0 2px #e35b2e' : 'inset 0 1px 3px rgba(12, 47, 58, 0.05)')};">
+          <div style="position: absolute; top: 0; left: 0; height: 100%; width: ${pct}%; background: linear-gradient(135deg, ${isWinner ? 'rgba(16, 185, 129, 0.35) 0%, rgba(16, 185, 129, 0.15)' : 'rgba(255, 157, 92, 0.35) 0%, rgba(227, 91, 46, 0.2)'} 100%); transition: width 0.4s ease;"></div>
           <div style="position: relative; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 13px;">
-            <span style="font-weight: ${isMyVote ? '700' : '400'};">${isMyVote ? '✅ ' : ''}${escapeHtml(opt.text)}</span>
-            <span style="font-weight: 700; color: #e35b2e; font-size: 12px;">${pct}% (${opt.votes.length})</span>
+            <span style="font-weight: ${isMyVote || isWinner ? '700' : '400'};">${isWinner ? '🏆 ' : ''}${isMyVote ? '✅ ' : ''}${escapeHtml(opt.text)}</span>
+            <span style="font-weight: 700; color: ${isWinner ? '#10b981' : '#e35b2e'}; font-size: 12px;">${pct}% (${opt.votes.length})</span>
           </div>
         </div>
       `;
     }).join('');
+
+    const footer = closed
+      ? `🏁 Sondage terminé · ${totalVotes} vote${totalVotes > 1 ? 's' : ''}`
+      : `${totalVotes} vote${totalVotes > 1 ? 's' : ''} · touche une option pour voter${poll.closesAt ? ` · ⏰ clôture le ${new Date(poll.closesAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}`;
 
     return `
       <div class="card">
@@ -195,7 +248,7 @@ function renderPolls() {
           <button class="btn-icon-small" onclick="confirmDeletePoll(${poll.id})" title="Supprimer" style="background: var(--bg-sunken); border: none; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; flex-shrink: 0;">🗑️</button>
         </div>
         ${optionsHtml}
-        <div style="font-size: 11px; color: var(--primary-light); margin-top: 8px;">${totalVotes} vote${totalVotes > 1 ? 's' : ''} · touche une option pour voter</div>
+        <div style="font-size: 11px; color: var(--primary-light); margin-top: 8px;">${footer}</div>
       </div>
     `;
   }).join('');
@@ -218,12 +271,17 @@ function createPoll() {
     return;
   }
 
+  const closesAtRaw = document.getElementById('poll-closes-at')?.value || '';
+  const closesAt = closesAtRaw ? new Date(closesAtRaw).toISOString() : null;
+
   polls.push({
     id: Date.now(),
     question,
     options: optionInputs.map(text => ({ text, votes: [] })),
     creator: currentUser.name,
-    timestamp: new Date()
+    timestamp: new Date(),
+    closesAt,          // ✅ Clôture automatique optionnelle
+    resultNotified: false
   });
 
   saveAllData();
@@ -237,6 +295,7 @@ function createPoll() {
 function voteOnPoll(pollId, optionIdx) {
   const poll = polls.find(p => p.id === pollId);
   if (!poll) return;
+  if (isPollClosed(poll)) { showNotification('🏁 Ce sondage est terminé', 'error'); return; }
 
   // Retirer le vote précédent (un seul vote par personne, changement autorisé)
   poll.options.forEach(o => {

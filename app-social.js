@@ -98,6 +98,7 @@ function renderMyProfile() {
   document.getElementById('my-profile-content').innerHTML = html;
   renderProfileXpStats();
   showMyProfileTab('infos');
+  if (user.name === 'Marine') loadPendingPrivateMessages(); // ✅ Liste des envois programmés
 }
 
 // ============== MESSAGE PRIVÉ (réservé au profil de Marine) ==============
@@ -146,8 +147,54 @@ function renderPrivateMessageComposer() {
 
       <button class="btn btn-primary" onclick="sendPrivateMessage()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15); background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white; font-weight: 700;">💌 Envoyer</button>
       <div id="pm-status" style="font-size: 11.5px; color: var(--primary-light); margin-top: 8px; text-align: center;"></div>
+      <div id="pm-pending" style="margin-top: 14px;"></div>
     </div>
   `;
+}
+
+// ✅ Liste des messages programmés pas encore envoyés, avec annulation — avant, une
+// fois un envoi programmé validé, aucun moyen de le revoir ni de l'annuler.
+async function loadPendingPrivateMessages() {
+  const box = document.getElementById('pm-pending');
+  if (!box || !window.supabaseReady) return;
+  try {
+    const { data, error } = await window.supabase
+      .from('private_messages')
+      .select('*')
+      .eq('sent', false)
+      .order('scheduled_at', { ascending: true });
+    if (error || !data || data.length === 0) { box.innerHTML = ''; return; }
+
+    box.innerHTML = `
+      <div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">⏳ Programmés (pas encore envoyés)</div>
+      ${data.map(m => {
+        const target = PARTICIPANTS.find(p => p.id === m.target_id)?.name || '?';
+        const when = new Date(m.scheduled_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return `
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--bg-sunken); border-radius: 8px; font-size: 12px;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 700; color: var(--primary);">${m.emoji || '❤️'} Pour ${escapeHtml(target)} · ${when}</div>
+              <div style="color: var(--primary-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(m.message)}</div>
+            </div>
+            <button onclick="cancelPendingPrivateMessage(${m.id})" title="Annuler" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; border-radius: 6px; padding: 6px 9px; cursor: pointer; flex-shrink: 0;">✕</button>
+          </div>`;
+      }).join('')}
+    `;
+  } catch (e) { box.innerHTML = ''; }
+}
+
+function cancelPendingPrivateMessage(id) {
+  showConfirmation('Annuler cet envoi programmé ?', async () => {
+    try {
+      // Sécurité anti-course : on ne supprime que s'il n'est toujours pas parti
+      const { error } = await window.supabase.from('private_messages').delete().eq('id', id).eq('sent', false);
+      if (error) throw error;
+      showNotification('✕ Envoi annulé', 'success');
+    } catch (e) {
+      showNotification('❌ Annulation impossible (déjà envoyé ?)', 'error');
+    }
+    loadPendingPrivateMessages();
+  });
 }
 
 function togglePmSelectAll() {
@@ -189,6 +236,7 @@ async function sendPrivateMessage() {
       ? `✅ Message envoyé à ${names} !`
       : `✅ Programmé pour ${names} le ${scheduledAt.toLocaleString('fr-FR')}`;
     showNotification(`💌 Message privé enregistré pour ${targetIds.length} personne${targetIds.length > 1 ? 's' : ''} !`, 'success');
+    loadPendingPrivateMessages();
     document.getElementById('pm-message').value = '';
     document.querySelectorAll('.pm-target-checkbox').forEach(b => { b.checked = false; });
   } catch (err) {
@@ -840,14 +888,24 @@ function renderChat() {
     const showName = !mine && msg.person_id !== lastPersonId;
     lastPersonId = msg.person_id;
 
+    // Réactions existantes { "❤️": [ids], ... }
+    const reactions = msg.reactions || {};
+    const reactionChips = Object.entries(reactions)
+      .filter(([, ids]) => Array.isArray(ids) && ids.length > 0)
+      .map(([emo, ids]) => {
+        const mineR = currentUser && ids.includes(currentUser.id);
+        return `<span onclick="event.stopPropagation(); toggleChatReaction(${msg.id}, '${emo}')" style="display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 10px; font-size: 11px; cursor: pointer; background: ${mineR ? 'rgba(255,255,255,0.95)' : 'var(--bg-raised)'}; box-shadow: 0 1px 3px rgba(0,0,0,0.15); color: var(--primary);">${emo} ${ids.length}</span>`;
+      }).join('');
+
     return `${sep}
       <div style="display: flex; ${mine ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
-        <div style="max-width: 80%; padding: 7px 11px; border-radius: ${mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px'}; font-size: 13px; line-height: 1.4; ${mine
+        <div onclick="showChatReactionPicker(${msg.id}, this)" style="max-width: 80%; padding: 7px 11px; border-radius: ${mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px'}; font-size: 13px; line-height: 1.4; cursor: pointer; ${mine
           ? 'background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white;'
           : 'background: var(--bg-sunken); color: var(--primary);'}">
           ${showName ? `<div style="font-size: 10.5px; font-weight: 700; margin-bottom: 2px; ${mine ? 'color: rgba(255,255,255,0.85);' : 'color: var(--accent-pink);'}">${escapeHtml(p.name)}</div>` : ''}
           ${mine ? escapeHtml(msg.text) : highlightMentions(msg.text)}
           <div style="font-size: 9.5px; margin-top: 2px; text-align: right; ${mine ? 'color: rgba(255,255,255,0.7);' : 'color: var(--primary-light);'}">${time}</div>
+          ${reactionChips ? `<div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">${reactionChips}</div>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -881,6 +939,47 @@ async function sendChatMessage() {
     console.error('Envoi chat échoué:', err);
     input.value = text; // ne pas perdre le message tapé
     showNotification('❌ Message non envoyé, réessaie', 'error');
+  }
+}
+
+// ✅ Réactions : tap sur une bulle → mini-sélecteur ❤️ 😂 👍 juste au-dessus.
+// La bascule relit d'abord la version cloud du message (comme les likes de la
+// galerie) pour ne jamais écraser la réaction posée par quelqu'un d'autre.
+function showChatReactionPicker(msgId, bubbleEl) {
+  document.getElementById('chat-reaction-picker')?.remove();
+  const picker = document.createElement('div');
+  picker.id = 'chat-reaction-picker';
+  const rect = bubbleEl.getBoundingClientRect();
+  picker.style.cssText = `position: fixed; top: ${Math.max(8, rect.top - 44)}px; left: ${Math.min(Math.max(8, rect.left), window.innerWidth - 150)}px; z-index: 100000; background: var(--bg-raised); border-radius: 20px; padding: 6px 10px; display: flex; gap: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.25);`;
+  picker.innerHTML = ['❤️', '😂', '👍'].map(emo =>
+    `<button onclick="toggleChatReaction(${msgId}, '${emo}'); document.getElementById('chat-reaction-picker').remove();" style="background: none; border: none; font-size: 20px; cursor: pointer; padding: 2px;">${emo}</button>`
+  ).join('');
+  document.body.appendChild(picker);
+  setTimeout(() => {
+    const closeOnTap = (e) => { if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('click', closeOnTap); } };
+    document.addEventListener('click', closeOnTap);
+  }, 50);
+}
+
+async function toggleChatReaction(msgId, emoji) {
+  if (!currentUser || !window.supabaseReady) return;
+  try {
+    const { data, error } = await window.supabase.from('chat_messages').select('reactions').eq('id', msgId).maybeSingle();
+    if (error || !data) return;
+    const reactions = data.reactions || {};
+    const ids = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+    const idx = ids.indexOf(currentUser.id);
+    if (idx > -1) ids.splice(idx, 1); else ids.push(currentUser.id);
+    reactions[emoji] = ids;
+
+    const { error: upErr } = await window.supabase.from('chat_messages').update({ reactions }).eq('id', msgId);
+    if (upErr) throw upErr;
+
+    // Mise à jour locale immédiate (le temps réel confirmera pour les autres)
+    const local = chatMessages.find(m => m.id === msgId);
+    if (local) { local.reactions = reactions; renderChat(); }
+  } catch (e) {
+    console.error('Réaction échouée:', e);
   }
 }
 
@@ -931,6 +1030,15 @@ function updateChatUnreadDot() {
             } else {
               updateChatUnreadDot();
             }
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, (payload) => {
+          // ✅ Réactions posées par les autres, en temps réel
+          const local = chatMessages.find(m => m.id === payload.new.id);
+          if (local) {
+            local.reactions = payload.new.reactions || {};
+            const panel = document.getElementById('chatPanel');
+            if (panel && panel.classList.contains('open')) renderChat();
           }
         })
         .subscribe((status) => { chatRealtimeOk = (status === 'SUBSCRIBED'); });

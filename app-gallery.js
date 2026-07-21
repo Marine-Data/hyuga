@@ -598,6 +598,7 @@ function openGalleryLightbox(itemId) {
   overlay.innerHTML = `
     ${media}
     <button onclick="document.getElementById('gallery-lightbox').remove()" style="position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 20px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">✕</button>
+    <button onclick="event.stopPropagation(); downloadGalleryItem(${item.id})" title="Enregistrer" style="position: absolute; top: max(14px, env(safe-area-inset-top)); right: 64px; background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 17px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">⬇️</button>
     ${prevId !== null ? `<button onclick="event.stopPropagation(); openGalleryLightbox(${prevId})" style="${navBtnStyle} left: 10px;">‹</button>` : ''}
     ${nextId !== null ? `<button onclick="event.stopPropagation(); openGalleryLightbox(${nextId})" style="${navBtnStyle} right: 10px;">›</button>` : ''}
     <div style="position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.85); font-size: 12.5px; padding: 0 20px;">
@@ -606,6 +607,38 @@ function openGalleryLightbox(itemId) {
   `;
 
   document.body.appendChild(overlay);
+}
+
+// ✅ Enregistrer une photo/vidéo dans l'appareil (fonctionne pour les deux formats :
+// URL Storage récente ou base64 historique). Nom de fichier lisible : lieu + date.
+async function downloadGalleryItem(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  try {
+    let blob;
+    if (item.src.startsWith('data:')) {
+      blob = dataURLToBlob(item.src);
+    } else {
+      const res = await fetch(item.src);
+      blob = await res.blob();
+    }
+    const ext = item.type === 'video' ? 'mp4' : 'jpg';
+    const cleanLoc = (item.location || 'photo').replace(/[^a-zA-Z0-9àâéèêëîïôùûüç' -]/g, '').trim().replace(/\s+/g, '-') || 'photo';
+    const d = new Date(item.timestamp);
+    const name = `saraillon-${cleanLoc}-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.${ext}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showNotification('⬇️ Enregistrement lancé !', 'success');
+  } catch (err) {
+    console.error('Téléchargement échoué:', err);
+    showNotification('❌ Impossible d\'enregistrer ce fichier', 'error');
+  }
 }
 
 function viewGallery(idx) {

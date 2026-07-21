@@ -304,6 +304,7 @@ async function enterMainApp() {
       safe(renderChallenges);
       safe(renderInscriptions);
       safe(renderPolls);
+      safe(checkClosedPolls);
       safe(renderExpenses);
       safe(renderShopping);
       safe(renderTresor);
@@ -577,7 +578,8 @@ async function loadFromSupabaseCloud() {
       shoppingList = shopData.map(item => ({
         id: item.id,
         item: item.item,
-        done: item.done || false
+        done: item.done || false,
+        assignedTo: item.assigned_to || null // ✅ Qui s'en occupe
       }));
     }
     
@@ -751,7 +753,9 @@ async function loadFromSupabaseCloud() {
         question: p.question,
         options: p.options || [],
         creator: p.creator || '',
-        timestamp: p.created_at || new Date()
+        timestamp: p.created_at || new Date(),
+        closesAt: p.closes_at || null,
+        resultNotified: p.result_notified || false
       }));
     }
 
@@ -832,7 +836,7 @@ function saveAllData() {
   if (window.supabaseReady && window.syncToSupabase) {
     // Sync shopping list
     shoppingList.forEach(item => {
-      window.syncToSupabase('shopping_list', { id: item.id, item: item.item, done: item.done }).catch(err => console.error('Sync Supabase échouée:', err));
+      window.syncToSupabase('shopping_list', { id: item.id, item: item.item, done: item.done, assigned_to: item.assignedTo || null }).catch(err => console.error('Sync Supabase échouée:', err));
     });
     
     // Sync inscriptions (clé composée: person_id, day_idx, act_idx)
@@ -933,7 +937,9 @@ function saveAllData() {
         id: poll.id,
         question: poll.question,
         options: poll.options || [],
-        creator: poll.creator || ''
+        creator: poll.creator || '',
+        closes_at: poll.closesAt || null,
+        result_notified: poll.resultNotified || false
       }).catch(err => console.error('Sync Supabase échouée:', err));
     });
 
@@ -2127,7 +2133,29 @@ function toggleNotifications() {
 }
 
 function renderNotifications() {
-  const html = notifications.slice(0, 30).map(n => {
+  // ✅ Groupage des ❤️ : les likes portant sur le MÊME élément (type + refId) sont
+  // fusionnés en une seule ligne "❤️ 3 personnes ont aimé votre photo" — à 9
+  // participants, la cloche listait chaque like un par un et devenait illisible.
+  // Un tap sur la ligne groupée marque tout le groupe comme lu et navigue vers l'élément.
+  const grouped = [];
+  const likeGroups = {};
+  notifications.slice(0, 30).forEach(n => {
+    const isLike = /a aimé/.test(n.message) && n.refId;
+    if (!isLike) { grouped.push({ ...n, groupIds: [n.id] }); return; }
+    const key = `${n.type}-${n.refId}`;
+    if (likeGroups[key]) {
+      likeGroups[key].groupIds.push(n.id);
+      likeGroups[key].count++;
+      // Non-lu si AU MOINS un like du groupe est non-lu
+      likeGroups[key].anyUnread = likeGroups[key].anyUnread || !isReadByCurrentUser(n);
+    } else {
+      const g = { ...n, groupIds: [n.id], count: 1, anyUnread: !isReadByCurrentUser(n) };
+      likeGroups[key] = g;
+      grouped.push(g);
+    }
+  });
+
+  const html = grouped.map(n => {
     let navAction = "switchTab('home');";
     // ✅ Quand on connaît l'élément précis concerné (refId), on y va directement au
     // lieu de juste ouvrir l'onglet général — avant, une notif "X a commenté ta photo"
@@ -2146,15 +2174,33 @@ function renderNotifications() {
     else if (n.type === 'corvees') navAction = "switchTab('corvees');";
     else if (n.type === 'inscriptions') navAction = "switchTab('inscriptions');";
     else if (n.type === 'surprises') navAction = "switchTab('surprises');";
-    
+
+    // Libellé groupé : "❤️ 3 personnes ont aimé votre photo"
+    let label = n.message;
+    if (n.count && n.count > 1) {
+      const suffix = (n.message.match(/a aimé (.*)$/) || [])[1] || 'ça';
+      label = `${n.count} personnes ont aimé ${suffix}`;
+    }
+    const unread = n.count ? n.anyUnread : !isReadByCurrentUser(n);
+
     return `
-    <div class="notif-item ${!isReadByCurrentUser(n) ? 'unread' : ''}" onclick="markRead(${n.id}); ${navAction}" style="cursor: pointer;">
-      <div style="font-size: 12px; color: var(--primary);">${n.emoji} ${escapeHtml(n.message)}</div>
+    <div class="notif-item ${unread ? 'unread' : ''}" onclick="markReadGroup(${JSON.stringify(n.groupIds)}); ${navAction}" style="cursor: pointer;">
+      <div style="font-size: 12px; color: var(--primary);">${n.emoji} ${escapeHtml(label)}</div>
       <div class="notif-time">${new Date(n.timestamp).toLocaleTimeString('fr-FR')}</div>
     </div>
   `;
   }).join('');
   document.getElementById('notif-content').innerHTML = html || '<div style="padding: 20px; text-align: center; color: var(--primary-light);">Aucune notification</div>';
+}
+
+function markReadGroup(ids) {
+  ids.forEach(id => {
+    const notif = notifications.find(n => n.id === id);
+    if (notif) markReadForCurrentUser(notif);
+  });
+  updateNotifBadge();
+  renderNotifications();
+  saveAllData();
 }
 
 // ✅ Depuis une notification de Galerie (like/commentaire/mention) : ouvre la Galerie
