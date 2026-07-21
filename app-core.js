@@ -686,7 +686,7 @@ async function loadFromSupabaseCloud() {
             // la vraie date d'origine — created_at (géré par la base) en repli
             // seulement pour les très vieilles notifications d'avant ce correctif.
             timestamp: n.timestamp || n.created_at || new Date(),
-            read: n.author_id === (currentUser ? currentUser.id : null) // ✅ Ses propres notifs sont déjà "vues"
+            readBy: n.author_id != null ? [n.author_id] : [] // ✅ Seul l'auteur a "vu" par défaut ; les autres personnes sur cet appareil (voir switchToOtherProfile) devront la lire elles-mêmes
           });
         }
       });
@@ -1823,6 +1823,24 @@ function showNotification(msg, type = 'success') {
   setTimeout(() => notif.remove(), 3000);
 }
 
+// ✅ GARDE-FOU MULTI-PROFILS : sur un même appareil, plusieurs personnes peuvent se
+// succéder (voir switchToOtherProfile) — le statut "lu" ne doit donc jamais être un
+// simple booléen partagé (sinon Sonia qui lit ses notifs les marquerait "lues" pour
+// Marine aussi au prochain changement de profil sur le même téléphone). On garde
+// désormais un tableau `readBy` des id de personnes ayant vu la notif. `n.read`
+// (ancien format, avant ce correctif) reste lu en repli pour les notifs déjà stockées
+// localement avant la mise à jour, afin de ne pas tout remarquer comme non-lu d'un coup.
+function isReadByCurrentUser(n) {
+  if (Array.isArray(n.readBy)) return !!(currentUser && n.readBy.includes(currentUser.id));
+  return !!n.read;
+}
+
+function markReadForCurrentUser(n) {
+  if (!currentUser) return;
+  if (!Array.isArray(n.readBy)) n.readBy = n.read ? [currentUser.id] : [];
+  if (!n.readBy.includes(currentUser.id)) n.readBy.push(currentUser.id);
+}
+
 function addNotification(msg, emoji = '📌', type = 'general', sync = true, refId = null) {
   const notif = {
     id: Date.now(),
@@ -1831,7 +1849,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
     type: type,
     refId: refId,
     timestamp: new Date(),
-    read: false
+    readBy: currentUser ? [currentUser.id] : [] // ✅ L'auteur de l'action a, par définition, déjà "vu" sa propre notif
   };
   notifications.unshift(notif);
   if (notifications.length > 50) notifications.pop();
@@ -1912,7 +1930,7 @@ function sendPushNotification(msg, emoji = '📌') {
 }
 
 function updateNotifBadge() {
-  const unread = notifications.filter(n => !n.read).length;
+  const unread = notifications.filter(n => !isReadByCurrentUser(n)).length;
   const badge = document.getElementById('notifBadge');
   if (unread > 0) {
     badge.textContent = unread > 99 ? '99+' : unread;
@@ -1949,7 +1967,7 @@ function renderNotifications() {
     else if (n.type === 'surprises') navAction = "switchTab('surprises');";
     
     return `
-    <div class="notif-item ${!n.read ? 'unread' : ''}" onclick="markRead(${n.id}); ${navAction}" style="cursor: pointer;">
+    <div class="notif-item ${!isReadByCurrentUser(n) ? 'unread' : ''}" onclick="markRead(${n.id}); ${navAction}" style="cursor: pointer;">
       <div style="font-size: 12px; color: var(--primary);">${n.emoji} ${escapeHtml(n.message)}</div>
       <div class="notif-time">${new Date(n.timestamp).toLocaleTimeString('fr-FR')}</div>
     </div>
@@ -2001,7 +2019,7 @@ function openChallengeNotification(challengeId) {
 
 function markRead(id) {
   const notif = notifications.find(n => n.id === id);
-  if (notif) notif.read = true;
+  if (notif) markReadForCurrentUser(notif);
   updateNotifBadge();
   renderNotifications();
   saveAllData();
