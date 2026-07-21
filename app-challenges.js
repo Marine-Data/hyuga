@@ -113,6 +113,12 @@ function confirmDeleteChallenge(id) {
     if (window.supabaseReady) {
       window.deleteFromSupabase('challenges', id).catch(err => console.error('Suppression cloud échouée:', err));
     }
+    // 🪦 Pierre tombale (anti-résurrection) — voir app-core.js
+    if (window.supabase) {
+      window.supabase.from('deleted_items').upsert({ table_name: 'challenges', item_id: id })
+        .then(() => { if (deletedItemIds.challenges) deletedItemIds.challenges.add(Number(id)); })
+        .catch(err => console.error('Pose de pierre tombale échouée:', err));
+    }
     saveAllData();
     renderChallenges();
     showNotification('🗑️ Supprimé', 'success');

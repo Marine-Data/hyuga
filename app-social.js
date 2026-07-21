@@ -744,6 +744,12 @@ function deleteFeedEntry(entryId) {
     if (window.supabaseReady && window.deleteFromSupabase) {
       window.deleteFromSupabase('feed_entries', entryId).catch(err => console.error('Suppression Supabase échouée:', err));
     }
+    // 🪦 Pierre tombale (anti-résurrection) — voir app-core.js
+    if (window.supabase) {
+      window.supabase.from('deleted_items').upsert({ table_name: 'feed_entries', item_id: entryId })
+        .then(() => { if (deletedItemIds.feed_entries) deletedItemIds.feed_entries.add(Number(entryId)); })
+        .catch(err => console.error('Pose de pierre tombale échouée:', err));
+    }
     saveAllData();
     renderFeed();
     showNotification('🗑️ Publication supprimée', 'success');

@@ -524,6 +524,30 @@ function mergeCommentsById(localArr, cloudArr) {
   return merged;
 }
 
+// 🪦 (anti-résurrection) Ids supprimés définitivement, par table — chargés depuis la
+// table deleted_items à chaque synchro. Utilisés pour : 1) purger les copies locales,
+// 2) refuser de re-synchroniser un élément supprimé (voir saveAllData), même depuis un
+// appareil resté longtemps hors-ligne avec une vieille galerie.
+let deletedItemIds = { gallery_items: new Set(), feed_entries: new Set(), challenges: new Set() };
+
+async function refreshDeletedItems() {
+  if (!window.supabaseReady || !window.supabase) return;
+  try {
+    const { data, error } = await window.supabase.from('deleted_items').select('table_name, item_id');
+    if (error || !data) return;
+    const fresh = { gallery_items: new Set(), feed_entries: new Set(), challenges: new Set() };
+    data.forEach(row => {
+      if (!fresh[row.table_name]) fresh[row.table_name] = new Set();
+      fresh[row.table_name].add(Number(row.item_id));
+    });
+    deletedItemIds = fresh;
+  } catch (e) { /* réseau indisponible : on garde la dernière liste connue */ }
+}
+
+function isTombstoned(table, id) {
+  return !!(deletedItemIds[table] && deletedItemIds[table].has(Number(id)));
+}
+
 // 🌐 Load data from Supabase (async)
 async function loadFromSupabaseCloud() {
   // Attendre que Supabase soit prêt
@@ -539,7 +563,10 @@ async function loadFromSupabaseCloud() {
   }
   
   console.log('🌐 Loading from Supabase...');
-  
+
+  // 🪦 D'abord la liste des éléments supprimés définitivement (anti-résurrection)
+  await refreshDeletedItems();
+
   try {
     // Load shopping list
     const shopData = await window.loadFromSupabase('shopping_list');
@@ -603,7 +630,7 @@ async function loadFromSupabaseCloud() {
       console.log(`✅ Loaded ${galleryData.length} gallery items from Supabase`);
       const localGalleryById = {};
       galleryItems.forEach(g => { localGalleryById[g.id] = g; });
-      galleryItems = galleryData.map(item => ({
+      galleryItems = galleryData.filter(item => !isTombstoned('gallery_items', item.id)).map(item => ({
         id: item.id,
         src: item.image_url,
         type: item.type || 'image',
@@ -626,7 +653,7 @@ async function loadFromSupabaseCloud() {
       console.log(`✅ Loaded ${feedData.length} feed entries from Supabase`);
       const localFeedById = {};
       feed.forEach(f => { localFeedById[f.id] = f; });
-      feed = feedData.map(entry => {
+      feed = feedData.filter(entry => !isTombstoned('feed_entries', entry.id)).map(entry => {
         const parsedData = entry.data ? JSON.parse(entry.data) : { likes: [], comments: [] };
         return {
           id: entry.id,
@@ -796,6 +823,7 @@ function saveAllData() {
     // JAMAIS synchronisé entre appareils (contrairement à la galerie/corvées) : un
     // commentaire posté par quelqu'un d'autre pouvait ne jamais apparaître ailleurs.
     challenges.forEach(ch => {
+      if (isTombstoned('challenges', ch.id)) return; // 🪦 anti-résurrection
       window.syncToSupabase('challenges', {
         id: ch.id,
         creator: ch.creator || null,
@@ -814,6 +842,9 @@ function saveAllData() {
 
     // Sync gallery items
     galleryItems.forEach(item => {
+      // 🪦 Jamais re-synchroniser un élément supprimé définitivement, même si cet
+      // appareil en garde une vieille copie locale (anti-résurrection).
+      if (isTombstoned('gallery_items', item.id)) return;
       const imgSrc = item.src || item.image || '';
       // ✅ Ne jamais synchroniser une image vide : ça écraserait une bonne photo déjà en ligne
       if (!imgSrc) {
@@ -840,6 +871,7 @@ function saveAllData() {
     // Sync feed entries
     // Sync feed (sérialiser en JSON)
     feed.forEach(entry => {
+      if (isTombstoned('feed_entries', entry.id)) return; // 🪦 anti-résurrection
       window.syncToSupabase('feed_entries', {
         id: entry.id,
         person_id: entry.userId || 1,

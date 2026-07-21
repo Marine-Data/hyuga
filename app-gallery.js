@@ -485,6 +485,14 @@ function confirmDeleteGalleryItem(itemId) {
     document.getElementById('gallery-edit-modal')?.remove();
     renderGallery();
     window.deleteFromSupabase('gallery_items', itemId);
+    // 🪦 Pierre tombale : empêche définitivement tout appareil (même hors-ligne
+    // longtemps avec une vieille copie) de faire ressusciter cette photo en la
+    // re-synchronisant — voir isTombstoned/refreshDeletedItems dans app-core.js.
+    if (window.supabase) {
+      window.supabase.from('deleted_items').upsert({ table_name: 'gallery_items', item_id: itemId })
+        .then(() => { if (deletedItemIds.gallery_items) deletedItemIds.gallery_items.add(Number(itemId)); })
+        .catch(err => console.error('Pose de pierre tombale échouée:', err));
+    }
     showNotification('🗑️ Photo supprimée', 'success');
   });
 }
