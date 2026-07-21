@@ -1,1827 +1,1350 @@
-// ============================================================
-// MODULE COMMUNAUTÉ — extrait de index.html (Kdramatrics)
-// Avis publics + likes, abonnements, fil d'activité, profil public,
-// recherche de profil.
-// Dépend de main.js, quiz.js, ost.js, tierlist.js pour l'état global
-// et les fonctions partagées ; catalogue.js et trends.js pour
-// quelques actions croisées (marquer vu, tendances).
-// ============================================================
+// ============== FEED ==============
 
-import { state, setState, esc, showToast, sb, isLoggedIn, currentUserId, render, avecBoutonDesactive, formatDateFr, castingLinksHtml, computeTrends, enrichirDramasAvecPersonnes, fmtNote, chargerMesAVoir, FLOWER_MOTIF_SVG } from './main.js';
-import { stampHtml } from './catalogue.js';
-import { finishQuiz, loadLeaderboardQuiz } from './quiz.js';
-import { loadOstLeaderboard } from './ost.js';
-import { getTierlistLikeCount } from './tierlist.js';
-import { markAsWatched, uploadAvatar, renderTrendsSections } from './catalogue.js';
-
-export function renderRechercheProfilResultats() {
-  if (state.rechercheProfilLoading) return `<p class="tr-note">Recherche…</p>`;
-  const q = state.rechercheProfilQuery.trim();
-  if (q.length < 2) return `<p class="tr-note">Tape au moins 2 lettres du pseudo.</p>`;
-  const resultats = state.rechercheProfilResultats || [];
-  if (resultats.length === 0) return `<p class="tr-note">Aucun profil trouvé pour "${esc(q)}".</p>`;
-  return resultats.map((p) => `
-    <div class="tr-person-row" data-open-profil-recherche="${esc(p.id)}">
-      ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" class="tr-person-avatar">` : `<span class="tr-rank motif-flower" style="width:24px;height:24px;">${FLOWER_MOTIF_SVG}</span>`}
-      <div class="tr-person-info"><p class="tr-person-name">${esc(p.pseudo)}</p></div>
-      <span class="text-btn" style="color:var(--blue-deep);">Voir le profil</span>
-    </div>`).join("");
+// ============== PROFILE MANAGEMENT ==============
+function showMyProfile() {
+  document.getElementById('my-profile-content').style.display = 'block';
+  document.getElementById('all-profiles-content').style.display = 'none';
+  renderMyProfile();
 }
-export function renderRechercheProfilModal() {
-  if (!state.rechercheProfilOpen) return "";
-  return `<div class="modal-overlay" id="rechercheProfilOverlay">
-    <div class="modal-sheet" id="rechercheProfilSheet">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <div style="flex:1;"><h3>Chercher un profil</h3></div>
-        <button class="icon-btn" id="rechercheProfilClose">✕</button>
-      </div>
-      <div class="modal-body">
-        <label style="display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--ink-soft); font-weight:500;">
-          Pseudo
-          <input id="rechercheProfilInput" value="${esc(state.rechercheProfilQuery)}" placeholder="ex. dramaqueen92" autofocus>
-        </label>
-        <div id="rechercheProfilResultats" style="margin-top:10px;">${renderRechercheProfilResultats()}</div>
-      </div>
+
+function showGroupProfiles() {
+  showAllProfiles();
+}
+
+function showAllProfiles() {
+  document.getElementById('my-profile-content').style.display = 'none';
+  document.getElementById('all-profiles-content').style.display = 'block';
+  renderAllProfiles();
+}
+
+// ✅ XP total + rang, calculés à la volée depuis computeXpLeaderboard() (la même
+// source que le Classement de l'onglet Défis) — jamais une valeur figée séparée qui
+// pourrait se désynchroniser.
+function renderProfileXpStats() {
+  const el = document.getElementById('profile-xp-stats');
+  if (!el) return;
+  if (typeof computeXpLeaderboard !== 'function') { el.innerHTML = ''; return; }
+
+  const ranking = computeXpLeaderboard();
+  const myRankIdx = ranking.findIndex(r => r.p.id === currentUser.id);
+  const myXp = myRankIdx !== -1 ? ranking[myRankIdx].xp : 0;
+  const myRank = myRankIdx !== -1 ? myRankIdx + 1 : '—';
+
+  el.innerHTML = `
+    <div style="flex: 1; background: var(--bg-raised); border-radius: 12px; box-shadow: 0 2px 8px rgba(12,47,58,0.08); text-align: center; padding: 10px 4px;">
+      <div style="font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--primary);">${myXp}</div>
+      <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary-light);">XP total</div>
     </div>
-  </div>`;
-}
-/* ============================================================
-   MODULE COMMUNAUTÉ
-   Avis publics + likes, abonnements, fil d'activité, profil public.
-   ============================================================ */
-
-// ---- état additionnel ----
-// ---- chargement ----
-export async function loadCommunaute() {
-  try {
-    const { data, error } = await sb
-      .from("avis")
-      .select("*, profils(pseudo, avatar_url), dramas(titre, titre_kr, poster_url, annee)")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) throw error;
-    state.avis = data || [];
-  } catch (e) {
-    console.error("Erreur chargement avis", e);
-    state.avis = [];
-  }
-
-  // Activités "veut voir" : alimentent le fil au même titre que les
-  // avis (cf. demande : "X veut voir Y" doit apparaître dans le fil),
-  // mais restent une source de données distincte de `avis` — pas de
-  // like/suppression depuis le fil pour ces cartes, l'envie se gère
-  // depuis l'onglet À voir comme avant.
-  try {
-    const { data, error } = await sb
-      .from("mes_a_voir")
-      .select("*, profils(pseudo, avatar_url), a_voir(titre, titre_kr, poster_url, annee)")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) throw error;
-    state.activitesAVoir = data || [];
-  } catch (e) {
-    console.error("Erreur chargement activités à voir", e);
-    state.activitesAVoir = [];
-  }
-
-  try {
-    const { data, error } = await sb.from("abonnements").select("*");
-    if (error) throw error;
-    state.abonnements = data || [];
-  } catch (e) {
-    console.error("Erreur chargement abonnements", e);
-    state.abonnements = [];
-  }
-
-  // Compte des likes par avis (requête groupée légère : on charge tout
-  // et on compte côté client, le volume restant modeste pour cet usage).
-  try {
-    const { data, error } = await sb.from("avis_likes").select("avis_id, user_id");
-    if (error) throw error;
-    state.avisLikes = data || [];
-  } catch (e) {
-    state.avisLikes = [];
-  }
-
-  // Compte des likes par cadeau
-  try {
-    const { data, error } = await sb.from("cadeau_likes").select("cadeau_id, user_id");
-    if (error) throw error;
-    state.cadeauxLikes = data || [];
-  } catch (e) {
-    state.cadeauxLikes = [];
-  }
-
-  // Compte des commentaires par cadeau
-  try {
-    const { data, error } = await sb.from("cadeau_comments").select("cadeau_id");
-    if (error) throw error;
-    state.cadeauxComments = data || [];
-  } catch (e) {
-    state.cadeauxComments = [];
-  }
-
-  // Les 20 derniers inscrits, pour la carte "X a rejoint le carnet"
-  // dans le fil — sans ça, un compte tout juste créé est invisible
-  // (aucune activité encore) et impossible à trouver pour s'abonner.
-  try {
-    const { data, error } = await sb
-      .from("profils")
-      .select("id, pseudo, avatar_url, created_at")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (error) throw error;
-    state.nouveauxInscrits = data || [];
-  } catch (e) {
-    console.error("Erreur chargement nouveaux inscrits", e);
-    state.nouveauxInscrits = [];
-  }
-
-  // Cadeaux gagnés récemment par tout le monde (pas seulement les
-  // miens), pour la carte "X a gagné [acteur]" dans le fil. Jointure
-  // vers "profils" impossible ici (collection_acteurs.user_id
-  // référence auth.users, pas profils directement — même limite que
-  // pour suggestions_a_voir), donc on fusionne à la main avec les
-  // profils déjà récupérés au-dessus si possible, sinon une requête
-  // dédiée.
-  try {
-    const { data, error } = await sb
-      .from("collection_acteurs")
-      .select("*, personnes(id, nom, role, photo_url)")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (error) throw error;
-    const gains = (data || []).filter((c) => c.personnes);
-    const userIds = [...new Set(gains.map((c) => c.user_id))];
-    let profilsParId = {};
-    if (userIds.length > 0) {
-      const { data: profils, error: e2 } = await sb.from("profils").select("id, pseudo, avatar_url").in("id", userIds);
-      if (e2) throw e2;
-      (profils || []).forEach((p) => { profilsParId[p.id] = p; });
-    }
-    state.activitesCadeaux = gains.map((c) => ({ ...c, profil_gagnant: profilsParId[c.user_id] || null }));
-  } catch (e) {
-    console.error("Erreur chargement activités cadeaux", e);
-    state.activitesCadeaux = [];
-  }
-}
-
-export function getLikeCount(avisId) {
-  return (state.avisLikes || []).filter((l) => l.avis_id === avisId).length;
-}
-export function hasLiked(avisId) {
-  const uid = currentUserId();
-  if (!uid) return false;
-  return (state.avisLikes || []).some((l) => l.avis_id === avisId && l.user_id === uid);
-}
-
-// ---- Likes pour les cadeaux ----
-export function getLikeCadeauCount(cadeauId) {
-  return (state.cadeauxLikes || []).filter((l) => l.cadeau_id === cadeauId).length;
-}
-export function hasLikedCadeau(cadeauId) {
-  const uid = currentUserId();
-  if (!uid) return false;
-  return (state.cadeauxLikes || []).some((l) => l.cadeau_id === cadeauId && l.user_id === uid);
-}
-export function getCadeauCommentCount(cadeauId) {
-  return (state.cadeauxComments || []).filter((c) => c.cadeau_id === cadeauId).length;
-}
-
-// ---- Likes/commentaires sur les "vus" et "à voir" d'un profil ----
-// Scopés à state.profilPublicData (chargés par openProfilPublic), pas
-// globaux : on ne les affiche que sur la fiche profil consultée.
-export function hasLikedVisionnage(visionnageId) {
-  const uid = currentUserId();
-  if (!uid || !state.profilPublicData) return false;
-  return (state.profilPublicData.likesVisionnageDuProfil || []).some((l) => l.visionnage_id === visionnageId && l.user_id === uid);
-}
-export function getVisionnageLikeCount(visionnageId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.likesVisionnageDuProfil || []).filter((l) => l.visionnage_id === visionnageId).length;
-}
-export function getVisionnageCommentCount(visionnageId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.commentsVisionnageDuProfil || []).filter((c) => c.visionnage_id === visionnageId).length;
-}
-export function hasLikedAVoir(mesAVoirId) {
-  const uid = currentUserId();
-  if (!uid || !state.profilPublicData) return false;
-  return (state.profilPublicData.likesAVoirDuProfil || []).some((l) => l.mes_a_voir_id === mesAVoirId && l.user_id === uid);
-}
-export function getAVoirLikeCount(mesAVoirId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.likesAVoirDuProfil || []).filter((l) => l.mes_a_voir_id === mesAVoirId).length;
-}
-export function getAVoirCommentCount(mesAVoirId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.commentsAVoirDuProfil || []).filter((c) => c.mes_a_voir_id === mesAVoirId).length;
-}
-
-export async function toggleLikeVisionnage(visionnageId, ownerId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer."); return; }
-  const uid = currentUserId();
-  const d = state.profilPublicData;
-  if (!d) return;
-  try {
-    if (hasLikedVisionnage(visionnageId)) {
-      const { error } = await sb.from("mes_visionnages_likes").delete().eq("visionnage_id", visionnageId).eq("user_id", uid);
-      if (error) throw error;
-      d.likesVisionnageDuProfil = (d.likesVisionnageDuProfil || []).filter((l) => !(l.visionnage_id === visionnageId && l.user_id === uid));
-    } else {
-      const { error } = await sb.from("mes_visionnages_likes").insert([{ visionnage_id: visionnageId, user_id: uid }]);
-      if (error) throw error;
-      d.likesVisionnageDuProfil = [...(d.likesVisionnageDuProfil || []), { visionnage_id: visionnageId, user_id: uid }];
-      if (ownerId && ownerId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: ownerId, from_user_id: uid, interaction_type: "like", target_kind: "visionnage", target_id: visionnageId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like visionnage", errNotif);
-      }
-    }
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-export async function toggleLikeAVoir(mesAVoirId, ownerId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer."); return; }
-  const uid = currentUserId();
-  const d = state.profilPublicData;
-  if (!d) return;
-  try {
-    if (hasLikedAVoir(mesAVoirId)) {
-      const { error } = await sb.from("mes_a_voir_likes").delete().eq("mes_a_voir_id", mesAVoirId).eq("user_id", uid);
-      if (error) throw error;
-      d.likesAVoirDuProfil = (d.likesAVoirDuProfil || []).filter((l) => !(l.mes_a_voir_id === mesAVoirId && l.user_id === uid));
-    } else {
-      const { error } = await sb.from("mes_a_voir_likes").insert([{ mes_a_voir_id: mesAVoirId, user_id: uid }]);
-      if (error) throw error;
-      d.likesAVoirDuProfil = [...(d.likesAVoirDuProfil || []), { mes_a_voir_id: mesAVoirId, user_id: uid }];
-      if (ownerId && ownerId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: ownerId, from_user_id: uid, interaction_type: "like", target_kind: "a_voir", target_id: mesAVoirId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like à voir", errNotif);
-      }
-    }
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- Likes/commentaires sur la page "Tendances" d'un profil, prise
-// dans son ensemble (pas une ligne précise : la cible est profilId
-// lui-même, à la fois pour le like et pour to_user_id de la notif).
-export function hasLikedTendances(profilId) {
-  const uid = currentUserId();
-  if (!uid || !state.profilPublicData) return false;
-  return (state.profilPublicData.likesTendancesDuProfil || []).some((l) => l.profil_id === profilId && l.user_id === uid);
-}
-export function getTendancesLikeCount(profilId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.likesTendancesDuProfil || []).filter((l) => l.profil_id === profilId).length;
-}
-export function getTendancesCommentCount(profilId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.commentsTendancesDuProfil || []).filter((c) => c.profil_id === profilId).length;
-}
-export async function toggleLikeTendances(profilId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer."); return; }
-  const uid = currentUserId();
-  const d = state.profilPublicData;
-  if (!d) return;
-  try {
-    if (hasLikedTendances(profilId)) {
-      const { error } = await sb.from("tendances_likes").delete().eq("profil_id", profilId).eq("user_id", uid);
-      if (error) throw error;
-      d.likesTendancesDuProfil = (d.likesTendancesDuProfil || []).filter((l) => !(l.profil_id === profilId && l.user_id === uid));
-    } else {
-      const { error } = await sb.from("tendances_likes").insert([{ profil_id: profilId, user_id: uid }]);
-      if (error) throw error;
-      d.likesTendancesDuProfil = [...(d.likesTendancesDuProfil || []), { profil_id: profilId, user_id: uid }];
-      if (profilId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: profilId, from_user_id: uid, interaction_type: "like", target_kind: "tendances", target_id: profilId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like tendances", errNotif);
-      }
-    }
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- Likes/commentaires sur une personne (acteur/actrice/scénariste/
-// réalisateur) telle qu'elle apparaît dans "Les valeurs sûres" d'un
-// profil précis. Cible = (profilId, personneId), car la même personne
-// peut apparaître chez plusieurs profils avec une note différente.
-export function hasLikedValeurSure(personneId) {
-  const uid = currentUserId();
-  if (!uid || !state.profilPublicData) return false;
-  return (state.profilPublicData.likesValeursSuresDuProfil || []).some((l) => l.personne_id === personneId && l.user_id === uid);
-}
-export function getValeurSureLikeCount(personneId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.likesValeursSuresDuProfil || []).filter((l) => l.personne_id === personneId).length;
-}
-export function getValeurSureCommentCount(personneId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.commentsValeursSuresDuProfil || []).filter((c) => c.personne_id === personneId).length;
-}
-export async function toggleLikeValeurSure(profilId, personneId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer."); return; }
-  const uid = currentUserId();
-  const d = state.profilPublicData;
-  if (!d) return;
-  try {
-    if (hasLikedValeurSure(personneId)) {
-      const { error } = await sb.from("valeurs_sures_likes").delete().eq("profil_id", profilId).eq("personne_id", personneId).eq("user_id", uid);
-      if (error) throw error;
-      d.likesValeursSuresDuProfil = (d.likesValeursSuresDuProfil || []).filter((l) => !(l.personne_id === personneId && l.user_id === uid));
-    } else {
-      const { error } = await sb.from("valeurs_sures_likes").insert([{ profil_id: profilId, personne_id: personneId, user_id: uid }]);
-      if (error) throw error;
-      d.likesValeursSuresDuProfil = [...(d.likesValeursSuresDuProfil || []), { profil_id: profilId, personne_id: personneId, user_id: uid }];
-      if (profilId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: profilId, from_user_id: uid, interaction_type: "like", target_kind: "valeurs_sures", target_id: personneId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like valeur sûre", errNotif);
-      }
-    }
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- Likes/commentaires sur une partie de Quiz du jour ou d'OST
-// Challenge ("Jeux" sur une fiche profil). target_kind ('quiz'|'ost')
-// + target_id (scores_quiz.id ou scores_ost.id) identifient la partie.
-export function hasLikedJeu(kind, targetId) {
-  const uid = currentUserId();
-  if (!uid || !state.profilPublicData) return false;
-  return (state.profilPublicData.likesJeuxDuProfil || []).some((l) => l.target_kind === kind && l.target_id === targetId && l.user_id === uid);
-}
-export function getJeuLikeCount(kind, targetId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.likesJeuxDuProfil || []).filter((l) => l.target_kind === kind && l.target_id === targetId).length;
-}
-export function getJeuCommentCount(kind, targetId) {
-  if (!state.profilPublicData) return 0;
-  return (state.profilPublicData.commentsJeuxDuProfil || []).filter((c) => c.target_kind === kind && c.target_id === targetId).length;
-}
-export async function toggleLikeJeu(kind, targetId, ownerId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer."); return; }
-  const uid = currentUserId();
-  const d = state.profilPublicData;
-  if (!d) return;
-  try {
-    if (hasLikedJeu(kind, targetId)) {
-      const { error } = await sb.from("jeux_likes").delete().eq("target_kind", kind).eq("target_id", targetId).eq("user_id", uid);
-      if (error) throw error;
-      d.likesJeuxDuProfil = (d.likesJeuxDuProfil || []).filter((l) => !(l.target_kind === kind && l.target_id === targetId && l.user_id === uid));
-    } else {
-      const { error } = await sb.from("jeux_likes").insert([{ target_kind: kind, target_id: targetId, user_id: uid }]);
-      if (error) throw error;
-      d.likesJeuxDuProfil = [...(d.likesJeuxDuProfil || []), { target_kind: kind, target_id: targetId, user_id: uid }];
-      if (ownerId && ownerId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: ownerId, from_user_id: uid, interaction_type: "like", target_kind: kind, target_id: targetId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like jeu", errNotif);
-      }
-    }
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- modale commentaires sur une entrée "vu" / "à voir" / "tendances"
-// / "valeurs sûres" / "cadeau" / "quiz" / "ost" ----
-// Les commentaires sont chargés à la demande à l'ouverture (pas
-// pré-stockés dans profilPublicData), pour que la même modale serve
-// aussi bien depuis une fiche profil que depuis le fil communauté
-// (ex. un cadeau gagné, qui n'a pas de "profilPublicData" parent).
-export function ouvrirCommentairesEntry(kind, targetId, titre, ownerId) {
-  setState({ entryCommentModal: { kind, targetId, titre, ownerId, draft: "", comments: [], loadingComments: true } });
-  chargerCommentairesEntry(kind, targetId);
-}
-export function commentTableEtColonne(kind) {
-  if (kind === "visionnage") return { table: "mes_visionnages_comments", col: "visionnage_id" };
-  if (kind === "a_voir") return { table: "mes_a_voir_comments", col: "mes_a_voir_id" };
-  if (kind === "tendances") return { table: "tendances_comments", col: "profil_id" };
-  if (kind === "valeurs_sures") return { table: "valeurs_sures_comments", col: "personne_id" };
-  if (kind === "cadeau") return { table: "cadeau_comments", col: "cadeau_id" };
-  return { table: "jeux_comments", col: "target_id" }; // "quiz" | "ost"
-}
-export async function chargerCommentairesEntry(kind, targetId) {
-  const { table, col } = commentTableEtColonne(kind);
-  try {
-    let query = sb.from(table).select("*, profils(pseudo, avatar_url)").eq(col, targetId).order("created_at", { ascending: false });
-    if (kind === "quiz" || kind === "ost") query = query.eq("target_kind", kind);
-    const { data, error } = await query;
-    if (error) throw error;
-    if (state.entryCommentModal && state.entryCommentModal.kind === kind && state.entryCommentModal.targetId === targetId) {
-      setState({ entryCommentModal: { ...state.entryCommentModal, comments: data || [], loadingComments: false } });
-    }
-  } catch (e) {
-    console.error("Erreur chargement commentaires", e);
-    if (state.entryCommentModal) setState({ entryCommentModal: { ...state.entryCommentModal, comments: [], loadingComments: false } });
-  }
-}
-export function fermerCommentairesEntry() {
-  setState({ entryCommentModal: null });
-}
-export async function publierCommentaireEntry() {
-  const m = state.entryCommentModal;
-  if (!m) return;
-  if (!isLoggedIn()) { showToast("Connecte-toi pour commenter."); return; }
-  const texte = (m.draft || "").trim();
-  if (!texte) { showToast("Écris un commentaire avant de publier."); return; }
-  const uid = currentUserId();
-  const { table } = commentTableEtColonne(m.kind);
-  // "valeurs_sures" a besoin de DEUX colonnes (profil_id + personne_id) ;
-  // "quiz"/"ost" ont besoin de target_kind EN PLUS de target_id (même
-  // table jeux_comments pour les deux, distingués par target_kind).
-  const insertObj = m.kind === "visionnage" ? { visionnage_id: m.targetId, user_id: uid, contenu: texte }
-    : m.kind === "a_voir" ? { mes_a_voir_id: m.targetId, user_id: uid, contenu: texte }
-    : m.kind === "tendances" ? { profil_id: m.targetId, user_id: uid, contenu: texte }
-    : m.kind === "valeurs_sures" ? { profil_id: m.ownerId, personne_id: m.targetId, user_id: uid, contenu: texte }
-    : m.kind === "cadeau" ? { cadeau_id: m.targetId, user_id: uid, contenu: texte }
-    : { target_kind: m.kind, target_id: m.targetId, user_id: uid, contenu: texte }; // quiz/ost
-  try {
-    const { data, error } = await sb.from(table).insert([insertObj]).select("*, profils(pseudo, avatar_url)").single();
-    if (error) throw error;
-    setState({ entryCommentModal: { ...m, draft: "", comments: [data, ...(m.comments || [])] } });
-    // Garde aussi à jour les compteurs affichés ailleurs (badge 💬 sur
-    // la carte du fil ou sur la fiche profil), sans attendre un rechargement.
-    if (m.kind === "cadeau") {
-      state.cadeauxComments = [...(state.cadeauxComments || []), data];
-    } else if (m.kind === "quiz" || m.kind === "ost") {
-      const d = state.profilPublicData;
-      if (d) d.commentsJeuxDuProfil = [data, ...(d.commentsJeuxDuProfil || [])];
-    } else {
-      const d = state.profilPublicData;
-      if (d) {
-        const listKey = m.kind === "visionnage" ? "commentsVisionnageDuProfil" : m.kind === "a_voir" ? "commentsAVoirDuProfil" : m.kind === "tendances" ? "commentsTendancesDuProfil" : "commentsValeursSuresDuProfil";
-        d[listKey] = [data, ...(d[listKey] || [])];
-      }
-    }
-    if (m.ownerId && m.ownerId !== uid) {
-      const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-        to_user_id: m.ownerId, from_user_id: uid, interaction_type: "comment", target_kind: m.kind, target_id: m.targetId, titre: m.titre, contenu_apercu: texte.slice(0, 80),
-      }]);
-      if (errNotif) console.error("Erreur notification commentaire", errNotif);
-    }
-  } catch (e) {
-    console.error(e);
-    showToast("Publication impossible.");
-  }
-}
-
-export function isFollowing(profilId) {
-  const uid = currentUserId();
-  if (!uid) return false;
-  return state.abonnements.some((a) => a.follower_id === uid && a.followed_id === profilId);
-}
-export function getFollowerCount(profilId) {
-  return state.abonnements.filter((a) => a.followed_id === profilId).length;
-}
-export function getFollowingCount(profilId) {
-  return state.abonnements.filter((a) => a.follower_id === profilId).length;
-}
-
-// ---- modale "liste des abonnés / abonnements" d'un profil ----
-// Comble un vrai trou fonctionnel : les chiffres "Abonnés"/"Abonnements"
-// affichés sur une fiche profil n'étaient que des compteurs, sans
-// aucun moyen de voir QUI ils sont ni de s'abonner depuis cette liste.
-export async function ouvrirListeAbonnes(profilId, mode) {
-  const ids = mode === "abonnes"
-    ? state.abonnements.filter((a) => a.followed_id === profilId).map((a) => a.follower_id)
-    : state.abonnements.filter((a) => a.follower_id === profilId).map((a) => a.followed_id);
-  setState({ listeAbonnesModal: { mode, profils: [], loading: true } });
-  if (ids.length === 0) {
-    setState({ listeAbonnesModal: { mode, profils: [], loading: false } });
-    return;
-  }
-  try {
-    const { data, error } = await sb.from("profils").select("id, pseudo, avatar_url").in("id", ids);
-    if (error) throw error;
-    setState({ listeAbonnesModal: { mode, profils: data || [], loading: false } });
-  } catch (e) {
-    console.error("Erreur chargement liste abonnés/abonnements", e);
-    setState({ listeAbonnesModal: { mode, profils: [], loading: false } });
-  }
-}
-export function fermerListeAbonnes() {
-  setState({ listeAbonnesModal: null });
-}
-
-// ---- système de cadeaux (acteurs gagnés en terminant une tierlist ou un quiz) ----
-export async function chargerMaCollectionActeurs() {
-  if (!isLoggedIn()) { state.maCollectionActeurs = []; return; }
-  try {
-    const { data, error } = await sb
-      .from("collection_acteurs")
-      .select("*, personnes(id, nom, role, photo_url)")
-      .eq("user_id", currentUserId())
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    state.maCollectionActeurs = (data || []).filter((c) => c.personnes);
-  } catch (e) {
-    console.error("Erreur chargement collection acteurs", e);
-    state.maCollectionActeurs = [];
-  }
-}
-
-// Tire au hasard une personne AVEC PHOTO, pas déjà dans la collection
-// de l'utilisateur, l'ajoute à sa collection, et déclenche l'affichage
-// du cadeau (popup emballage). Appelée à la fin d'une tierlist ou d'un
-// quiz — voir sauvegarderTierlistBuilder() et finishQuiz().
-// N'arrive jamais en erreur visible si aucune personne n'est éligible
-// (catalogue trop petit, ou tout déjà collecté) : pas de cadeau, sans
-// notification d'échec — l'absence de gain ne doit pas être perçue
-// comme un bug par l'utilisateur.
-export async function tenterGagnerCadeau(source) {
-  // Toute la fonction est protégée par un seul try/catch global : le
-  // système de cadeaux ne doit JAMAIS pouvoir faire échouer ou
-  // afficher une erreur sur l'action principale qui l'a déclenché
-  // (sauvegarde d'une tierlist ou d'un quiz, qui elle a déjà réussi
-  // à ce stade) — voir sauvegarderTierlistBuilder() et finishQuiz().
-  try {
-    if (!isLoggedIn()) return;
-    const idsDejaPossedes = new Set((state.maCollectionActeurs || []).map((c) => c.personne_id));
-    const eligibles = (state.people || []).filter((p) => p.photo_url && !idsDejaPossedes.has(p.id));
-    if (eligibles.length === 0) return;
-    const gagnee = eligibles[Math.floor(Math.random() * eligibles.length)];
-    const { error } = await sb.from("collection_acteurs").insert([{
-      user_id: currentUserId(),
-      personne_id: gagnee.id,
-      gagne_via: source,
-    }]);
-    if (error) {
-      // Conflit (déjà possédée) : improbable ici puisqu'on filtre déjà
-      // dessus, mais sans danger si ça arrive (pas de doublon créé,
-      // pas de cadeau affiché pour rien).
-      if (error.code === "23505") return;
-      throw error;
-    }
-    state.maCollectionActeurs = [{ id: null, personne_id: gagnee.id, personnes: gagnee }, ...state.maCollectionActeurs];
-    // Ajoute aussi l'activité au fil communauté (visible par les
-    // autres), pour qu'elle apparaisse immédiatement sans recharger
-    // toute la page — voir cadeauActiviteCardHtml().
-    state.activitesCadeaux = [{
-      id: null, user_id: currentUserId(), personne_id: gagnee.id, personnes: gagnee,
-      created_at: new Date().toISOString(), profil_gagnant: state.profil ? { id: currentUserId(), pseudo: state.profil.pseudo } : null,
-    }, ...(state.activitesCadeaux || [])];
-    setState({ cadeauEnCours: { personne: gagnee, ouvert: false } });
-  } catch (e) {
-    // Échec silencieux : l'absence de cadeau ne doit jamais être
-    // perçue comme un bug, et ne doit jamais écraser le message de
-    // succès de l'action qui a déclenché cette tentative.
-    console.error("Erreur attribution cadeau (sans impact sur l'action principale)", e);
-  }
-}
-export function ouvrirCadeau() {
-  if (!state.cadeauEnCours) return;
-  setState({ cadeauEnCours: { ...state.cadeauEnCours, ouvert: true } });
-}
-export function fermerCadeau() {
-  setState({ cadeauEnCours: null });
-}
-export function ouvrirCollection() {
-  setState({ collectionModalOpen: true });
-}
-export function fermerCollection() {
-  setState({ collectionModalOpen: false });
-}
-
-// ---- "piocher dans les à-voir de mes abonnés" ----
-// Charge, pour tous les profils que JE suis, leur liste "à voir"
-// personnelle (table mes_a_voir, jointe au catalogue a_voir), avec le
-// pseudo/avatar de chacun pour affichage. Lecture publique comme pour
-// mes_visionnages (voir chargerTousLesVisionnages) — mes_a_voir d'un
-// autre utilisateur est déjà lu avec succès ailleurs (openProfilPublic).
-export async function ouvrirEnviesAbonnes() {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour voir les envies de tes abonnements."); return; }
-  const uid = currentUserId();
-  const suivisIds = state.abonnements.filter((a) => a.follower_id === uid).map((a) => a.followed_id);
-  setState({ enviesAbonnesOpen: true, enviesAbonnesLoading: true, enviesAbonnesData: null });
-  if (suivisIds.length === 0) {
-    setState({ enviesAbonnesLoading: false, enviesAbonnesData: [] });
-    return;
-  }
-  try {
-    const { data: mesAVoirAbonnes, error: e1 } = await sb
-      .from("mes_a_voir")
-      .select("*, a_voir(*)")
-      .in("user_id", suivisIds);
-    if (e1) throw e1;
-
-    const { data: profils, error: e2 } = await sb
-      .from("profils")
-      .select("id, pseudo, avatar_url")
-      .in("id", suivisIds);
-    if (e2) throw e2;
-    const profilsParId = {};
-    (profils || []).forEach((p) => { profilsParId[p.id] = p; });
-
-    const items = (mesAVoirAbonnes || [])
-      .filter((m) => m.a_voir)
-      .map((m) => ({
-        ...m.a_voir,
-        mes_a_voir_id_abonne: m.id,
-        suggere_par: profilsParId[m.user_id] || null,
-      }))
-      // Évite de proposer un titre déjà présent dans MA propre liste à voir.
-      .filter((item) => !state.mesAVoirIds.includes(item.id));
-
-    setState({ enviesAbonnesLoading: false, enviesAbonnesData: items });
-  } catch (e) {
-    console.error("Erreur chargement envies abonnés", e);
-    showToast("Impossible de charger les envies de tes abonnements.");
-    setState({ enviesAbonnesLoading: false, enviesAbonnesData: [] });
-  }
-}
-export function fermerEnviesAbonnes() {
-  setState({ enviesAbonnesOpen: false, enviesAbonnesData: null });
-}
-// Ajoute un item choisi chez un abonné à MA propre liste à voir, avec
-// le même upsert (user_id, a_voir_id) que la logique d'ajout standard.
-export async function piocherEnvieAbonne(aVoirId) {
-  if (!isLoggedIn()) return;
-  try {
-    const { error } = await sb.from("mes_a_voir").upsert({ user_id: currentUserId(), a_voir_id: aVoirId }, { onConflict: "user_id,a_voir_id" });
-    if (error) throw error;
-    await chargerMesAVoir();
-    setState({
-      enviesAbonnesData: (state.enviesAbonnesData || []).filter((item) => item.id !== aVoirId),
-    });
-    showToast("Ajouté à ta liste à voir !");
-  } catch (e) {
-    console.error("Erreur ajout depuis envies abonnés", e);
-    showToast("Impossible d'ajouter ce titre.");
-  }
-}
-
-// ---- suggérer un drama à un abonné ----
-
-// Trouve ou crée l'entrée correspondante dans le catalogue commun
-// `a_voir` à partir d'un objet drama (vu ou déjà à voir) — même
-// pattern de correspondance par titre que markAsWatched().
-export async function trouverOuCreerAVoir(d) {
-  const normalized = d.titre.trim().toLowerCase();
-  const existant = (state.aVoirCatalogue || []).find((a) => a.titre.trim().toLowerCase() === normalized);
-  if (existant) return existant.id;
-  const { data: inserted, error } = await sb.from("a_voir").insert([{
-    titre: d.titre, titre_kr: d.titre_kr || null, annee: d.annee || null,
-    scenariste: d.scenariste || null, realisateur: d.realisateur || null, acteur: d.acteur || null, actrice: d.actrice || null,
-    poster_url: d.poster_url || null,
-  }]).select().single();
-  if (error) throw error;
-  return inserted.id;
-}
-
-// Ouvre le petit sélecteur "à qui suggérer ce drama ?" depuis une
-// fiche drama. `d` est l'objet drama affiché dans dramaModal/avoir.
-export async function ouvrirSuggererA(d) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour suggérer un drama."); return; }
-  const uid = currentUserId();
-  const mesAbonnements = state.abonnements.filter((a) => a.follower_id === uid).map((a) => a.followed_id);
-  if (mesAbonnements.length === 0) {
-    showToast("Tu ne suis encore personne — abonne-toi à des profils pour pouvoir leur suggérer des dramas.");
-    return;
-  }
-  setState({ suggererADraft: { drama: d, abonnementsIds: mesAbonnements, abonnementsProfils: [] } });
-  try {
-    const { data: profils, error } = await sb.from("profils").select("id, pseudo, avatar_url").in("id", mesAbonnements);
-    if (error) throw error;
-    // Re-vérifie que la modale est toujours ouverte sur le même
-    // drama avant d'appliquer (l'utilisateur pourrait avoir fermé
-    // entre-temps pendant le chargement réseau).
-    if (state.suggererADraft && state.suggererADraft.drama === d) {
-      setState({ suggererADraft: { ...state.suggererADraft, abonnementsProfils: profils || [] } });
-    }
-  } catch (e) {
-    console.error("Erreur chargement profils abonnements", e);
-  }
-}
-export function fermerSuggererA() {
-  setState({ suggererADraft: null });
-}
-export async function envoyerSuggestion(toUserId) {
-  const draft = state.suggererADraft;
-  if (!draft) return;
-  try {
-    const aVoirId = await trouverOuCreerAVoir(draft.drama);
-    const { error } = await sb.from("suggestions_a_voir").insert([{
-      from_user_id: currentUserId(),
-      to_user_id: toUserId,
-      a_voir_id: aVoirId,
-    }]);
-    if (error) throw error;
-    showToast(`"${draft.drama.titre}" suggéré !`);
-    setState({ suggererADraft: null });
-  } catch (e) {
-    console.error("Erreur envoi suggestion", e);
-    showToast("Impossible d'envoyer la suggestion.");
-  }
-}
-
-// ---- notifications (suggestions reçues) ----
-export async function chargerNotificationsSuggestions() {
-  if (!isLoggedIn()) { state.notifSuggestionsData = []; return; }
-  try {
-    // PostgREST ne peut pas faire de jointure imbriquée vers "profils"
-    // ici : suggestions_a_voir.from_user_id référence auth.users, pas
-    // profils directement (même si profils.id = auth.users.id en
-    // pratique, ce n'est pas une vraie clé étrangère déclarée entre
-    // les deux). On fait donc deux requêtes séparées et on fusionne
-    // côté client — même pattern que ouvrirEnviesAbonnes().
-    const { data, error } = await sb
-      .from("suggestions_a_voir")
-      .select("*, a_voir(*)")
-      .eq("to_user_id", currentUserId())
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    const suggestions = data || [];
-
-    const fromIds = [...new Set(suggestions.map((s) => s.from_user_id))];
-    let profilsParId = {};
-    if (fromIds.length > 0) {
-      const { data: profils, error: e2 } = await sb.from("profils").select("id, pseudo, avatar_url").in("id", fromIds);
-      if (e2) throw e2;
-      (profils || []).forEach((p) => { profilsParId[p.id] = p; });
-    }
-
-    state.notifSuggestionsData = suggestions.map((s) => ({ ...s, profil_expediteur: profilsParId[s.from_user_id] || null }));
-  } catch (e) {
-    console.error("Erreur chargement notifications suggestions", e);
-    state.notifSuggestionsData = [];
-  }
-}
-export function getSuggestionsNonLues() {
-  return (state.notifSuggestionsData || []).filter((s) => !s.vue).length;
-}
-
-// Charge les notifications "nouvel abonné" reçues (où je suis
-// followed_id), même principe que chargerNotificationsSuggestions :
-// deux requêtes séparées (notifications puis profils) car il n'y a
-// pas de vraie clé étrangère déclarée entre notifications_abonnements
-// et profils côté PostgREST pour une jointure imbriquée fiable ici.
-export async function chargerNotificationsAbonnements() {
-  if (!isLoggedIn()) { state.notifAbonnementsData = []; return; }
-  try {
-    const { data, error } = await sb
-      .from("notifications_abonnements")
-      .select("*")
-      .eq("followed_id", currentUserId())
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    const notifs = data || [];
-
-    const followerIds = [...new Set(notifs.map((n) => n.follower_id))];
-    let profilsParId = {};
-    if (followerIds.length > 0) {
-      const { data: profils, error: e2 } = await sb.from("profils").select("id, pseudo, avatar_url").in("id", followerIds);
-      if (e2) throw e2;
-      (profils || []).forEach((p) => { profilsParId[p.id] = p; });
-    }
-
-    state.notifAbonnementsData = notifs.map((n) => ({ ...n, profil_follower: profilsParId[n.follower_id] || null }));
-  } catch (e) {
-    console.error("Erreur chargement notifications abonnements", e);
-    state.notifAbonnementsData = [];
-  }
-}
-
-// Charge les notifications "quelqu'un a aimé/commenté ton vu ou ton à
-// voir" reçues (où je suis to_user_id), même principe que les deux
-// fonctions précédentes (jointure profils faite à la main côté client).
-export async function chargerNotificationsInteractions() {
-  if (!isLoggedIn()) { state.notifInteractionsData = []; return; }
-  try {
-    const { data, error } = await sb
-      .from("notifications_interactions")
-      .select("*")
-      .eq("to_user_id", currentUserId())
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    const notifs = data || [];
-
-    const fromIds = [...new Set(notifs.map((n) => n.from_user_id))];
-    let profilsParId = {};
-    if (fromIds.length > 0) {
-      const { data: profils, error: e2 } = await sb.from("profils").select("id, pseudo, avatar_url").in("id", fromIds);
-      if (e2) throw e2;
-      (profils || []).forEach((p) => { profilsParId[p.id] = p; });
-    }
-
-    state.notifInteractionsData = notifs.map((n) => ({ ...n, profil_auteur: profilsParId[n.from_user_id] || null }));
-  } catch (e) {
-    console.error("Erreur chargement notifications interactions", e);
-    state.notifInteractionsData = [];
-  }
-}
-// Nombre total de notifications non lues, suggestions + nouveaux
-// abonnés + interactions (likes/commentaires sur vus/à voir) confondus
-// (cloche unique — voir le choix produit).
-export function getNotificationsNonLues() {
-  return getSuggestionsNonLues() + (state.notifAbonnementsData || []).filter((n) => !n.vue).length + (state.notifInteractionsData || []).filter((n) => !n.vue).length;
-}
-// Marque les notifications "nouvel abonné" comme vues (même logique
-// que marquerSuggestionsVues, appelée en plus à l'ouverture de la cloche).
-export async function marquerAbonnementsVus() {
-  const idsNonLues = (state.notifAbonnementsData || []).filter((n) => !n.vue).map((n) => n.id);
-  if (idsNonLues.length === 0) return;
-  try {
-    const { error } = await sb.from("notifications_abonnements").update({ vue: true }).in("id", idsNonLues);
-    if (error) throw error;
-    state.notifAbonnementsData = state.notifAbonnementsData.map((n) => idsNonLues.includes(n.id) ? { ...n, vue: true } : n);
-    render();
-  } catch (e) {
-    console.error("Erreur marquage abonnements vus", e);
-  }
-}
-// Marque les notifications de likes/commentaires sur vus/à voir comme vues.
-export async function marquerInteractionsVues() {
-  const idsNonLues = (state.notifInteractionsData || []).filter((n) => !n.vue).map((n) => n.id);
-  if (idsNonLues.length === 0) return;
-  try {
-    const { error } = await sb.from("notifications_interactions").update({ vue: true }).in("id", idsNonLues);
-    if (error) throw error;
-    state.notifInteractionsData = state.notifInteractionsData.map((n) => idsNonLues.includes(n.id) ? { ...n, vue: true } : n);
-    render();
-  } catch (e) {
-    console.error("Erreur marquage interactions vues", e);
-  }
-}
-export async function ouvrirNotifSuggestions() {
-  setState({ notifSuggestionsOpen: true });
-}
-export function fermerNotifSuggestions() {
-  setState({ notifSuggestionsOpen: false });
-}
-// Marque toutes les suggestions reçues comme vues (appelé à
-// l'ouverture de la modale, pour faire disparaître le badge).
-export async function marquerSuggestionsVues() {
-  const idsNonLues = (state.notifSuggestionsData || []).filter((s) => !s.vue).map((s) => s.id);
-  if (idsNonLues.length === 0) return;
-  try {
-    const { error } = await sb.from("suggestions_a_voir").update({ vue: true }).in("id", idsNonLues);
-    if (error) throw error;
-    state.notifSuggestionsData = state.notifSuggestionsData.map((s) => idsNonLues.includes(s.id) ? { ...s, vue: true } : s);
-    render();
-  } catch (e) {
-    console.error("Erreur marquage suggestions vues", e);
-  }
-}
-// Ajoute le drama suggéré à MA liste à voir, depuis la notification.
-export async function ajouterDepuisSuggestion(suggestion) {
-  if (!suggestion.a_voir) return;
-  try {
-    const { error } = await sb.from("mes_a_voir").upsert({ user_id: currentUserId(), a_voir_id: suggestion.a_voir.id }, { onConflict: "user_id,a_voir_id" });
-    if (error) throw error;
-    await chargerMesAVoir();
-    showToast(`"${suggestion.a_voir.titre}" ajouté à ta liste à voir !`);
-    render();
-  } catch (e) {
-    console.error("Erreur ajout depuis suggestion", e);
-    showToast("Impossible d'ajouter ce titre.");
-  }
-}
-
-// ---- recherche de profil par pseudo ----
-// Permet de trouver et s'abonner à quelqu'un même si son compte n'a
-// encore aucune activité visible dans le fil (cas d'un compte qui
-// vient juste d'être créé — c'est le trou fonctionnel à combler).
-export function ouvrirRechercheProfil() {
-  setState({ rechercheProfilOpen: true, rechercheProfilQuery: "", rechercheProfilResultats: [] });
-}
-export function fermerRechercheProfil() {
-  setState({ rechercheProfilOpen: false });
-}
-let rechercheProfilDebounceTimer = null;
-export function lancerRechercheProfilDebounced(query) {
-  state.rechercheProfilQuery = query;
-  if (rechercheProfilDebounceTimer) clearTimeout(rechercheProfilDebounceTimer);
-  if (query.trim().length < 2) {
-    state.rechercheProfilResultats = [];
-    majDomResultatsRechercheProfil();
-    return;
-  }
-  rechercheProfilDebounceTimer = setTimeout(() => rechercherProfilParPseudo(query), 350);
-}
-// Met à jour SEULEMENT le bloc de résultats en DOM direct, sans
-// jamais passer par render()/innerHTML sur tout #app — sinon le champ
-// de recherche perdrait le focus à chaque résultat reçu (innerHTML
-// met document.activeElement à null, même si l'élément recréé a le
-// même id). Même principe que le sélecteur de casting.
-export function majDomResultatsRechercheProfil() {
-  const zone = document.getElementById("rechercheProfilResultats");
-  if (zone) zone.innerHTML = renderRechercheProfilResultats();
-  document.querySelectorAll("[data-open-profil-recherche]").forEach((row) => {
-    row.addEventListener("click", () => {
-      const id = row.dataset.openProfilRecherche;
-      setState({ rechercheProfilOpen: false });
-      openProfilPublic(id);
-    });
-  });
-}
-export async function rechercherProfilParPseudo(query) {
-  const q = query.trim();
-  if (q.length < 2) return;
-  state.rechercheProfilLoading = true;
-  majDomResultatsRechercheProfil();
-  try {
-    const { data, error } = await sb
-      .from("profils")
-      .select("id, pseudo, avatar_url")
-      .ilike("pseudo", `%${q}%`)
-      .neq("id", currentUserId() || "00000000-0000-0000-0000-000000000000")
-      .limit(20);
-    if (error) throw error;
-    state.rechercheProfilResultats = data || [];
-  } catch (e) {
-    console.error("Erreur recherche profil", e);
-    state.rechercheProfilResultats = [];
-  } finally {
-    state.rechercheProfilLoading = false;
-    majDomResultatsRechercheProfil();
-  }
-}
-
-// ---- actions : avis ----
-export function openComposer(dramaId) {
-  // Pré-remplit si l'utilisateur a déjà un avis sur ce drama (édition).
-  const existant = state.avis.find((a) => a.drama_id === dramaId && a.user_id === currentUserId());
-  setState({
-    composerOpen: true,
-    composerDramaId: dramaId || "",
-    composerNote: existant ? String(existant.note ?? "") : "",
-    composerCommentaire: existant ? (existant.commentaire || "") : "",
-  });
-}
-export function closeComposer() {
-  setState({ composerOpen: false, composerDramaId: "", composerNote: "", composerCommentaire: "" });
-}
-
-export async function publierAvis() {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour publier un avis."); return; }
-  const dramaId = state.composerDramaId;
-  if (!dramaId) { showToast("Choisis un drama."); return; }
-  const note = state.composerNote === "" ? null : Number(state.composerNote);
-  if (note !== null && (note < 0 || note > 10)) { showToast("La note doit être entre 0 et 10."); return; }
-
-  const payload = {
-    user_id: currentUserId(),
-    drama_id: dramaId,
-    note,
-    commentaire: state.composerCommentaire.trim() || null,
-  };
-  try {
-    // upsert : un seul avis par utilisateur et par drama (contrainte unique en base)
-    const { error } = await sb.from("avis").upsert(payload, { onConflict: "user_id,drama_id" });
-    if (error) throw error;
-    await loadCommunaute();
-    closeComposer();
-    showToast("Avis publié.");
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Publication impossible.");
-  }
-}
-
-export async function supprimerAvis(avisId) {
-  try {
-    const { error } = await sb.from("avis").delete().eq("id", avisId);
-    if (error) throw error;
-    await loadCommunaute();
-    showToast("Avis supprimé.");
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Suppression impossible.");
-  }
-}
-
-export async function toggleLikeAvis(avisId, ownerId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer un avis."); return; }
-  const uid = currentUserId();
-  try {
-    if (hasLiked(avisId)) {
-      const { error } = await sb.from("avis_likes").delete().eq("avis_id", avisId).eq("user_id", uid);
-      if (error) throw error;
-    } else {
-      const { error } = await sb.from("avis_likes").insert([{ avis_id: avisId, user_id: uid }]);
-      if (error) throw error;
-      if (ownerId && ownerId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: ownerId, from_user_id: uid, interaction_type: "like", target_kind: "avis", target_id: avisId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like avis", errNotif);
-      }
-    }
-    await loadCommunaute();
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- Likes pour les cadeaux ----
-export async function toggleLikeCadeau(cadeauId, ownerId, titre) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour aimer un cadeau."); return; }
-  const uid = currentUserId();
-  try {
-    if (hasLikedCadeau(cadeauId)) {
-      const { error } = await sb.from("cadeau_likes").delete().eq("cadeau_id", cadeauId).eq("user_id", uid);
-      if (error) throw error;
-    } else {
-      const { error } = await sb.from("cadeau_likes").insert([{ cadeau_id: cadeauId, user_id: uid }]);
-      if (error) throw error;
-      if (ownerId && ownerId !== uid) {
-        const { error: errNotif } = await sb.from("notifications_interactions").insert([{
-          to_user_id: ownerId, from_user_id: uid, interaction_type: "like", target_kind: "cadeau", target_id: cadeauId, titre,
-        }]);
-        if (errNotif) console.error("Erreur notification like cadeau", errNotif);
-      }
-    }
-    await loadCommunaute();
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- actions : abonnements ----
-export async function toggleFollow(profilId) {
-  if (!isLoggedIn()) { showToast("Connecte-toi pour suivre quelqu'un."); return; }
-  const uid = currentUserId();
-  if (uid === profilId) return;
-  try {
-    if (isFollowing(profilId)) {
-      const { error } = await sb.from("abonnements").delete().eq("follower_id", uid).eq("followed_id", profilId);
-      if (error) throw error;
-      showToast("Tu ne suis plus cette personne.");
-    } else {
-      const { error } = await sb.from("abonnements").insert([{ follower_id: uid, followed_id: profilId }]);
-      if (error) throw error;
-      // Notifie la personne suivie. En upsert sur (follower_id,
-      // followed_id) : un réabonnement après désabonnement remet la
-      // même ligne à "non vue" plutôt que d'empiler un doublon.
-      const { error: errNotif } = await sb.from("notifications_abonnements")
-        .upsert({ follower_id: uid, followed_id: profilId, vue: false }, { onConflict: "follower_id,followed_id" });
-      if (errNotif) console.error("Erreur création notification abonnement", errNotif);
-      showToast("Abonnement ajouté.");
-    }
-    await loadCommunaute();
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Action impossible.");
-  }
-}
-
-// ---- profil public ----
-export async function openProfilPublic(profilId) {
-  // Mémorise d'où on vient pour pouvoir y revenir avec le bouton
-  // retour (voir renderProfilPublicView()). Si on est déjà sur une
-  // fiche profil (cas d'un clic en chaîne profil -> profil -> profil),
-  // on garde le point d'entrée d'origine plutôt que d'empiler des
-  // fiches : "retour" doit ramener au contenu, pas à la fiche précédente.
-  const retourTab = state.activeTab === "profil" ? state.profilRetourTab : state.activeTab;
-  setState({ profilPublicId: profilId, profilPublicData: null, activeTab: "profil", profilRetourTab: retourTab });
-  try {
-    const { data: profil, error: e1 } = await sb.from("profils").select("*").eq("id", profilId).single();
-    if (e1) throw e1;
-    const avisDuProfil = state.avis.filter((a) => a.user_id === profilId);
-    const { data: tierlistsDuProfil, error: e2 } = await sb
-      .from("tierlists")
-      .select("*")
-      .eq("user_id", profilId)
-      .eq("est_publique", true)
-      .order("created_at", { ascending: false });
-    if (e2) throw e2;
-
-    // Ses dramas vus (jointure visionnages + catalogue, même format
-    // que state.mesEntries pour pouvoir réutiliser computeTrends/getStats).
-    // On garde aussi `visionnage_id` (l'id de la ligne mes_visionnages
-    // elle-même) à part de `id` (celui du drama, écrasé par le spread) :
-    // c'est lui qui identifie un like/commentaire précis sur CETTE
-    // personne ayant vu CE drama, pas le drama en général.
-    const { data: visionnagesData, error: e3 } = await sb
-      .from("mes_visionnages")
-      .select("*, dramas(*)")
-      .eq("user_id", profilId);
-    if (e3) throw e3;
-    const entriesDuProfil = enrichirDramasAvecPersonnes((visionnagesData || [])
-      .filter((v) => v.dramas)
-      .map((v) => ({ ...v.dramas, note: v.note, date_visionnage: v.date_visionnage, visionnage_id: v.id })));
-
-    // Sa liste à voir (jointure mes_a_voir + catalogue a_voir). Même
-    // logique : `mes_a_voir_id` est conservé à part de `id` (celui du
-    // catalogue a_voir) pour identifier précisément CETTE envie-là.
-    const { data: aVoirData, error: e4 } = await sb
-      .from("mes_a_voir")
-      .select("*, a_voir(*)")
-      .eq("user_id", profilId);
-    if (e4) throw e4;
-    const aVoirDuProfil = (aVoirData || []).filter((m) => m.a_voir).map((m) => ({ ...m.a_voir, mes_a_voir_id: m.id }));
-
-    // Likes + commentaires sur ses "vus" et son "à voir" — scopés aux
-    // ids de CE profil pour rester légers (pas un chargement global).
-    const visionnageIds = (visionnagesData || []).map((v) => v.id);
-    const mesAVoirIds = (aVoirData || []).map((m) => m.id);
-    let likesVisionnageDuProfil = [];
-    let commentsVisionnageDuProfil = [];
-    let likesAVoirDuProfil = [];
-    let commentsAVoirDuProfil = [];
-    if (visionnageIds.length > 0) {
-      const { data: lv } = await sb.from("mes_visionnages_likes").select("*").in("visionnage_id", visionnageIds);
-      likesVisionnageDuProfil = lv || [];
-      const { data: cv } = await sb.from("mes_visionnages_comments").select("*, profils(pseudo, avatar_url)").in("visionnage_id", visionnageIds).order("created_at", { ascending: false });
-      commentsVisionnageDuProfil = cv || [];
-    }
-    if (mesAVoirIds.length > 0) {
-      const { data: lav } = await sb.from("mes_a_voir_likes").select("*").in("mes_a_voir_id", mesAVoirIds);
-      likesAVoirDuProfil = lav || [];
-      const { data: cav } = await sb.from("mes_a_voir_comments").select("*, profils(pseudo, avatar_url)").in("mes_a_voir_id", mesAVoirIds).order("created_at", { ascending: false });
-      commentsAVoirDuProfil = cav || [];
-    }
-
-    // Likes + commentaires sur sa page "Tendances" dans son ensemble
-    // (pas une ligne précise, donc identifiés par profilId lui-même).
-    const { data: ltd } = await sb.from("tendances_likes").select("*").eq("profil_id", profilId);
-    const likesTendancesDuProfil = ltd || [];
-    const { data: ctd } = await sb.from("tendances_comments").select("*, profils(pseudo, avatar_url)").eq("profil_id", profilId).order("created_at", { ascending: false });
-    const commentsTendancesDuProfil = ctd || [];
-
-    // Likes + commentaires sur les personnes de SES "valeurs sûres"
-    // (identifiés par le couple profil_id + personne_id, car la même
-    // personne peut apparaître chez plusieurs profils avec une note
-    // différente — voir renderTrendsSections()).
-    const { data: lvs } = await sb.from("valeurs_sures_likes").select("*").eq("profil_id", profilId);
-    const likesValeursSuresDuProfil = lvs || [];
-    const { data: cvs } = await sb.from("valeurs_sures_comments").select("*, profils(pseudo, avatar_url)").eq("profil_id", profilId).order("created_at", { ascending: false });
-    const commentsValeursSuresDuProfil = cvs || [];
-
-    // Sa collection de cadeaux (acteurs gagnés en terminant une
-    // tierlist ou un quiz) — visible par tout le monde, même principe
-    // que "Ma collection" mais pour le profil consulté.
-    const { data: collectionData, error: e5 } = await sb
-      .from("collection_acteurs")
-      .select("*, personnes(id, nom, role, photo_url)")
-      .eq("user_id", profilId)
-      .order("created_at", { ascending: false });
-    if (e5) throw e5;
-    const collectionDuProfil = (collectionData || []).filter((c) => c.personnes);
-
-    // Son historique de quiz (scores déjà publics par ailleurs via le
-    // classement — voir loadLeaderboardQuiz()).
-    const { data: quizData, error: e6 } = await sb
-      .from("scores_quiz")
-      .select("*")
-      .eq("user_id", profilId)
-      .order("date_quiz", { ascending: false });
-    if (e6) throw e6;
-    const quizDuProfil = quizData || [];
-
-    // Son historique OST Challenge (même principe, classement déjà
-    // public via loadOstLeaderboard()).
-    const { data: ostData, error: e7 } = await sb
-      .from("scores_ost")
-      .select("*")
-      .eq("user_id", profilId)
-      .order("date_partie", { ascending: false });
-    if (e7) throw e7;
-    const ostDuProfil = ostData || [];
-
-    // Likes + commentaires sur ses parties Quiz/OST (regroupées sous
-    // l'onglet "Jeux" — voir renderProfilPublicView()). Une seule paire
-    // de tables génériques (target_kind 'quiz'|'ost'), donc une seule
-    // requête par sens plutôt qu'une par jeu.
-    const idsQuiz = quizDuProfil.map((q) => q.id);
-    const idsOst = ostDuProfil.map((o) => o.id);
-    const idsJeux = [...idsQuiz, ...idsOst];
-    let likesJeuxDuProfil = [];
-    let commentsJeuxDuProfil = [];
-    if (idsJeux.length > 0) {
-      const { data: lj } = await sb.from("jeux_likes").select("*").in("target_id", idsJeux);
-      likesJeuxDuProfil = lj || [];
-      const { data: cj } = await sb.from("jeux_comments").select("*, profils(pseudo, avatar_url)").in("target_id", idsJeux).order("created_at", { ascending: false });
-      commentsJeuxDuProfil = cj || [];
-    }
-
-    const trendsDuProfil = computeTrends(entriesDuProfil);
-
-    setState({
-      profilPublicData: {
-        profil, avisDuProfil, tierlistsDuProfil: tierlistsDuProfil || [],
-        entriesDuProfil, aVoirDuProfil, trendsDuProfil, collectionDuProfil, quizDuProfil, ostDuProfil,
-        likesVisionnageDuProfil, commentsVisionnageDuProfil, likesAVoirDuProfil, commentsAVoirDuProfil,
-        likesTendancesDuProfil, commentsTendancesDuProfil,
-        likesValeursSuresDuProfil, commentsValeursSuresDuProfil,
-        likesJeuxDuProfil, commentsJeuxDuProfil,
-        profilSubTab: "vus", // "vus" | "a-voir" | "tendances" | "avis" | "tierlists" | "cadeaux" | "jeux"
-      },
-    });
-  } catch (e) {
-    console.error(e);
-    showToast("Profil introuvable.");
-  }
-}
-
-// ---- rendu : fil d'activité ----
-// Fusionne trois sources hétérogènes (avis publiés, envies "à voir"
-// ajoutées, tierlists publiques créées) en une liste d'activités
-// triée par date, normalisée avec un champ `type` pour savoir quel
-// gabarit de carte appliquer.
-export function getFeedEntries() {
-  const activitesAvis = state.avis.map((a) => ({ type: "avis", date: a.created_at, data: a }));
-  const activitesAVoir = (state.activitesAVoir || []).map((m) => ({ type: "a_voir", date: m.created_at, data: m }));
-  const activitesTierlist = (state.tierlists || [])
-    .filter((t) => t.est_publique)
-    .map((t) => ({ type: "tierlist", date: t.created_at, data: t }));
-  const activitesCadeaux = (state.activitesCadeaux || []).map((c) => ({ type: "cadeau", date: c.created_at, data: c }));
-
-  // Les cartes "X a rejoint le carnet" sont désormais affichées dans
-  // l'onglet "Abonnements" plutôt que dans le Fil d'actualité — leur
-  // seule action possible (Suivre) les rattache au réseau social, pas
-  // au flux de contenu — voir renderAbonnementsView().
-  return [...activitesAvis, ...activitesAVoir, ...activitesTierlist, ...activitesCadeaux].sort((x, y) => new Date(y.date) - new Date(x.date));
-}
-
-export function activiteCardHtml(entry) {
-  if (entry.type === "avis") return avisCardHtml(entry.data);
-  if (entry.type === "tierlist") return tierlistActiviteCardHtml(entry.data);
-  if (entry.type === "inscription") return inscriptionActiviteCardHtml(entry.data);
-  if (entry.type === "cadeau") return cadeauActiviteCardHtml(entry.data);
-  return aVoirActiviteCardHtml(entry.data);
-}
-
-export function avisCardHtml(a) {
-  const liked = hasLiked(a.id);
-  const likeCount = getLikeCount(a.id);
-  const pseudo = a.profils ? a.profils.pseudo : "Utilisateur supprimé";
-  const avatar = a.profils ? a.profils.avatar_url : null;
-  const drama = a.dramas || {};
-  const mine = a.user_id === currentUserId();
-  return `<article class="drama-card" style="cursor:default;">
-    <div class="card-row" style="align-items:flex-start;">
-      ${avatar
-        ? `<img src="${esc(avatar)}" class="tr-person-avatar" style="width:56px;height:56px;cursor:pointer;object-fit:cover;" data-open-profil="${esc(a.user_id)}">`
-        : `<div class="stamp mini motif-flower" style="width:56px;height:56px;cursor:pointer;" data-open-profil="${esc(a.user_id)}">${FLOWER_MOTIF_SVG}</div>`}
-      <div class="card-main">
-        <p class="tr-person-name" style="cursor:pointer;" data-open-profil="${esc(a.user_id)}">${esc(pseudo)}</p>
-        <p class="cast" style="margin-top:1px;">a noté <b data-drama-titre="${esc(drama.titre)}" style="cursor:pointer; color:var(--blue-deep);">${esc(drama.titre || "un drama")}</b>${drama.annee ? ` (${esc(drama.annee)})` : ""}</p>
-      </div>
-      ${a.note !== null && a.note !== undefined ? stampHtml(a.note, true) : ""}
+    <div onclick="switchTab('challenges'); setTimeout(() => switchQuestPanel('classement'), 60);" style="cursor: pointer; flex: 1; background: var(--bg-raised); border-radius: 12px; box-shadow: 0 2px 8px rgba(12,47,58,0.08); text-align: center; padding: 10px 4px;">
+      <div style="font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--primary);">#${myRank}</div>
+      <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary-light);">Rang</div>
     </div>
-    ${a.commentaire ? `<p style="font-size:13px; color:var(--ink); line-height:1.5; margin:10px 0 0;">${esc(a.commentaire)}</p>` : ""}
-    <div class="card-actions" style="margin-top:10px;">
-      <button class="text-btn" data-toggle-like="${esc(a.id)}" data-owner-id="${esc(a.user_id)}" data-titre="${esc(drama.titre || "un drama")}" style="${liked ? "color:var(--seal); font-weight:600;" : ""}">
-        ${liked ? "♥" : "♡"} ${likeCount > 0 ? likeCount : ""}
-      </button>
-      ${mine ? `<button class="text-btn danger" data-delete-avis="${esc(a.id)}">🗑 Supprimer</button>` : ""}
-    </div>
-  </article>`;
+  `;
 }
 
-// Carte "X veut voir Y" — même gabarit visuel que les avis (pas de
-// distinction demandée), mais sans like ni suppression depuis le fil
-// (l'envie se gère depuis l'onglet À voir).
-export function aVoirActiviteCardHtml(m) {
-  const pseudo = m.profils ? m.profils.pseudo : "Utilisateur supprimé";
-  const avatar = m.profils ? m.profils.avatar_url : null;
-  const drama = m.a_voir || {};
-  return `<article class="drama-card" style="cursor:default;">
-    <div class="card-row" style="align-items:flex-start;">
-      ${avatar
-        ? `<img src="${esc(avatar)}" class="tr-person-avatar" style="width:56px;height:56px;cursor:pointer;object-fit:cover;" data-open-profil="${esc(m.user_id)}">`
-        : `<div class="stamp mini motif-flower" style="width:56px;height:56px;cursor:pointer;" data-open-profil="${esc(m.user_id)}">${FLOWER_MOTIF_SVG}</div>`}
-      <div class="card-main">
-        <p class="tr-person-name" style="cursor:pointer;" data-open-profil="${esc(m.user_id)}">${esc(pseudo)}</p>
-        <p class="cast" style="margin-top:1px;">veut voir <b style="color:var(--blue-deep);">${esc(drama.titre || "un drama")}</b>${drama.annee ? ` (${esc(drama.annee)})` : ""}</p>
-      </div>
-      ${drama.poster_url ? `<img src="${esc(drama.poster_url)}" class="tr-person-avatar" style="width:56px;height:76px;border-radius:4px;object-fit:cover;">` : ""}
-    </div>
-  </article>`;
-}
-
-// Carte "X a créé une tierlist Y" dans le fil. Donne un accès direct
-// à la modal de visionnage (qui inclut désormais les commentaires) —
-// c'est là que se fait l'interaction, pas directement depuis la carte
-// du fil (pour rester cohérent avec le gabarit commun demandé).
-export function tierlistActiviteCardHtml(t) {
-  const pseudo = t.profils ? t.profils.pseudo : "Utilisateur supprimé";
-  const avatar = t.profils ? t.profils.avatar_url : null;
-  const likeCount = getTierlistLikeCount(t.id);
-  return `<article class="drama-card" data-view-tierlist="${esc(t.id)}">
-    <div class="card-row" style="align-items:flex-start;">
-      ${avatar
-        ? `<img src="${esc(avatar)}" class="tr-person-avatar" style="width:56px;height:56px;cursor:pointer;object-fit:cover;" data-open-profil="${esc(t.user_id)}" data-stop-propagation="1">`
-        : `<div class="stamp mini motif-flower" style="width:56px;height:56px;cursor:pointer;" data-open-profil="${esc(t.user_id)}" data-stop-propagation="1">${FLOWER_MOTIF_SVG}</div>`}
-      <div class="card-main">
-        <p class="tr-person-name" style="cursor:pointer;" data-open-profil="${esc(t.user_id)}" data-stop-propagation="1">${esc(pseudo)}</p>
-        <p class="cast" style="margin-top:1px;">a créé la tierlist <b style="color:var(--blue-deep);">${esc(t.titre)}</b>${t.theme ? ` · ${esc(t.theme)}` : ""}</p>
-      </div>
-      <span class="tr-rank">▦</span>
-    </div>
-    <div class="card-actions" style="margin-top:10px;">
-      <span class="text-btn" style="cursor:default;">${likeCount > 0 ? `♥ ${likeCount}` : "♡"}</span>
-      <span class="text-btn" style="cursor:default;">👁 Voir et commenter</span>
-    </div>
-  </article>`;
-}
-
-// Carte "X a rejoint le carnet" : seule façon de découvrir un compte
-// tout juste créé, qui n'a encore aucune activité (avis, tierlist...)
-// donc n'apparaîtrait jamais autrement dans le fil.
-export function inscriptionActiviteCardHtml(p) {
-  const dejaAbonne = isFollowing(p.id);
-  const estMoi = p.id === currentUserId();
-  return `<article class="drama-card" style="cursor:default;">
-    <div class="card-row" style="align-items:flex-start;">
-      ${p.avatar_url
-        ? `<img src="${esc(p.avatar_url)}" class="tr-person-avatar" style="width:56px;height:56px;cursor:pointer;object-fit:cover;" data-open-profil="${esc(p.id)}">`
-        : `<div class="stamp mini motif-flower" style="width:56px;height:56px;cursor:pointer;" data-open-profil="${esc(p.id)}">${FLOWER_MOTIF_SVG}</div>`}
-      <div class="card-main">
-        <p class="tr-person-name" style="cursor:pointer;" data-open-profil="${esc(p.id)}">${esc(p.pseudo)}</p>
-        <p class="cast" style="margin-top:1px;">🌱 a rejoint le carnet</p>
-      </div>
-      ${!estMoi ? `<button class="ghost-btn" style="flex:0; padding:8px 14px; ${dejaAbonne ? "border-color:var(--seal); color:var(--seal);" : ""}" data-follow-id="${esc(p.id)}">${dejaAbonne ? "Abonné(e)" : "Suivre"}</button>` : ""}
-    </div>
-  </article>`;
-}
-
-// Carte "X a gagné [acteur]" : activité publique liée au système de
-// cadeaux (tenterGagnerCadeau), affichée avec la photo de l'acteur
-// gagné — demandé explicitement, à la différence des autres cartes
-// qui montrent surtout l'avatar de l'utilisateur.
-export function cadeauActiviteCardHtml(c) {
-  const pseudo = c.profil_gagnant ? c.profil_gagnant.pseudo : "Quelqu'un";
-  const p = c.personnes;
-  const liked = hasLikedCadeau(c.id);
-  const likeCount = getLikeCadeauCount(c.id);
-  const commentCount = getCadeauCommentCount(c.id);
-  return `<article class="drama-card" style="cursor:default;">
-    <div class="card-row" style="align-items:flex-start;">
-      <img src="${esc(p.photo_url)}" class="tr-person-avatar" style="width:56px;height:56px;object-fit:cover; cursor:pointer;" data-person-name="${esc(p.nom)}" data-person-role="${esc(p.role)}">
-      <div class="card-main">
-        ${c.profil_gagnant ? `<p class="tr-person-name" style="cursor:pointer;" data-open-profil="${esc(c.profil_gagnant.id)}">${esc(pseudo)}</p>` : `<p class="tr-person-name">${esc(pseudo)}</p>`}
-        <p class="cast" style="margin-top:1px;">🎁 a gagné <b style="color:var(--blue-deep); cursor:pointer;" data-person-name="${esc(p.nom)}" data-person-role="${esc(p.role)}">${esc(p.nom)}</b></p>
-      </div>
-      <span class="tr-rank">🏆</span>
-    </div>
-    <div class="card-actions" style="margin-top:10px;">
-      <button class="text-btn" data-toggle-like-cadeau="${esc(c.id)}" data-owner-id="${esc(c.user_id)}" data-titre="${esc(p.nom)}" style="${liked ? "color:var(--seal); font-weight:600;" : ""}">
-        ${liked ? "♥" : "♡"} ${likeCount > 0 ? likeCount : ""}
-      </button>
-      <button class="text-btn" data-open-comments-cadeau="${esc(c.id)}" data-owner-id="${esc(c.user_id)}" data-titre="${esc(p.nom)}">💬 ${commentCount > 0 ? commentCount : ""}</button>
-    </div>
-  </article>`;
-}
-
-export function renderCommunauteView() {
-  if (!isLoggedIn()) {
-    return `<div class="trends-wrap"><div class="empty-state">
-      <p>Connecte-toi pour voir le fil de la communauté, publier des avis et suivre d'autres fans.</p>
-      <button class="primary-btn" id="goToAuthBtn" style="margin-top:6px;">Se connecter / S'inscrire</button>
-    </div></div>`;
-  }
-
-  const entries = getFeedEntries();
-  let html = `<main class="kt-list" style="padding-top:14px;">`;
-
-  if (entries.length === 0) {
-    html += `<div class="empty-state"><p>Aucune activité pour l'instant.</p></div>`;
+function renderMyProfile() {
+  const user = currentUser;
+  const personalData = personalsData[user.id] || {};
+  // ✅ La bio personnalisée en app (personalData.bio) gagne toujours sur la bio par défaut (user.bio)
+  const officialBio = (personalData.bio && personalData.bio.trim()) ? personalData.bio : (user.bio || '');
+  
+  // Déterminer comment afficher l'avatar
+  let avatarHTML = '';
+  if (personalData.avatar && personalData.avatar.startsWith('data:image')) {
+    // C'est une image compressée
+    avatarHTML = `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
   } else {
-    html += entries.map(activiteCardHtml).join("");
+    // C'est un emoji ou vide
+    avatarHTML = personalData.avatar || '👤';
   }
-  html += `</main>`;
-  return html;
-}
-
-// ---- onglet "Abonnements" : tout ce qui touche au réseau social,
-// auparavant éparpillé en boutons en haut du Fil (regroupé ici pour
-// plus de clarté — voir la refonte de la navigation Communauté).
-export function renderAbonnementsView() {
-  if (!isLoggedIn()) {
-    return `<div class="trends-wrap"><div class="empty-state">
-      <p>Connecte-toi pour gérer tes abonnements et découvrir d'autres fans.</p>
-      <button class="primary-btn" id="goToAuthFromAbonnementsBtn" style="margin-top:6px;">Se connecter / S'inscrire</button>
-    </div></div>`;
-  }
-  const uid = currentUserId();
-  const nouveaux = (state.nouveauxInscrits || []).filter((p) => p.id !== uid);
-  return `<div class="trends-wrap">
-    <section class="tr-section">
-      <div class="modal-stat-row" style="margin:0 0 14px;">
-        <div class="modal-stat" style="cursor:pointer;" data-voir-liste-abonnes="${esc(uid)}:abonnes"><span class="v">${getFollowerCount(uid)}</span><span class="l">Abonnés</span></div>
-        <div class="modal-stat" style="cursor:pointer;" data-voir-liste-abonnes="${esc(uid)}:abonnements"><span class="v">${getFollowingCount(uid)}</span><span class="l">Abonnements</span></div>
+  
+  const html = `
+    <div class="card" style="text-align: center; padding: 24px;">
+      <div onclick="document.getElementById('avatarInput')?.click()" style="cursor: pointer; position: relative; font-size: 80px; margin-bottom: 20px; display: inline-block; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2);" title="Toucher pour changer la photo">
+        ${avatarHTML}
+        <span style="position: absolute; bottom: 4px; right: 4px; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-gold); border: 3px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 15px;">📷</span>
       </div>
-      <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="ghost-btn" id="ouvrirEnviesAbonnesBtn" style="width:100%;">🎁 Envies de mes abonnements</button>
-        <button class="ghost-btn" id="ouvrirRechercheProfilBtn" style="width:100%;">🔍 Rechercher un profil</button>
+      <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--primary);">${user.name}</div>
+      <div style="font-size: 14px; color: var(--primary-light); font-style: italic; margin-bottom: 18px;">
+        "${officialBio || 'Aventurier(e) du groupe'}"
       </div>
-    </section>
-    <section class="tr-section">
-      <h2 class="tr-title">Nouveaux membres</h2>
-      ${nouveaux.length === 0 ? `<p class="tr-note">Personne de nouveau pour l'instant.</p>` : nouveaux.map(inscriptionActiviteCardHtml).join("")}
-    </section>
-  </div>`;
-}
 
-// ---- onglet "Jeux" : page d'accueil regroupant Quiz du jour, OST
-// Challenge et Tierlists (auparavant 3 boutons distincts du subnav
-// Communauté, plus "Deezer" qui est désormais retiré — voir le
-// mini-lecteur flottant persistant qui couvre déjà cet usage).
-export function renderJeuxView() {
-  const nbCadeaux = (state.maCollectionActeurs || []).length;
-  return `<div class="trends-wrap">
-    <section class="tr-section" style="display:flex; flex-direction:column; gap:9px;">
-      <button class="jeu-card" data-tab="quiz">
-        <span class="jeu-card-icon" style="background:var(--celadon-soft);">🧠</span>
-        <span class="jeu-card-info"><span class="jeu-card-titre">Quiz du jour</span><span class="jeu-card-sub">Un nouveau défi chaque jour</span></span>
-        <span class="jeu-card-chevron">›</span>
-      </button>
-      <button class="jeu-card" data-tab="ost">
-        <span class="jeu-card-icon" style="background:var(--gold-soft);">🎵</span>
-        <span class="jeu-card-info"><span class="jeu-card-titre">OST Challenge</span><span class="jeu-card-sub">Reconnais la bande-son</span></span>
-        <span class="jeu-card-chevron">›</span>
-      </button>
-      <button class="jeu-card" data-tab="tierlists">
-        <span class="jeu-card-icon" style="background:var(--seal-soft);">▦</span>
-        <span class="jeu-card-info"><span class="jeu-card-titre">Tierlists</span><span class="jeu-card-sub">Classe tes acteurs préférés</span></span>
-        <span class="jeu-card-chevron">›</span>
-      </button>
-      ${isLoggedIn() ? `<button class="jeu-card" id="ouvrirCollectionBtn">
-        <span class="jeu-card-icon" style="background:var(--paper-sunken);">🏆</span>
-        <span class="jeu-card-info"><span class="jeu-card-titre">Ma collection</span><span class="jeu-card-sub">${nbCadeaux} acteur${nbCadeaux === 1 ? "" : "s"} gagné${nbCadeaux === 1 ? "" : "s"}</span></span>
-        <span class="jeu-card-chevron">›</span>
-      </button>` : ""}
-    </section>
-  </div>`;
-}
-
-export function renderProfilPublicView() {
-  const d = state.profilPublicData;
-  if (!d) return `<div class="trends-wrap"><div class="empty-state"><p>Chargement du profil…</p></div></div>`;
-  const { profil, avisDuProfil, tierlistsDuProfil, entriesDuProfil, aVoirDuProfil, trendsDuProfil, collectionDuProfil, quizDuProfil, ostDuProfil, profilSubTab } = d;
-  const isMe = profil.id === currentUserId();
-  const ratedEntries = entriesDuProfil.filter((e) => e.note !== null && e.note !== undefined);
-  const note_avg = ratedEntries.length ? ratedEntries.reduce((s, e) => s + Number(e.note), 0) / ratedEntries.length : null;
-  const subTab = profilSubTab || "vus";
-
-  const subnavHtml = `<div class="subnav" style="padding:0 0 14px;">
-    <button class="${subTab === "vus" ? "active" : ""}" data-profil-subtab="vus">Vus (${entriesDuProfil.length})</button>
-    <button class="${subTab === "a-voir" ? "active" : ""}" data-profil-subtab="a-voir">À voir (${aVoirDuProfil.length})</button>
-    <button class="${subTab === "tendances" ? "active" : ""}" data-profil-subtab="tendances">Tendances</button>
-    <button class="${subTab === "avis" ? "active" : ""}" data-profil-subtab="avis">Avis (${avisDuProfil.length})</button>
-    <button class="${subTab === "tierlists" ? "active" : ""}" data-profil-subtab="tierlists">Tierlists</button>
-    <button class="${subTab === "cadeaux" ? "active" : ""}" data-profil-subtab="cadeaux">🎁 Cadeaux (${collectionDuProfil.length})</button>
-    <button class="${subTab === "jeux" ? "active" : ""}" data-profil-subtab="jeux">Jeux (${quizDuProfil.length + ostDuProfil.length})</button>
-  </div>`;
-
-  let contentHtml = "";
-  if (subTab === "vus") {
-    contentHtml = entriesDuProfil.length === 0 ? `<p class="tr-note">Aucun drama vu pour l'instant.</p>` : entriesDuProfil
-      .slice().sort((a, b) => (b.note || 0) - (a.note || 0))
-      .map((dr) => {
-        const liked = hasLikedVisionnage(dr.visionnage_id);
-        const likeCount = getVisionnageLikeCount(dr.visionnage_id);
-        const commentCount = getVisionnageCommentCount(dr.visionnage_id);
-        return `<div style="margin-bottom:9px;">
-          <article class="drama-card" data-drama-titre="${esc(dr.titre)}" style="margin-bottom:0; border-radius:12px 12px 0 0;">
-            <div class="card-row">
-              ${dr.poster_url ? `<img src="${esc(dr.poster_url)}" alt="" class="poster-thumb">` : stampHtml(dr.note, false)}
-              <div class="card-main">
-                <h2>${esc(dr.titre)}${dr.annee ? `<span class="year"> · ${esc(dr.annee)}</span>` : ""}</h2>
-                <p class="cast" data-stop-propagation="1">${[castingLinksHtml(dr.acteur, "acteur"), castingLinksHtml(dr.actrice, "actrice")].filter(Boolean).join("  ·  ") || "Casting non renseigné"}</p>
-              </div>
-              ${dr.poster_url ? stampHtml(dr.note, true) : ""}
-            </div>
-          </article>
-          <div class="card-actions" style="background:var(--paper-raised); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:8px 14px; margin-top:-1px;">
-            <button class="text-btn" data-toggle-like-visionnage="${esc(dr.visionnage_id)}" data-owner-id="${esc(profil.id)}" data-titre="${esc(dr.titre)}" style="${liked ? "color:var(--seal); font-weight:600;" : ""}">${liked ? "♥" : "♡"} ${likeCount > 0 ? likeCount : ""}</button>
-            <button class="text-btn" data-open-comments-visionnage="${esc(dr.visionnage_id)}" data-owner-id="${esc(profil.id)}" data-titre="${esc(dr.titre)}">💬 ${commentCount > 0 ? commentCount : ""}</button>
-          </div>
-        </div>`;
-      }).join("");
-  } else if (subTab === "a-voir") {
-    contentHtml = aVoirDuProfil.length === 0 ? `<p class="tr-note">Aucune envie enregistrée.</p>` : aVoirDuProfil.map((dr) => {
-      const liked = hasLikedAVoir(dr.mes_a_voir_id);
-      const likeCount = getAVoirLikeCount(dr.mes_a_voir_id);
-      const commentCount = getAVoirCommentCount(dr.mes_a_voir_id);
-      return `<div style="margin-bottom:9px;">
-        <article class="drama-card" data-drama-titre="${esc(dr.titre)}" style="margin-bottom:0; border-radius:12px 12px 0 0;">
-          <div class="card-row">
-            ${dr.poster_url ? `<img src="${esc(dr.poster_url)}" alt="" class="poster-thumb">` : `<div class="stamp empty motif-flower">${FLOWER_MOTIF_SVG}</div>`}
-            <div class="card-main">
-              <h2>${esc(dr.titre)}${dr.annee ? `<span class="year"> · ${esc(dr.annee)}</span>` : ""}</h2>
-              <p class="cast" data-stop-propagation="1">${[castingLinksHtml(dr.acteur, "acteur"), castingLinksHtml(dr.actrice, "actrice")].filter(Boolean).join("  ·  ") || "Casting non renseigné"}</p>
-            </div>
-          </div>
-        </article>
-        <div class="card-actions" style="background:var(--paper-raised); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:8px 14px; margin-top:-1px;">
-          <button class="text-btn" data-toggle-like-a-voir="${esc(dr.mes_a_voir_id)}" data-owner-id="${esc(profil.id)}" data-titre="${esc(dr.titre)}" style="${liked ? "color:var(--seal); font-weight:600;" : ""}">${liked ? "♥" : "♡"} ${likeCount > 0 ? likeCount : ""}</button>
-          <button class="text-btn" data-open-comments-a-voir="${esc(dr.mes_a_voir_id)}" data-owner-id="${esc(profil.id)}" data-titre="${esc(dr.titre)}">💬 ${commentCount > 0 ? commentCount : ""}</button>
-        </div>
-      </div>`;
-    }).join("");
-  } else if (subTab === "tendances") {
-    const tLiked = hasLikedTendances(profil.id);
-    const tLikeCount = getTendancesLikeCount(profil.id);
-    const tCommentCount = getTendancesCommentCount(profil.id);
-    const tendancesActionsHtml = `<div class="card-actions" style="background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:8px 14px; margin-bottom:14px;">
-      <button class="text-btn" data-toggle-like-tendances="${esc(profil.id)}" data-titre="Tendances de ${esc(profil.pseudo)}" style="${tLiked ? "color:var(--seal); font-weight:600;" : ""}">${tLiked ? "♥" : "♡"} ${tLikeCount > 0 ? tLikeCount : ""}</button>
-      <button class="text-btn" data-open-comments-tendances="${esc(profil.id)}" data-titre="Tendances de ${esc(profil.pseudo)}">💬 ${tCommentCount > 0 ? tCommentCount : ""}</button>
-    </div>`;
-    if (!trendsDuProfil || !trendsDuProfil.records) {
-      contentHtml = tendancesActionsHtml + `<p class="tr-note">Pas encore assez de dramas notés pour calculer des tendances.</p>`;
-    } else {
-      contentHtml = tendancesActionsHtml + renderTrendsSections(trendsDuProfil, entriesDuProfil, profil.id);
-    }
-  } else if (subTab === "avis") {
-    contentHtml = avisDuProfil.length === 0 ? `<p class="tr-note">Aucun avis publié.</p>` : avisDuProfil.map(avisCardHtml).join("");
-  } else if (subTab === "tierlists") {
-    contentHtml = tierlistsDuProfil.length === 0 ? `<p class="tr-note">Aucune tierlist publique.</p>` : tierlistsDuProfil.map((t) => `
-      <div class="tr-person-row" data-view-tierlist="${esc(t.id)}">
-        <span class="tr-rank">▦</span>
-        <div class="tr-person-info"><p class="tr-person-name">${esc(t.titre)}</p><p class="tr-person-sub">${esc(t.theme || "")}</p></div>
-      </div>`).join("");
-  } else if (subTab === "cadeaux") {
-    contentHtml = collectionDuProfil.length === 0 ? `<p class="tr-note">Aucun cadeau gagné pour l'instant.</p>` : `
-      <div class="collection-grid">
-        ${collectionDuProfil.map((c) => {
-          const liked = hasLikedCadeau(c.id);
-          const likeCount = getLikeCadeauCount(c.id);
-          const commentCount = getCadeauCommentCount(c.id);
-          return `
-          <div>
-            <div class="collection-item" data-person-name="${esc(c.personnes.nom)}" data-person-role="${esc(c.personnes.role)}">
-              <img src="${esc(c.personnes.photo_url)}" alt="${esc(c.personnes.nom)}">
-              <p>${esc(c.personnes.nom)}</p>
-            </div>
-            <div style="display:flex; justify-content:center; gap:10px; margin-top:4px;">
-              <button class="text-btn" data-toggle-like-cadeau="${esc(c.id)}" data-owner-id="${esc(c.user_id)}" data-titre="${esc(c.personnes.nom)}" style="${liked ? "color:var(--seal); font-weight:600;" : ""}">${liked ? "♥" : "♡"} ${likeCount > 0 ? likeCount : ""}</button>
-              <button class="text-btn" data-open-comments-cadeau="${esc(c.id)}" data-owner-id="${esc(c.user_id)}" data-titre="${esc(c.personnes.nom)}">💬 ${commentCount > 0 ? commentCount : ""}</button>
-            </div>
-          </div>`;
-        }).join("")}
-      </div>`;
-  } else if (subTab === "jeux") {
-    const quizRows = quizDuProfil.map((q) => ({ kind: "quiz", id: q.id, date: q.date_quiz, detail: `${q.bonnes_reponses}/${q.total_questions} bonnes réponses`, score: `${q.score_total} pts`, icon: "🧠" }));
-    const ostRows = ostDuProfil.map((o) => ({ kind: "ost", id: o.id, date: o.date_partie, detail: o.mode || "OST Challenge", score: `${o.score} pts`, icon: "🎵" }));
-    const toutesLesParties = [...quizRows, ...ostRows].sort((a, b) => new Date(b.date) - new Date(a.date));
-    contentHtml = toutesLesParties.length === 0 ? `<p class="tr-note">Aucune partie jouée pour l'instant.</p>` : toutesLesParties.map((p) => {
-      const liked = hasLikedJeu(p.kind, p.id);
-      const likeCount = getJeuLikeCount(p.kind, p.id);
-      const commentCount = getJeuCommentCount(p.kind, p.id);
-      const titreJeu = p.kind === "quiz" ? "Quiz du jour" : "OST Challenge";
-      return `<div style="margin-bottom:9px;">
-        <div class="tr-person-row" style="margin-bottom:0; border-radius:12px 12px 0 0; cursor:default;">
-          <span class="tr-rank">${p.icon}</span>
-          <div class="tr-person-info"><p class="tr-person-name">${esc(titreJeu)} · ${formatDateFr(typeof p.date === "string" && p.date.includes("T") ? p.date.slice(0, 10) : p.date)}</p><p class="tr-person-sub">${esc(p.detail)}</p></div>
-          <span class="tr-person-score">${esc(p.score)}</span>
-        </div>
-        <div class="card-actions" style="background:var(--paper-raised); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:8px 14px; margin-top:-1px;">
-          <button class="text-btn" data-toggle-like-jeu="${esc(p.id)}" data-jeu-kind="${esc(p.kind)}" data-owner-id="${esc(profil.id)}" data-titre="${esc(titreJeu)}" style="${liked ? "color:var(--seal); font-weight:600;" : ""}">${liked ? "♥" : "♡"} ${likeCount > 0 ? likeCount : ""}</button>
-          <button class="text-btn" data-open-comments-jeu="${esc(p.id)}" data-jeu-kind="${esc(p.kind)}" data-owner-id="${esc(profil.id)}" data-titre="${esc(titreJeu)}">💬 ${commentCount > 0 ? commentCount : ""}</button>
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  return `<div class="trends-wrap">
-    ${state.profilRetourTab ? `<button class="text-btn" id="profilRetourBtn" style="margin-bottom:10px; font-weight:600;">← Retour</button>` : ""}
-    <section class="tr-section">
-      <div class="profil-header-card">
-        <div class="profil-header-top">
-          ${isMe ? `
-          <label class="avatar-upload-zone">
-            ${profil.avatar_url ? `<img src="${esc(profil.avatar_url)}" class="profil-avatar">` : `<div class="stamp motif-flower profil-avatar" style="display:flex;align-items:center;justify-content:center;">${FLOWER_MOTIF_SVG}</div>`}
-            <span class="avatar-upload-badge">${state.imageProcessing ? "…" : "📷"}</span>
-            <input type="file" accept="image/*" style="display:none" id="avatarUploadInput">
-          </label>` : `
-          ${profil.avatar_url ? `<img src="${esc(profil.avatar_url)}" class="profil-avatar">` : `<div class="stamp motif-flower profil-avatar" style="display:flex;align-items:center;justify-content:center;">${FLOWER_MOTIF_SVG}</div>`}`}
-          <div class="profil-header-info">
-            <h3 class="profil-pseudo">${esc(profil.pseudo)}</h3>
-            ${profil.bio ? `<p class="profil-bio">${esc(profil.bio)}</p>` : profil.created_at ? `<p class="profil-bio">Membre depuis ${new Date(profil.created_at).getFullYear()}</p>` : ""}
-          </div>
-          ${!isMe ? `<button class="profil-follow-btn ${isFollowing(profil.id) ? "is-following" : ""}" data-follow-id="${esc(profil.id)}">${isFollowing(profil.id) ? "Abonné(e)" : "Suivre"}</button>` : `<button class="profil-follow-btn" id="logoutBtn">Déconnexion</button>`}
-        </div>
-        <div class="profil-stats-grid">
-          <div class="profil-stat" style="background:var(--celadon-soft);"><span class="v">${entriesDuProfil.length}</span><span class="l">Vus</span></div>
-          <div class="profil-stat" style="background:var(--gold-soft);"><span class="v">${fmtNote(note_avg)}</span><span class="l">Note moy.</span></div>
-          <div class="profil-stat" style="background:var(--seal-soft); cursor:pointer;" data-voir-liste-abonnes="${esc(profil.id)}:abonnes"><span class="v">${getFollowerCount(profil.id)}</span><span class="l">Abonnés</span></div>
-          <div class="profil-stat" style="background:var(--celadon-soft); cursor:pointer;" data-voir-liste-abonnes="${esc(profil.id)}:abonnements"><span class="v">${getFollowingCount(profil.id)}</span><span class="l">Abonnements</span></div>
-        </div>
-        ${isMe ? `
-        <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
-          ${state.pushPermissionStatus === "granted" ? `
-            <button class="text-btn" id="desactiverPushBtn">🔕 Désactiver les notifications sur cet appareil</button>
-          ` : state.pushPermissionStatus === "denied" ? `
-            <p class="tr-note" style="margin:0;">🔕 Notifications bloquées — réactive-les dans les réglages de ton navigateur si tu changes d'avis.</p>
-          ` : state.pushPermissionStatus === "unsupported" ? `
-            <p class="tr-note" style="margin:0;">Les notifications ne sont pas prises en charge sur cet appareil/navigateur.</p>
-          ` : `
-            <button class="text-btn" id="activerPushBtn" style="font-weight:600; color:var(--blue-deep);">🔔 Activer les notifications sur ce téléphone</button>
-          `}
-        </div>` : ""}
+      <!-- ✅ XP et rang : n'apparaissaient nulle part sur le profil (seulement dans
+           Défis > Classement), donnant l'impression que rien ne se passait en validant
+           un défi. Recalculé à chaque affichage du profil, jamais figé. -->
+      <div id="profile-xp-stats" style="display: flex; gap: 10px; margin-bottom: 24px;"></div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+        <button class="btn btn-primary" onclick="showMyProfileTab('infos')" id="btn-infos" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2);">📋 Infos</button>
+        <button class="btn" onclick="showMyProfileTab('valise')" id="btn-valise" style="background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">🎒 Valise</button>
       </div>
-    </section>
-    <section class="tr-section">
-      ${subnavHtml}
-      ${contentHtml}
-    </section>
-  </div>`;
-}
+      
+      <div id="my-profile-tab-content"></div>
+      
+      <div style="margin-top: 16px;">
+        <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderMyProfile, 300);" style="width: 100%; background: ${localStorage.getItem('pushActivated') ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)'}; color: ${localStorage.getItem('pushActivated') ? 'var(--primary)' : 'white'}; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          ${localStorage.getItem('pushActivated') ? '🔕 Désactiver les notifs push' : '🔔 Activer les notifs push'}
+        </button>
+      </div>
+      
+      <div id="travel-section" style="margin-top: 16px;"></div>
 
-export function renderComposerSheet() {
-  if (!state.composerOpen) return "";
-  const dramaOptions = state.entries.map((d) => `<option value="${esc(d.id)}" ${state.composerDramaId === d.id ? "selected" : ""}>${esc(d.titre)}${d.annee ? ` (${esc(d.annee)})` : ""}</option>`).join("");
-  return `<div class="sheet-overlay" id="composerOverlay">
-    <div class="sheet" id="composerSheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <h3>Nouvel avis</h3>
-        <button class="icon-btn" id="composerClose">✕</button>
-      </div>
-      <div class="sheet-body">
-        <label>Drama
-          <select id="composer-drama" style="border:1px solid var(--line); background:var(--paper-raised); border-radius:3px; border-width:2px; padding:10px 11px; font-size:14.5px; font-family:inherit;">
-            <option value="">— Choisir —</option>
-            ${dramaOptions}
-          </select>
-        </label>
-        <label>Note /10 (optionnelle)<input id="composer-note" type="number" inputmode="decimal" step="0.5" min="0" max="10" value="${esc(state.composerNote)}"></label>
-        <label>Ton avis<input id="composer-commentaire" value="${esc(state.composerCommentaire)}" placeholder="Qu'as-tu pensé de ce drama ?"></label>
-      </div>
-      <div class="sheet-footer">
-        <button class="ghost-btn" id="composerCancel">Annuler</button>
-        <button class="primary-btn" id="composerSave">Publier</button>
+      ${user.name === 'Marine' ? renderPrivateMessageComposer() : ''}
+
+      <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">
+        <button class="btn btn-primary" onclick="showAllProfiles()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15);">👥 Voir les autres</button>
       </div>
     </div>
-  </div>`;
+  `;
+  
+  document.getElementById('my-profile-content').innerHTML = html;
+  renderProfileXpStats();
+  showMyProfileTab('infos');
+  loadTravelSection(); // ✅ 🧳 Infos d'arrivée/départ + billets
+  if (user.name === 'Marine') loadPendingPrivateMessages(); // ✅ Liste des envois programmés
 }
 
-export function attachCommunauteListeners() {
-  const ouvrirEnviesAbonnesBtn = document.getElementById("ouvrirEnviesAbonnesBtn");
-  if (ouvrirEnviesAbonnesBtn) ouvrirEnviesAbonnesBtn.addEventListener("click", ouvrirEnviesAbonnes);
-  const enviesAbonnesClose = document.getElementById("enviesAbonnesClose");
-  if (enviesAbonnesClose) enviesAbonnesClose.addEventListener("click", fermerEnviesAbonnes);
-  const enviesAbonnesOverlay = document.getElementById("enviesAbonnesOverlay");
-  if (enviesAbonnesOverlay) {
-    enviesAbonnesOverlay.addEventListener("click", (e) => { if (e.target === enviesAbonnesOverlay) fermerEnviesAbonnes(); });
-  }
-  document.querySelectorAll("[data-piocher-envie]").forEach((btn) => {
-    btn.addEventListener("click", () => piocherEnvieAbonne(btn.dataset.piocherEnvie));
-  });
-  document.querySelectorAll("[data-toggle-like]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeAvis(btn.dataset.toggleLike, btn.dataset.ownerId, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-toggle-like-cadeau]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeCadeau(btn.dataset.toggleLikeCadeau, btn.dataset.ownerId, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-open-comments-cadeau]").forEach((btn) => {
-    btn.addEventListener("click", () => ouvrirCommentairesEntry("cadeau", btn.dataset.openCommentsCadeau, btn.dataset.titre, btn.dataset.ownerId));
-  });
-  document.querySelectorAll("[data-delete-avis]").forEach((btn) => {
-    btn.addEventListener("click", () => supprimerAvis(btn.dataset.deleteAvis));
-  });
-  document.querySelectorAll("[data-open-profil]").forEach((el) => {
-    el.addEventListener("click", () => openProfilPublic(el.dataset.openProfil));
-  });
-  document.querySelectorAll("[data-follow-id]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleFollow(btn.dataset.followId));
-  });
-  document.querySelectorAll("[data-profil-subtab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (!state.profilPublicData) return;
-      setState({ profilPublicData: { ...state.profilPublicData, profilSubTab: btn.dataset.profilSubtab } });
-    });
-  });
-  document.querySelectorAll("[data-voir-liste-abonnes]").forEach((el) => {
-    el.addEventListener("click", () => {
-      const [profilId, mode] = el.dataset.voirListeAbonnes.split(":");
-      ouvrirListeAbonnes(profilId, mode);
-    });
-  });
-  const listeAbonnesClose = document.getElementById("listeAbonnesClose");
-  if (listeAbonnesClose) listeAbonnesClose.addEventListener("click", fermerListeAbonnes);
-  const listeAbonnesOverlay = document.getElementById("listeAbonnesOverlay");
-  if (listeAbonnesOverlay) {
-    listeAbonnesOverlay.addEventListener("click", (e) => { if (e.target === listeAbonnesOverlay) fermerListeAbonnes(); });
-  }
-  document.querySelectorAll("[data-open-profil-liste]").forEach((row) => {
-    row.addEventListener("click", () => {
-      const id = row.dataset.openProfilListe;
-      setState({ listeAbonnesModal: null });
-      openProfilPublic(id);
-    });
-  });
-  document.querySelectorAll("[data-toggle-like-visionnage]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeVisionnage(btn.dataset.toggleLikeVisionnage, btn.dataset.ownerId, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-open-comments-visionnage]").forEach((btn) => {
-    btn.addEventListener("click", () => ouvrirCommentairesEntry("visionnage", btn.dataset.openCommentsVisionnage, btn.dataset.titre, btn.dataset.ownerId));
-  });
-  document.querySelectorAll("[data-toggle-like-a-voir]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeAVoir(btn.dataset.toggleLikeAVoir, btn.dataset.ownerId, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-open-comments-a-voir]").forEach((btn) => {
-    btn.addEventListener("click", () => ouvrirCommentairesEntry("a_voir", btn.dataset.openCommentsAVoir, btn.dataset.titre, btn.dataset.ownerId));
-  });
-  document.querySelectorAll("[data-toggle-like-tendances]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeTendances(btn.dataset.toggleLikeTendances, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-open-comments-tendances]").forEach((btn) => {
-    btn.addEventListener("click", () => ouvrirCommentairesEntry("tendances", btn.dataset.openCommentsTendances, btn.dataset.titre, btn.dataset.openCommentsTendances));
-  });
-  document.querySelectorAll("[data-toggle-like-valeur-sure]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeValeurSure(btn.dataset.ownerId, btn.dataset.toggleLikeValeurSure, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-open-comments-valeur-sure]").forEach((btn) => {
-    btn.addEventListener("click", () => ouvrirCommentairesEntry("valeurs_sures", btn.dataset.openCommentsValeurSure, btn.dataset.titre, btn.dataset.ownerId));
-  });
-  document.querySelectorAll("[data-toggle-like-jeu]").forEach((btn) => {
-    btn.addEventListener("click", () => toggleLikeJeu(btn.dataset.jeuKind, btn.dataset.toggleLikeJeu, btn.dataset.ownerId, btn.dataset.titre));
-  });
-  document.querySelectorAll("[data-open-comments-jeu]").forEach((btn) => {
-    btn.addEventListener("click", () => ouvrirCommentairesEntry(btn.dataset.jeuKind, btn.dataset.openCommentsJeu, btn.dataset.titre, btn.dataset.ownerId));
-  });
-  const entryCommentClose = document.getElementById("entryCommentClose");
-  if (entryCommentClose) entryCommentClose.addEventListener("click", fermerCommentairesEntry);
-  const entryCommentOverlay = document.getElementById("entryCommentOverlay");
-  if (entryCommentOverlay) {
-    entryCommentOverlay.addEventListener("click", (e) => { if (e.target === entryCommentOverlay) fermerCommentairesEntry(); });
-  }
-  const entryCommentInput = document.getElementById("entry-comment-input");
-  if (entryCommentInput) entryCommentInput.addEventListener("input", (e) => { if (state.entryCommentModal) state.entryCommentModal.draft = e.target.value; });
-  const entryCommentSubmitBtn = document.getElementById("entryCommentSubmitBtn");
-  if (entryCommentSubmitBtn) entryCommentSubmitBtn.addEventListener("click", publierCommentaireEntry);
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
-  const profilRetourBtn = document.getElementById("profilRetourBtn");
-  if (profilRetourBtn) {
-    profilRetourBtn.addEventListener("click", () => {
-      setState({ activeTab: state.profilRetourTab || "communaute" });
-    });
-  }
-  const activerPushBtn = document.getElementById("activerPushBtn");
-  if (activerPushBtn) activerPushBtn.addEventListener("click", activerNotificationsPush);
-  const desactiverPushBtn = document.getElementById("desactiverPushBtn");
-  if (desactiverPushBtn) desactiverPushBtn.addEventListener("click", desactiverNotificationsPush);
-  const pushPromptActiverBtn = document.getElementById("pushPromptActiverBtn");
-  if (pushPromptActiverBtn) pushPromptActiverBtn.addEventListener("click", activerNotificationsPush);
-  const pushPromptPlusTardBtn = document.getElementById("pushPromptPlusTardBtn");
-  if (pushPromptPlusTardBtn) pushPromptPlusTardBtn.addEventListener("click", dismissPushPrompt);
-  const avatarUploadInput = document.getElementById("avatarUploadInput");
-  if (avatarUploadInput) {
-    avatarUploadInput.addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (file) uploadAvatar(file);
-    });
-  }
-  const goToAuthBtn = document.getElementById("goToAuthBtn");
-  if (goToAuthBtn) goToAuthBtn.addEventListener("click", () => setState({ showAuthModal: true }));
+// ============== MESSAGE PRIVÉ (réservé au profil de Marine) ==============
+// ✅ Formulaire visible seulement sur le profil de Marine : choisir un
+// destinataire, écrire un message libre, choisir une heure d'envoi (ou
+// "maintenant"). Le message n'est jamais visible que par le destinataire
+// choisi (ni broadcast, ni fil d'activité) — voir checkPrivateMessages()
+// côté réception. Envoyé en push même si le destinataire a fermé l'app,
+// via la table private_messages + la tâche planifiée send-private-message.
+function renderPrivateMessageComposer() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // format datetime-local en heure locale
+  const nowLocal = now.toISOString().slice(0, 16);
+  const others = PARTICIPANTS.filter(p => p.id !== currentUser.id);
 
-  // Composer
-  const composerOverlay = document.getElementById("composerOverlay");
-  if (composerOverlay) composerOverlay.addEventListener("click", (e) => { if (e.target === composerOverlay) closeComposer(); });
-  const composerClose = document.getElementById("composerClose");
-  if (composerClose) composerClose.addEventListener("click", closeComposer);
-  const composerCancel = document.getElementById("composerCancel");
-  if (composerCancel) composerCancel.addEventListener("click", closeComposer);
-  const composerSave = document.getElementById("composerSave");
-  if (composerSave) composerSave.addEventListener("click", () => avecBoutonDesactive("composerSave", "Publication…", publierAvis));
-  const composerDrama = document.getElementById("composer-drama");
-  if (composerDrama) composerDrama.addEventListener("change", (e) => { state.composerDramaId = e.target.value; });
-  const composerNote = document.getElementById("composer-note");
-  if (composerNote) composerNote.addEventListener("input", (e) => { state.composerNote = e.target.value; });
-  const composerCommentaire = document.getElementById("composer-commentaire");
-  if (composerCommentaire) composerCommentaire.addEventListener("input", (e) => { state.composerCommentaire = e.target.value; });
+  return `
+    <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); text-align: left;">
+      <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--primary); margin-bottom: 12px;">💌 Envoyer un message privé</div>
+
+      <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">À qui ? <span style="font-weight: 400; color: var(--primary-light);">(plusieurs choix possibles)</span></label>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+        <button type="button" onclick="togglePmSelectAll()" style="background: none; border: none; color: var(--accent-pink); font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 4px;">Tout sélectionner / désélectionner</button>
+      </div>
+      <div id="pm-targets" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+        ${others.map(p => `
+          <label style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 20px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); font-size: 13px; cursor: pointer;">
+            <input type="checkbox" class="pm-target-checkbox" value="${p.id}" style="accent-color: var(--accent-pink);">
+            ${escapeHtml(p.name)}
+          </label>
+        `).join('')}
+      </div>
+
+      <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Message</label>
+      <textarea id="pm-message" placeholder="Passe une belle journée..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 70px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 14px;"></textarea>
+
+      <div style="display: grid; grid-template-columns: 70px 1fr; gap: 10px; margin-bottom: 14px;">
+        <div>
+          <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Emoji</label>
+          <input type="text" id="pm-emoji" value="❤️" maxlength="4" style="width: 100%; padding: 12px; text-align: center; font-size: 16px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08);">
+        </div>
+        <div>
+          <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Quand ?</label>
+          <input type="datetime-local" id="pm-when" value="${nowLocal}" style="width: 100%; padding: 11px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary);">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="sendPrivateMessage()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15); background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white; font-weight: 700;">💌 Envoyer</button>
+      <div id="pm-status" style="font-size: 11.5px; color: var(--primary-light); margin-top: 8px; text-align: center;"></div>
+      <div id="pm-pending" style="margin-top: 14px;"></div>
+    </div>
+  `;
+}
+
+// ✅ Liste des messages programmés pas encore envoyés, avec annulation — avant, une
+// fois un envoi programmé validé, aucun moyen de le revoir ni de l'annuler.
+async function loadPendingPrivateMessages() {
+  const box = document.getElementById('pm-pending');
+  if (!box || !window.supabaseReady) return;
+  try {
+    const { data, error } = await window.supabase
+      .from('private_messages')
+      .select('*')
+      .eq('sent', false)
+      .order('scheduled_at', { ascending: true });
+    if (error || !data || data.length === 0) { box.innerHTML = ''; return; }
+
+    box.innerHTML = `
+      <div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">⏳ Programmés (pas encore envoyés)</div>
+      ${data.map(m => {
+        const target = PARTICIPANTS.find(p => p.id === m.target_id)?.name || '?';
+        const when = new Date(m.scheduled_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return `
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--bg-sunken); border-radius: 8px; font-size: 12px;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 700; color: var(--primary);">${m.emoji || '❤️'} Pour ${escapeHtml(target)} · ${when}</div>
+              <div style="color: var(--primary-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(m.message)}</div>
+            </div>
+            <button onclick="cancelPendingPrivateMessage(${m.id})" title="Annuler" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; border-radius: 6px; padding: 6px 9px; cursor: pointer; flex-shrink: 0;">✕</button>
+          </div>`;
+      }).join('')}
+    `;
+  } catch (e) { box.innerHTML = ''; }
+}
+
+function cancelPendingPrivateMessage(id) {
+  showConfirmation('Annuler cet envoi programmé ?', async () => {
+    try {
+      // Sécurité anti-course : on ne supprime que s'il n'est toujours pas parti
+      const { error } = await window.supabase.from('private_messages').delete().eq('id', id).eq('sent', false);
+      if (error) throw error;
+      showNotification('✕ Envoi annulé', 'success');
+    } catch (e) {
+      showNotification('❌ Annulation impossible (déjà envoyé ?)', 'error');
+    }
+    loadPendingPrivateMessages();
+  });
+}
+
+function togglePmSelectAll() {
+  const boxes = document.querySelectorAll('.pm-target-checkbox');
+  const allChecked = Array.from(boxes).every(b => b.checked);
+  boxes.forEach(b => { b.checked = !allChecked; });
+}
+
+async function sendPrivateMessage() {
+  const targetIds = Array.from(document.querySelectorAll('.pm-target-checkbox:checked')).map(b => parseInt(b.value, 10));
+  const message = document.getElementById('pm-message').value.trim();
+  const emoji = document.getElementById('pm-emoji').value.trim() || '❤️';
+  const whenLocal = document.getElementById('pm-when').value;
+  const statusEl = document.getElementById('pm-status');
+
+  if (targetIds.length === 0) { showNotification('⚠️ Sélectionne au moins une personne', 'error'); return; }
+  if (!message) { showNotification('⚠️ Écris un message avant d\'envoyer', 'error'); return; }
+  if (!whenLocal) { showNotification('⚠️ Choisis une heure d\'envoi', 'error'); return; }
+
+  const scheduledAt = new Date(whenLocal); // interprété en heure locale du navigateur
+  if (statusEl) statusEl.textContent = '⏳ Envoi en cours...';
+
+  try {
+    // ✅ Une ligne par destinataire : chacun reçoit le même message/heure, mais indépendamment
+    // (si un envoi échoue pour l'un, les autres ne sont pas bloqués — voir le compte-rendu ci-dessous).
+    const rows = targetIds.map(targetId => ({
+      sender_id: currentUser.id,
+      target_id: targetId,
+      message,
+      emoji,
+      scheduled_at: scheduledAt.toISOString()
+    }));
+    const { error } = await window.supabase.from('private_messages').insert(rows);
+    if (error) throw error;
+
+    const names = targetIds.map(id => PARTICIPANTS.find(p => p.id === id)?.name || '?').join(', ');
+    const isNow = scheduledAt.getTime() <= Date.now() + 30000; // marge de 30s
+    if (statusEl) statusEl.textContent = isNow
+      ? `✅ Message envoyé à ${names} !`
+      : `✅ Programmé pour ${names} le ${scheduledAt.toLocaleString('fr-FR')}`;
+    showNotification(`💌 Message privé enregistré pour ${targetIds.length} personne${targetIds.length > 1 ? 's' : ''} !`, 'success');
+    loadPendingPrivateMessages();
+    document.getElementById('pm-message').value = '';
+    document.querySelectorAll('.pm-target-checkbox').forEach(b => { b.checked = false; });
+  } catch (err) {
+    console.error('Échec envoi message privé:', err);
+    if (statusEl) statusEl.textContent = '❌ Échec de l\'envoi, réessaie.';
+    showNotification('❌ Échec de l\'envoi du message privé', 'error');
+  }
+}
+
+function showMyProfileTab(tab) {
+  const content = document.getElementById('my-profile-tab-content');
+  
+  // Update buttons
+  document.getElementById('btn-infos').style.background = tab === 'infos' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-infos').style.color = tab === 'infos' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-infos').style.boxShadow = tab === 'infos' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-valise').style.background = tab === 'valise' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-valise').style.color = tab === 'valise' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-valise').style.boxShadow = tab === 'valise' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  
+  if (tab === 'infos') {
+    content.innerHTML = `
+      <div style="text-align: left;">
+        <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
+        
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">📝 Pseudo</label>
+        <input type="text" id="pseudoInput" placeholder="Ton pseudo..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;" value="${escapeHtml(currentUser.pseudo || '')}">
+        
+        <label style="font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary);">💬 Bio</label>
+        <textarea id="bioInput" style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 16px;">${personalsData[currentUser.id]?.bio || ''}</textarea>
+        
+        <button class="btn btn-primary" onclick="saveMyProfile()" style="width: 100%; border: none; box-shadow: 0 4px 12px rgba(12, 47, 58, 0.15); background: linear-gradient(135deg, var(--accent-cyan) 0%, #00d9d9 100%); color: white; font-weight: 700;">💾 Sauvegarder mon profil</button>
+      </div>
+    `;
+  } else if (tab === 'valise') {
+    renderChecklistValise();
+  }
+}
+
+function renderChecklistValise() {
+  const content = document.getElementById('my-profile-tab-content');
+
+  // ✅ On regroupe par nom d'objet normalisé (insensible à la casse/espaces) pour éviter
+  // qu'un même objet ("Maillot de bain") apparaisse en double/triple s'il est demandé
+  // par plusieurs activités différentes. La clé de la valise est basée sur ce nom normalisé
+  // (préfixe "pack:" pour ne pas entrer en collision avec les clés par activité utilisées
+  // dans l'onglet Planning, qui restent indépendantes).
+  const grouped = {};
+  planningData.forEach((day, dayIdx) => {
+    day.activities.forEach((activity, actIdx) => {
+      const list = Array.isArray(activity.apporter) ? activity.apporter : [];
+      list.forEach((itemName) => {
+        const norm = String(itemName || '').trim().toLowerCase();
+        if (!norm) return;
+        if (!grouped[norm]) {
+          grouped[norm] = { key: `pack:${norm}`, name: itemName.trim(), sources: [] };
+        }
+        const sourceLabel = `${activity.nom} · ${day.jour}`;
+        if (!grouped[norm].sources.includes(sourceLabel)) {
+          grouped[norm].sources.push(sourceLabel);
+        }
+      });
+    });
+  });
+
+  const items = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+  if (items.length === 0) {
+    content.innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📭 Aucun objet à préparer pour l\'instant</div>';
+    return;
+  }
+
+  const packedCount = items.filter(i => checklistValise[i.key]).length;
+  const pct = Math.round((packedCount / items.length) * 100);
+
+  let html = `
+    <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.14) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px; margin-bottom: 16px; text-align: center;">
+      <div style="font-weight: 800; font-size: 17px; margin-bottom: 6px;">🎒 ${packedCount} / ${items.length} dans la valise</div>
+      <div style="height: 8px; border-radius: 4px; background: var(--bg-sunken); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+  `;
+
+  html += items.map(i => {
+    const packed = checklistValise[i.key] || false;
+    const sourceLabel = i.sources.length > 1 ? `${i.sources.length} activités` : i.sources[0];
+    return `
+      <div onclick="toggleApporterItem('${i.key}'); renderChecklistValise();" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-raised); border-radius: 10px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(12, 47, 58, 0.06);">
+        <input type="checkbox" ${packed ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan); flex-shrink: 0;" onclick="event.stopPropagation();">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; text-decoration: ${packed ? 'line-through' : 'none'}; opacity: ${packed ? '0.55' : '1'};">${escapeHtml(i.name)}</div>
+          <div style="font-size: 10px; color: var(--primary-light);" title="${escapeHtml(i.sources.join(', '))}">${escapeHtml(sourceLabel)}</div>
+        </div>
+        <span style="font-size: 12px; flex-shrink: 0;">${packed ? '✅' : '⬜'}</span>
+      </div>
+    `;
+  }).join('');
+
+  content.innerHTML = html;
+}
+
+function saveMyProfile() {
+  const newBio = document.getElementById('bioInput').value;
+  const newPseudo = document.getElementById('pseudoInput').value;
+  
+  // Sauvegarder les données personnelles
+  personalsData[currentUser.id] = personalsData[currentUser.id] || {};
+  personalsData[currentUser.id].bio = newBio;
+  
+  // Sauvegarder le pseudo dans currentUser
+  currentUser.pseudo = newPseudo;
+  
+  // Sauvegarder aussi dans PARTICIPANTS
+  const participant = PARTICIPANTS.find(p => p.id === currentUser.id);
+  if (participant) {
+    participant.pseudo = newPseudo;
+  }
+  
+  saveAllData();
+  showNotification('✅ Profil mis à jour !', 'success');
+  addFeedEntry(`👤 ${currentUser.name} a mis à jour son profil`, '✨', 'profile', currentUser.id);
+  renderMyProfile();
+  if (typeof renderHeaderAvatar === 'function') renderHeaderAvatar();
+}
+
+// Upload de photo de profil
+function previewAvatar(event) {
+  const file = event.target.files[0];
+  if (file) {
+    // Limiter la taille (max 2MB)
+    if (file.size > 2000000) {
+      showNotification('⚠️ Image trop grande (max 2MB)', 'error');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // ✅ Compression revue à la hausse (500px / 85%, comme l'autre point d'upload avatar) —
+      // 300px/70% donnait des photos de profil floues.
+      compressImage(e.target.result, (compressedImage) => {
+        // Sauvegarder l'image compressée
+        personalsData[currentUser.id] = personalsData[currentUser.id] || {};
+        personalsData[currentUser.id].avatar = compressedImage;
+        
+        // Mettre à jour l'affichage du profil immédiatement
+        renderMyProfile();
+        if (typeof renderHeaderAvatar === 'function') renderHeaderAvatar();
+        
+        saveAllData();
+        showNotification('📸 Photo mise à jour !', 'success');
+      }, 500, 0.85);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Compresser l'image (redimensionner + réduire qualité)
+function compressImage(imageSource, callback, maxSize = 300, quality = 0.7) {
+  const img = new Image();
+  img.src = imageSource;
+  
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Redimensionner à maxSize max (300 pour avatars, 1080 pour galerie)
+    let width = img.width;
+    let height = img.height;
+    
+    if (width > height) {
+      if (width > maxSize) {
+        height = (height * maxSize) / width;
+        width = maxSize;
+      }
+    } else {
+      if (height > maxSize) {
+        width = (width * maxSize) / height;
+        height = maxSize;
+      }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    // Convertir en JPEG avec qualité réduite
+    const compressedImage = canvas.toDataURL('image/jpeg', quality);
+    callback(compressedImage);
+  };
+  
+  img.onerror = () => {
+    showNotification('⚠️ Erreur lors du chargement de l\'image', 'error');
+    callback(imageSource); // Fallback
+  };
+}
+
+// ✅ Grille de cartes façon trombinoscope (au lieu d'une liste verticale) — médaille
+// sur l'avatar pour les 3 premiers du classement XP, pour voir tout le groupe d'un coup.
+function renderAllProfiles() {
+  const section = document.getElementById('all-profiles-content');
+  const ranking = (typeof computeXpLeaderboard === 'function') ? computeXpLeaderboard() : [];
+  const medals = ['🥇', '🥈', '🥉'];
+
+  section.innerHTML = `
+    <div id="shuttle-recap" style="margin-bottom: 16px;"></div>
+    <div style="margin-bottom: 15px; font-size: 12px; color: var(--primary-light); font-weight: 600;">👥 ${PARTICIPANTS.length} participants</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+      ${PARTICIPANTS.map(user => {
+        const personalData = personalsData[user.id] || {};
+        const avatarHTML = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+          ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+          : (personalData.avatar || user.name.charAt(0));
+        const rankIdx = ranking.findIndex(r => r.p.id === user.id);
+        const xp = rankIdx !== -1 ? ranking[rankIdx].xp : 0;
+        const medal = rankIdx >= 0 && rankIdx < 3 ? medals[rankIdx] : null;
+        return `
+          <div onclick="showPublicProfile(${user.id})" style="cursor: pointer; background: var(--bg-raised); border-radius: 14px; padding: 12px 6px; text-align: center; box-shadow: 0 2px 10px rgba(12, 47, 58, 0.07);">
+            <div style="position: relative; width: 46px; height: 46px; margin: 0 auto 6px; border-radius: 50%; background: ${avatarHTML.startsWith('<img') ? 'transparent' : (typeof getPersonGradient === 'function' ? getPersonGradient(user.id) : 'linear-gradient(135deg, #1D5FA8, #1690A3)')}; display: flex; align-items: center; justify-content: center; font-size: ${avatarHTML.startsWith('<img') ? '0' : '18px'}; color: white; font-weight: 700; overflow: hidden;">
+              ${avatarHTML}
+              ${medal ? `<span style="position: absolute; bottom: -2px; right: -2px; font-size: 13px; background: var(--bg-raised); border-radius: 50%; padding: 1px;">${medal}</span>` : ''}
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(user.name)}</div>
+            <div style="font-size: 10px; color: var(--primary-light);">${xp} XP</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  loadShuttleRecap(); // ✅ 🚐 Récap des arrivées/départs de tout le monde
+}
+
+function showPublicProfile(userId) {
+  currentViewingProfileId = userId;
+  const section = document.getElementById('all-profiles-content');
+  const user = PARTICIPANTS.find(u => u.id === userId);
+  const personalData = personalsData[userId] || {};
+  const hasRealPhoto = personalData.avatar && personalData.avatar.startsWith('data:image');
+  const avatarHTML = hasRealPhoto
+    ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+    : (personalData.avatar || '👤');
+  const avatarWrapStyle = hasRealPhoto
+    ? `margin-bottom: 20px; display: inline-flex; width: 140px; height: 140px; border-radius: 50%; align-items: center; justify-content: center; overflow: hidden; padding: 3px; background: var(--bg-raised); box-shadow: 0 8px 20px rgba(12, 47, 58, 0.12);`
+    : `font-size: 70px; margin-bottom: 20px; display: inline-flex; padding: 20px; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); border-radius: 50%; width: 140px; height: 140px; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(29, 95, 168, 0.2); overflow: hidden;`;
+
+  const html = `
+    <div class="card" style="text-align: center; padding: 24px;">
+      <button class="btn" onclick="showAllProfiles()" style="width: 100%; margin-bottom: 18px; background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">← Retour aux participants</button>
+      
+      <div style="${avatarWrapStyle} cursor: pointer;" onclick="showPublicProfileTab(${userId}, 'feed')" title="Voir les activités">${avatarHTML}</div>
+      <div class="title-serif" style="font-size: 21px; margin-bottom: 8px;">${user.name}</div>
+      <div style="font-size: 13px; color: var(--primary-light); font-style: italic; margin-bottom: 16px;">
+        "${escapeHtml(personalData.bio || user.bio) || 'Aventurier(e) du groupe'}"
+      </div>
+      <div class="divider-gold" style="width: 60px; margin: 0 auto 20px;"></div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+        <button class="btn btn-primary" onclick="showPublicProfileTab(${userId}, 'feed')" id="btn-feed-pub" style="background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2);">📝 Feed</button>
+        <button class="btn" onclick="showPublicProfileTab(${userId}, 'photos')" id="btn-photos-pub" style="background: var(--bg-sunken); color: var(--primary); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08);">🖼️ Photos</button>
+      </div>
+      
+      <div id="public-profile-tab-content"></div>
+    </div>
+  `;
+  
+  section.innerHTML = html;
+  showPublicProfileTab(userId, 'feed');
+}
+
+function showPublicProfileTab(userId, tab) {
+  const content = document.getElementById('public-profile-tab-content');
+  
+  // Update buttons
+  document.getElementById('btn-feed-pub').style.background = tab === 'feed' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-feed-pub').style.color = tab === 'feed' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-feed-pub').style.boxShadow = tab === 'feed' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  document.getElementById('btn-photos-pub').style.background = tab === 'photos' ? 'linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%)' : 'var(--bg-sunken)';
+  document.getElementById('btn-photos-pub').style.color = tab === 'photos' ? 'white' : 'var(--primary)';
+  document.getElementById('btn-photos-pub').style.boxShadow = tab === 'photos' ? '0 4px 12px rgba(29, 95, 168, 0.2)' : '0 2px 6px rgba(12, 47, 58, 0.08)';
+  
+  if (tab === 'feed') {
+    const userFeed = feed.filter(e => e.userId === userId);
+    if (userFeed.length === 0) {
+      content.innerHTML = '<div style="text-align: center; color: var(--primary-light); margin-top: 28px; padding: 20px;">📭 Aucune activité pour le moment</div>';
+    } else {
+      content.innerHTML = '<div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">' + userFeed.slice(0, 5).map(entry => `
+        <div style="background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-sunken) 100%); padding: 14px; border-radius: 8px; box-shadow: inset 4px 0 0 var(--accent-cyan), 0 2px 6px rgba(111, 184, 176, 0.1);">
+          <div style="font-weight: 700; font-size: 13px; color: var(--primary);">${entry.emoji} ${escapeHtml(entry.message)}</div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 6px;">Il y a peu</div>
+        </div>
+      `).join('') + '</div>';
+    }
+  } else if (tab === 'photos') {
+    const userName = PARTICIPANTS.find(u => u.id === userId)?.name;
+    const userPhotos = galleryItems.filter(p => p.creator === userName);
+    if (userPhotos.length === 0) {
+      content.innerHTML = '<div style="text-align: center; color: var(--primary-light); margin-top: 20px;">Aucune photo 📸</div>';
+    } else {
+      content.innerHTML = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px;">' + userPhotos.slice(0, 9).map(p => `
+        <div class="photo-frame" style="aspect-ratio: 1; cursor: pointer;" onclick="switchTab('gallery')">
+          ${p.type === 'image'
+            ? `<img src="${p.src}" alt="">`
+            : `<video src="${p.src}" playsinline muted preload="metadata"></video>`}
+        </div>
+      `).join('') + '</div>';
+    }
+  }
+}
+
+// Helper: Clic sur créateur dans Galerie → Ouvre profil public
+function showPublicProfileFromGallery(creatorName) {
+  const user = PARTICIPANTS.find(u => u.name === creatorName);
+  if (user) {
+    previousTab = 'gallery';
+    switchTab('profile');
+    showAllProfiles();
+    showPublicProfile(user.id);
+  }
+}
+
+// Helper: Clic sur auteur dans Feed → Ouvre profil public
+function showPublicProfileFromFeed(userId) {
+  previousTab = 'feed';
+  switchTab('profile');
+  showAllProfiles();
+  showPublicProfile(userId);
+}
+
+// ============== ENHANCED FEED ==============
+// ✅ Composeur manuel : contrairement aux autres entrées du fil (générées automatiquement
+// par les actions de l'app), celle-ci permet de poster librement, comme un vrai mur d'activité.
+function postToFeed() {
+  const input = document.getElementById('feed-post-input');
+  const emojiInput = document.getElementById('feed-emoji');
+  const message = input.value.trim();
+  if (!message) { showNotification('⚠️ Écris quelque chose avant de publier', 'error'); return; }
+
+  const entry = addFeedEntry(message, emojiInput.value.trim() || '✨', null, null);
+  entry.manual = true; // ✅ Sert à savoir si "Voir →" doit s'afficher, et pour l'auto-suppression future
+  input.value = '';
+  showNotification('✅ Publié sur le fil !', 'success');
+}
+
+function addFeedEntry(message, emoji = '📌', refType = null, refId = null) {
+  const entry = {
+    id: Date.now(),
+    message,
+    user: currentUser.name,
+    userId: currentUser.id,
+    emoji,
+    refType,
+    refId: refId !== null ? String(refId) : null,
+    timestamp: new Date(),
+    likes: [],
+    comments: []
+  };
+  feed.unshift(entry);
+  if (feed.length > 100) feed.pop();
+  saveAllData();
+  renderFeed();
+  return entry;
+}
+
+// ✅ Filtre du fil : les publications volontaires (composeur en haut du fil) se noient
+// vite au milieu des événements automatiques ("a aimé...", "a coché..."). Trois puces
+// permettent de basculer d'un tap. Note : les publications manuelles antérieures au
+// 21/07 (avant que le flag "manual" soit persisté) apparaissent dans "activité".
+let feedFilterMode = 'all';
+
+function setFeedFilter(mode) {
+  feedFilterMode = mode;
+  renderFeed();
+}
+
+function renderFeed() {
+  const content = document.getElementById('feed-content');
+  if (!content) return; // ✅ Évite de planter si l'élément n'existe pas encore
+
+  try {
+    const chip = (mode, label) => `<button onclick="setFeedFilter('${mode}')" style="border: none; cursor: pointer; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: ${feedFilterMode === mode ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${feedFilterMode === mode ? 'white' : 'var(--primary)'};">${label}</button>`;
+    const filterBar = `<div style="display: flex; gap: 8px; margin-bottom: 14px;">${chip('all', 'Tout')}${chip('posts', '💬 Publications')}${chip('auto', '🤖 Activité')}</div>`;
+
+    const visibleFeed = feed.filter(entry => {
+      if (feedFilterMode === 'posts') return !!entry.manual;
+      if (feedFilterMode === 'auto') return !entry.manual;
+      return true;
+    });
+
+    if (visibleFeed.length === 0) {
+      content.innerHTML = filterBar + `<div style="padding: 40px 20px; text-align: center;"><p style="color: var(--primary-light); font-size: 14px;">${feedFilterMode === 'posts' ? '💬 Aucune publication — écris la première dans le champ ci-dessus !' : '📭 Aucune activité pour le moment'}</p></div>`;
+      return;
+    }
+    content.innerHTML = filterBar + visibleFeed.map(entry => {
+    const date = new Date(entry.timestamp);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    const timeStr = `${hours}:${mins}`;
+    const participant = PARTICIPANTS.find(p => p.id === entry.userId) || { name: entry.user };
+    const personalData = personalsData[participant.id] || {};
+    const avatarContent = (personalData.avatar && personalData.avatar.startsWith('data:image'))
+      ? `<img src="${personalData.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+      : (personalData.avatar || '👤');
+    const avatarImg = `<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #1D5FA8 0%, #1690A3 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 95, 168, 0.2); flex-shrink: 0; overflow: hidden;" onclick="showPublicProfileFromFeed(${participant.id})">${avatarContent}</div>`;
+    const userLiked = entry.likes.includes(currentUser.id);
+    return `
+      <div class="card" style="margin-bottom: 14px; padding: 14px; transition: all 0.3s ease;" onmouseenter="this.style.boxShadow='0 6px 16px rgba(12, 47, 58, 0.15)'; this.style.transform='translateY(-2px)';" onmouseleave="this.style.boxShadow='0 2px 8px rgba(12, 47, 58, 0.08)'; this.style.transform='translateY(0)';">
+        <div style="display: flex; gap: 12px;">
+          <div>${avatarImg}</div>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-weight: 700; color: var(--primary); cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px;" onclick="showPublicProfileFromFeed(${participant.id})">${entry.emoji} <span>${participant.name}</span></div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="font-size: 11px; background: var(--bg-sunken); padding: 4px 8px; border-radius: 4px; color: var(--primary-light); font-weight: 500;">${timeStr}</div>
+                ${entry.userId === currentUser.id ? `<button onclick="deleteFeedEntry(${entry.id})" title="Supprimer" style="background: none; border: none; cursor: pointer; font-size: 12px; color: var(--primary-light); padding: 2px;">🗑️</button>` : ''}
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--primary); margin-bottom: 10px; line-height: 1.4;">${highlightMentions(entry.message)}</div>
+            ${entry.refType ? `<div onclick="openFeedEntry('${entry.refType}', '${escapeHtml(String(entry.refId))}')" style="cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--accent-sand); margin: -4px 0 10px;">Voir →</div>` : ''}
+            <div style="display: flex; gap: 12px;">
+              <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️</button><span onclick="showLikersPanel(${JSON.stringify(entry.likes)})" style="font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; cursor: pointer; padding: 4px 2px;">${entry.likes.length}</span>
+              <button onclick="toggleFeedComments(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); font-weight: 500; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)'; this.style.color='var(--primary)';" onmouseout="this.style.transform='scale(1)'; this.style.color='var(--primary-light)';">💬 ${entry.comments.length}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  } catch (err) {
+    console.error('Erreur renderFeed:', err);
+  }
+}
+
+async function likeFeedEntry(entryId) {
+  const entry = feed.find(e => e.id === entryId);
+  if (entry) {
+    // ✅ Version cloud la plus fraîche avant bascule (les likes du fil vivent dans le
+    // blob JSON "data" de feed_entries — voir refreshLikesFromCloud, app-core.js)
+    const cloudLikes = await refreshLikesFromCloud('feed_entries', entryId, (row) => {
+      try { return (row.data ? JSON.parse(row.data) : {}).likes || []; } catch (e) { return null; }
+    });
+    if (cloudLikes !== null) entry.likes = cloudLikes;
+    const idx = entry.likes.indexOf(currentUser.id);
+    if (idx > -1) {
+      entry.likes.splice(idx, 1);
+    } else {
+      entry.likes.push(currentUser.id);
+      addNotification(`❤️ ${currentUser.name} a aimé`, '❤️', 'feed');
+    }
+    saveAllData();
+    renderFeed();
+  }
+}
+
+// ✅ Remplace l'ancien prompt() natif (moche, et les commentaires n'étaient jamais
+// affichés nulle part, juste comptés) par un vrai panneau, cohérent avec celui de la
+// Galerie : on peut enfin RELIRE les commentaires, pas juste voir leur nombre.
+// ✅ Permet de rafraîchir en live un modal de commentaires resté ouvert pendant qu'un
+// autre participant commente/publie au même moment (voir refreshOpenFeedCommentsModal,
+// appelée après chaque rechargement cloud du fil) — sans ça, il fallait fermer/rouvrir
+// le panneau pour voir les commentaires des autres arriver.
+let openFeedCommentsEntryId = null;
+
+function renderFeedCommentsList(entry) {
+  if (!entry.comments || entry.comments.length === 0) {
+    return `<div style="font-size: 12px; color: var(--primary-light); text-align: center; padding: 20px 0;">Aucun commentaire pour le moment</div>`;
+  }
+  return entry.comments.map(c => `
+    <div style="font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; box-shadow: 0 1px 0 var(--border);">
+      <strong>${escapeHtml(c.user)}:</strong> ${highlightMentions(c.text)}
+      <div style="font-size: 10px; color: var(--primary-light);">${new Date(c.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
+    </div>
+  `).join('');
+}
+
+// ✅ Appelée après chaque rechargement cloud du fil (voir la boucle de polling 25s dans
+// app-core.js) : si un modal de commentaires est ouvert, on ne touche QUE la liste des
+// commentaires (jamais le champ de saisie, pour ne pas effacer ce que la personne est en
+// train de taper) — sans ça, il fallait fermer/rouvrir le panneau pour voir arriver les
+// commentaires des autres pendant qu'on avait le sien ouvert.
+function refreshOpenFeedCommentsModal() {
+  if (openFeedCommentsEntryId === null) return;
+  const listEl = document.getElementById(`feed-comments-list-${openFeedCommentsEntryId}`);
+  if (!listEl) { openFeedCommentsEntryId = null; return; } // modal fermé entre-temps
+  const entry = feed.find(e => e.id === openFeedCommentsEntryId);
+  if (!entry) return;
+  listEl.innerHTML = renderFeedCommentsList(entry);
+}
+
+function toggleFeedComments(entryId) {
+  const entry = feed.find(e => e.id === entryId);
+  if (!entry) return;
+  if (!entry.comments) entry.comments = [];
+
+  let commentsDiv = document.getElementById(`feed-comments-${entryId}`);
+  if (commentsDiv) {
+    closeFeedCommentsModal(entryId);
+    return;
+  }
+  openFeedCommentsEntryId = entryId;
+
+  const backdrop = document.createElement('div');
+  backdrop.id = `feed-comments-backdrop-${entryId}`;
+  backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998;';
+  backdrop.onclick = () => closeFeedCommentsModal(entryId);
+
+  const container = document.createElement('div');
+  container.id = `feed-comments-${entryId}`;
+  container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); padding: 12px 20px 20px; border-radius: 16px 16px 0 0; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); z-index: 9999;';
+
+  let html = `
+    <div style="width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px;"></div>
+    <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+      💬 Commentaires
+      <button onclick="closeFeedCommentsModal(${entryId})" style="background: none; border: none; font-size: 18px; color: var(--primary-light); cursor: pointer;">✕</button>
+    </div>
+    <div id="feed-comments-list-${entryId}" style="overflow-y: auto; flex: 1; margin-bottom: 12px;">
+      ${renderFeedCommentsList(entry)}
+    </div>
+  `;
+  html += `
+    <div style="display: flex; gap: 8px; padding-top: 8px; box-shadow: 0 -1px 0 var(--border);">
+      <input type="text" placeholder="Commenter... @pseudo pour mentionner" id="feed-comment-${entryId}" style="flex: 1; margin-bottom: 0; font-size: 13px;">
+      <button class="btn btn-small btn-primary" onclick="addFeedComment(${entryId})">📤</button>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
+  document.getElementById(`feed-comment-${entryId}`).focus();
+}
+
+function closeFeedCommentsModal(entryId) {
+  try {
+    const el = document.getElementById(`feed-comments-${entryId}`);
+    if (el) el.remove();
+    const backdrop = document.getElementById(`feed-comments-backdrop-${entryId}`);
+    if (backdrop) backdrop.remove();
+    if (openFeedCommentsEntryId === entryId) openFeedCommentsEntryId = null;
+  } catch (err) {
+    console.error('Erreur fermeture modal commentaires du fil:', err);
+  }
+}
+
+function addFeedComment(entryId) {
+  const entry = feed.find(e => e.id === entryId);
+  if (!entry) return;
+  const input = document.getElementById(`feed-comment-${entryId}`);
+  if (!input || !input.value.trim()) return;
+
+  if (!entry.comments) entry.comments = [];
+  const mentions = parseMentions(input.value); // ✅ Détecte les @pseudo, comme dans la Galerie
+  entry.comments.push({
+    id: Date.now(),
+    user: currentUser.name,
+    userId: currentUser.id,
+    text: input.value,
+    timestamp: new Date(),
+    mentions
+  });
+  saveAllData();
+  addNotification(`💬 ${currentUser.name} a commenté ton activité`, '💬', 'feed');
+  closeFeedCommentsModal(entryId);
+  renderFeed();
+  toggleFeedComments(entryId); // ✅ Rouvre directement pour voir le commentaire fraîchement posté
+}
+
+// ✅ Uniquement ses propres publications (voir le bouton 🗑️, affiché seulement si
+// entry.userId === currentUser.id dans renderFeed) — jamais celles des autres.
+function deleteFeedEntry(entryId) {
+  showConfirmation('Supprimer cette publication du fil ?', () => {
+    const idx = feed.findIndex(e => e.id === entryId && e.userId === currentUser.id);
+    if (idx === -1) return;
+    feed.splice(idx, 1);
+    if (window.supabaseReady && window.deleteFromSupabase) {
+      window.deleteFromSupabase('feed_entries', entryId).catch(err => console.error('Suppression Supabase échouée:', err));
+    }
+    // 🪦 Pierre tombale (anti-résurrection) — voir app-core.js
+    if (window.supabase) {
+      window.supabase.from('deleted_items').upsert({ table_name: 'feed_entries', item_id: entryId })
+        .then(() => { if (deletedItemIds.feed_entries) deletedItemIds.feed_entries.add(Number(entryId)); })
+        .catch(err => console.error('Pose de pierre tombale échouée:', err));
+    }
+    saveAllData();
+    renderFeed();
+    showNotification('🗑️ Publication supprimée', 'success');
+  });
 }
 
 
+// ============== 💬 CHAT DE GROUPE (panneau indépendant, sous le bouton 🎵) ==============
+// Architecture volontairement différente du reste de l'app : le chat est 100% cloud
+// (insertion directe + lecture + TEMPS RÉEL via Supabase Realtime), jamais inclus dans
+// saveAllData/localStorage — donc aucun risque d'écrasement "dernière écriture gagne"
+// ni de résurrection. Repli : si le temps réel ne se connecte pas (réseau filtré...),
+// un rafraîchissement léger toutes les 15s prend le relais quand le panneau est ouvert.
+let chatMessages = [];
+let chatRealtimeOk = false;
+let chatInitDone = false;
 
+function toggleChatPanel() {
+  const panel = document.getElementById('chatPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    loadChatMessages().then(() => {
+      renderChat();
+      markChatRead();
+    });
+  }
+}
 
+async function loadChatMessages() {
+  if (!window.supabaseReady || !window.supabase) return;
+  try {
+    const { data, error } = await window.supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(300);
+    if (!error && data) chatMessages = data;
+  } catch (e) { /* hors-ligne : on garde ce qu'on a */ }
+}
 
+function renderChat() {
+  const box = document.getElementById('chat-messages');
+  if (!box) return;
 
+  if (chatMessages.length === 0) {
+    box.innerHTML = '<div style="text-align: center; color: var(--primary-light); font-size: 12.5px; padding: 30px 10px;">💬 Aucun message — lance la conversation !</div>';
+    return;
+  }
+
+  let lastDay = null;
+  let lastPersonId = null;
+  box.innerHTML = chatMessages.map(msg => {
+    const p = PARTICIPANTS.find(pp => pp.id === msg.person_id) || { name: '?' };
+    const mine = currentUser && msg.person_id === currentUser.id;
+    const d = new Date(msg.created_at);
+    const dayKey = d.toDateString();
+    const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    // Séparateur de jour
+    let sep = '';
+    if (dayKey !== lastDay) {
+      sep = `<div style="text-align: center; font-size: 10.5px; color: var(--primary-light); margin: 12px 0 6px;">${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`;
+      lastDay = dayKey;
+      lastPersonId = null; // nouveau jour → réafficher le nom
+    }
+
+    // Nom affiché seulement au premier message d'une série (pas le sien)
+    const showName = !mine && msg.person_id !== lastPersonId;
+    lastPersonId = msg.person_id;
+
+    // Réactions existantes { "❤️": [ids], ... }
+    const reactions = msg.reactions || {};
+    const reactionChips = Object.entries(reactions)
+      .filter(([, ids]) => Array.isArray(ids) && ids.length > 0)
+      .map(([emo, ids]) => {
+        const mineR = currentUser && ids.includes(currentUser.id);
+        return `<span onclick="event.stopPropagation(); toggleChatReaction(${msg.id}, '${emo}')" style="display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 10px; font-size: 11px; cursor: pointer; background: ${mineR ? 'rgba(255,255,255,0.95)' : 'var(--bg-raised)'}; box-shadow: 0 1px 3px rgba(0,0,0,0.15); color: var(--primary);">${emo} ${ids.length}</span>`;
+      }).join('');
+
+    return `${sep}
+      <div style="display: flex; ${mine ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
+        <div onclick="showChatReactionPicker(${msg.id}, this)" style="max-width: 80%; padding: 7px 11px; border-radius: ${mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px'}; font-size: 13px; line-height: 1.4; cursor: pointer; ${mine
+          ? 'background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white;'
+          : 'background: var(--bg-sunken); color: var(--primary);'}">
+          ${showName ? `<div style="font-size: 10.5px; font-weight: 700; margin-bottom: 2px; ${mine ? 'color: rgba(255,255,255,0.85);' : 'color: var(--accent-pink);'}">${escapeHtml(p.name)}</div>` : ''}
+          ${mine ? escapeHtml(msg.text) : highlightMentions(msg.text)}
+          <div style="font-size: 9.5px; margin-top: 2px; text-align: right; ${mine ? 'color: rgba(255,255,255,0.7);' : 'color: var(--primary-light);'}">${time}</div>
+          ${reactionChips ? `<div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">${reactionChips}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentUser) return;
+  if (!window.supabaseReady || !window.supabase) {
+    showNotification('⚠️ Hors ligne — le chat nécessite une connexion', 'error');
+    return;
+  }
+  input.value = '';
+  try {
+    const { data, error } = await window.supabase
+      .from('chat_messages')
+      .insert({ person_id: currentUser.id, text })
+      .select()
+      .single();
+    if (error) throw error;
+    // Affichage immédiat (le temps réel dédoublonnera par id)
+    if (data && !chatMessages.some(m => m.id === data.id)) {
+      chatMessages.push(data);
+      renderChat();
+      markChatRead();
+    }
+  } catch (err) {
+    console.error('Envoi chat échoué:', err);
+    input.value = text; // ne pas perdre le message tapé
+    showNotification('❌ Message non envoyé, réessaie', 'error');
+  }
+}
+
+// ✅ Réactions : tap sur une bulle → mini-sélecteur ❤️ 😂 👍 juste au-dessus.
+// La bascule relit d'abord la version cloud du message (comme les likes de la
+// galerie) pour ne jamais écraser la réaction posée par quelqu'un d'autre.
+function showChatReactionPicker(msgId, bubbleEl) {
+  document.getElementById('chat-reaction-picker')?.remove();
+  const picker = document.createElement('div');
+  picker.id = 'chat-reaction-picker';
+  const rect = bubbleEl.getBoundingClientRect();
+  picker.style.cssText = `position: fixed; top: ${Math.max(8, rect.top - 44)}px; left: ${Math.min(Math.max(8, rect.left), window.innerWidth - 150)}px; z-index: 100000; background: var(--bg-raised); border-radius: 20px; padding: 6px 10px; display: flex; gap: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.25);`;
+  picker.innerHTML = ['❤️', '😂', '👍'].map(emo =>
+    `<button onclick="toggleChatReaction(${msgId}, '${emo}'); document.getElementById('chat-reaction-picker').remove();" style="background: none; border: none; font-size: 20px; cursor: pointer; padding: 2px;">${emo}</button>`
+  ).join('');
+  document.body.appendChild(picker);
+  setTimeout(() => {
+    const closeOnTap = (e) => { if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('click', closeOnTap); } };
+    document.addEventListener('click', closeOnTap);
+  }, 50);
+}
+
+async function toggleChatReaction(msgId, emoji) {
+  if (!currentUser || !window.supabaseReady) return;
+  try {
+    const { data, error } = await window.supabase.from('chat_messages').select('reactions').eq('id', msgId).maybeSingle();
+    if (error || !data) return;
+    const reactions = data.reactions || {};
+    const ids = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+    const idx = ids.indexOf(currentUser.id);
+    if (idx > -1) ids.splice(idx, 1); else ids.push(currentUser.id);
+    reactions[emoji] = ids;
+
+    const { error: upErr } = await window.supabase.from('chat_messages').update({ reactions }).eq('id', msgId);
+    if (upErr) throw upErr;
+
+    // Mise à jour locale immédiate (le temps réel confirmera pour les autres)
+    const local = chatMessages.find(m => m.id === msgId);
+    if (local) { local.reactions = reactions; renderChat(); }
+  } catch (e) {
+    console.error('Réaction échouée:', e);
+  }
+}
+
+function markChatRead() {
+  if (chatMessages.length > 0) {
+    localStorage.setItem('chatLastReadAt', chatMessages[chatMessages.length - 1].created_at);
+  }
+  const dot = document.getElementById('chat-unread-dot');
+  if (dot) dot.style.display = 'none';
+}
+
+function updateChatUnreadDot() {
+  const dot = document.getElementById('chat-unread-dot');
+  const panel = document.getElementById('chatPanel');
+  if (!dot || chatMessages.length === 0) return;
+  if (panel && panel.classList.contains('open')) { markChatRead(); return; }
+  const lastRead = localStorage.getItem('chatLastReadAt') || '';
+  const lastMsg = chatMessages[chatMessages.length - 1];
+  // Ne pas signaler ses propres messages comme non lus
+  if (lastMsg.created_at > lastRead && (!currentUser || lastMsg.person_id !== currentUser.id)) {
+    dot.style.display = 'block';
+  }
+}
+
+// ✅ Initialisation différée : attend que Supabase soit prêt, puis 1) charge
+// l'historique (pour le point "non lu"), 2) s'abonne au temps réel — chaque
+// nouveau message arrive instantanément, panneau ouvert ou non.
+(function initChatWhenReady() {
+  const timer = setInterval(async () => {
+    if (chatInitDone) { clearInterval(timer); return; }
+    if (!window.supabaseReady || !window.supabase || !window.currentUser && !currentUser) return;
+    chatInitDone = true;
+    clearInterval(timer);
+
+    await loadChatMessages();
+    updateChatUnreadDot();
+
+    try {
+      window.supabase
+        .channel('chat-room')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+          if (!chatMessages.some(m => m.id === payload.new.id)) {
+            chatMessages.push(payload.new);
+            const panel = document.getElementById('chatPanel');
+            if (panel && panel.classList.contains('open')) {
+              renderChat();
+              markChatRead();
+            } else {
+              updateChatUnreadDot();
+            }
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, (payload) => {
+          // ✅ Réactions posées par les autres, en temps réel
+          const local = chatMessages.find(m => m.id === payload.new.id);
+          if (local) {
+            local.reactions = payload.new.reactions || {};
+            const panel = document.getElementById('chatPanel');
+            if (panel && panel.classList.contains('open')) renderChat();
+          }
+        })
+        .subscribe((status) => { chatRealtimeOk = (status === 'SUBSCRIBED'); });
+    } catch (e) {
+      console.warn('Temps réel indisponible, repli sur rafraîchissement périodique', e);
+    }
+
+    // Repli : si le temps réel n'a pas pris, rafraîchir toutes les 15s (panneau ouvert
+    // seulement) et vérifier le point "non lu" toutes les 60s.
+    setInterval(async () => {
+      const panel = document.getElementById('chatPanel');
+      if (!chatRealtimeOk && panel && panel.classList.contains('open')) {
+        await loadChatMessages();
+        renderChat();
+        markChatRead();
+      }
+    }, 15000);
+    setInterval(async () => {
+      if (!chatRealtimeOk) {
+        await loadChatMessages();
+        updateChatUnreadDot();
+      }
+    }, 60000);
+  }, 500);
+})();
+
+// ============== 🧳 MON VOYAGE (arrivée / départ / billets) ==============
+// Chaque personne renseigne sur SON profil : jour, heure et lieu d'arrivée et de
+// départ (Gare de Toulon / Aéroport de Marseille / Aéroport de Hyères / Autre),
+// une note navette ("venez me chercher à..."), et peut téléverser ses billets
+// (PDF ou photo). 100% cloud-natif : lecture/écriture directes dans Supabase,
+// jamais dans saveAllData → aucun risque d'écrasement entre appareils.
+const TRAVEL_PLACES = ['Gare de Toulon', 'Aéroport de Marseille', 'Aéroport de Hyères', 'Autre'];
+
+async function loadTravelSection() {
+  const box = document.getElementById('travel-section');
+  if (!box || !currentUser) return;
+  if (!window.supabaseReady) { box.innerHTML = ''; return; }
+
+  let info = {};
+  let tickets = [];
+  try {
+    const { data } = await window.supabase.from('travel_info').select('*').eq('person_id', currentUser.id).maybeSingle();
+    if (data) info = data;
+    const { data: tk } = await window.supabase.from('travel_tickets').select('*').eq('person_id', currentUser.id).order('created_at');
+    if (tk) tickets = tk;
+  } catch (e) { /* hors-ligne : section vide */ }
+
+  // ✅ Design "Méditerranée" validé le 21/07 : bandeau mer avec vague, cartes blanches
+  // arrondies, lieux en "galets" tapables, note navette sur sable doré, bouton en
+  // dégradé mer (eau profonde → turquoise lagon, couleurs officielles de l'app —
+  // pas d'orange/corail sur ce bouton, à la demande de Marine), frise de coquillages.
+  const inputStyle = 'width: 100%; padding: 9px 10px; border: 1px solid rgba(31, 182, 201, 0.25); border-radius: 10px; background: #f2fbfa; color: var(--primary); font-size: 12.5px;';
+  const labelStyle = 'font-weight: 700; display: block; margin-bottom: 3px; color: var(--sea-deep); font-size: 10px; letter-spacing: 0.5px;';
+
+  const placeChips = (prefix, selected) => {
+    const isCustom = selected && !TRAVEL_PLACES.slice(0, 3).includes(selected);
+    return `
+      <div id="travel-${prefix}-chips" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+        ${TRAVEL_PLACES.slice(0, 3).map(p => {
+          const sel = selected === p;
+          const emo = p.includes('Gare') ? '🚉' : '✈️';
+          return `<button type="button" onclick="selectTravelPlace('${prefix}', '${p.replace(/'/g, "\\'")}')" data-place="${escapeHtml(p)}" style="border: none; cursor: pointer; font-size: 11px; padding: 6px 11px; border-radius: 14px; font-weight: ${sel ? '700' : '500'}; background: ${sel ? 'var(--sea-deep)' : '#eef6f5'}; color: ${sel ? '#ffffff' : 'var(--primary-light)'};">${emo} ${escapeHtml(p.replace('Aéroport de ', ''))}</button>`;
+        }).join('')}
+        <button type="button" onclick="selectTravelPlace('${prefix}', 'Autre')" data-place="Autre" style="border: none; cursor: pointer; font-size: 11px; padding: 6px 11px; border-radius: 14px; font-weight: ${isCustom ? '700' : '500'}; background: ${isCustom ? 'var(--sea-deep)' : '#eef6f5'}; color: ${isCustom ? '#ffffff' : 'var(--primary-light)'};">📍 Autre</button>
+      </div>
+      <input type="hidden" id="travel-${prefix}-place" value="${escapeHtml(selected || '')}">
+      <input type="text" id="travel-${prefix}-place-custom" value="${isCustom ? escapeHtml(selected) : ''}" placeholder="Précise le lieu..." style="${inputStyle} margin-bottom: 8px; display: ${isCustom ? 'block' : 'none'};" oninput="document.getElementById('travel-${prefix}-place').value = this.value;">
+    `;
+  };
+
+  const legBlock = (prefix, title, emoji, emojiBg) => `
+    <div style="background: var(--bg-raised); border-radius: 16px; padding: 13px 14px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(14, 95, 116, 0.08);">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+        <span style="width: 30px; height: 30px; border-radius: 50%; background: ${emojiBg}; display: inline-flex; align-items: center; justify-content: center; font-size: 15px;">${emoji}</span>
+        <span style="font-weight: 700; font-size: 13.5px; color: var(--sea-deep);">${title}</span>
+      </div>
+      <div style="font-size: 10px; color: var(--primary-light); margin-bottom: 10px;">${prefix === 'arrival'
+        ? 'Ta destination finale — là où on vient te chercher 🌊 (avion + train ? mets la dernière étape ici, le reste dans la note)'
+        : 'Ton point de départ — là où on doit te déposer'}</div>
+      <div style="display: grid; grid-template-columns: 1fr 90px; gap: 8px; margin-bottom: 8px;">
+        <div><label style="${labelStyle}">JOUR</label><input type="date" id="travel-${prefix}-date" value="${info[prefix + '_date'] || ''}" style="${inputStyle}"></div>
+        <div><label style="${labelStyle}">HEURE</label><input type="time" id="travel-${prefix}-time" value="${info[prefix + '_time'] || ''}" style="${inputStyle}"></div>
+      </div>
+      ${placeChips(prefix, info[prefix + '_place'])}
+      <div style="background: #fdf3e3; border-radius: 10px; padding: 8px 10px;">
+        <label style="${labelStyle} color: var(--accent-sand);">${prefix === 'arrival' ? '🚕 OÙ / QUAND VENIR ME CHERCHER ?' : '🚕 OÙ / QUAND ME DÉPOSER ?'}</label>
+        <input type="text" id="travel-${prefix}-note" value="${escapeHtml(info[prefix + '_note'] || '')}" placeholder="${prefix === 'arrival' ? 'Ex : avion à Marseille 18h40 puis train, récup sortie gare 22h05' : 'Ex : dépose à 13h30 devant le hall 1'}" style="width: 100%; border: none; background: transparent; color: #8a6a3b; font-size: 11.5px; padding: 2px 0;">
+      </div>
+    </div>
+  `;
+
+  box.innerHTML = `
+    <div style="border-radius: 22px; overflow: hidden; background: var(--bg); box-shadow: 0 10px 30px rgba(12, 47, 58, 0.14); text-align: left;">
+      <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 16px 16px 0;">
+        <div style="font-family: var(--font-display); font-size: 17px; font-weight: 500; color: #ffffff; letter-spacing: 0.3px;">🧳 Mon voyage</div>
+        <div style="font-size: 11.5px; color: #d7f4ef; margin-top: 2px;">Dis-nous quand et où — on s'occupe de la navette 🚕</div>
+        <div style="text-align: right; font-size: 14px; letter-spacing: 6px;">🐚⭐🐚</div>
+        <svg viewBox="0 0 340 22" preserveAspectRatio="none" style="display: block; width: calc(100% + 32px); margin: 0 -16px; height: 22px;" aria-hidden="true"><path d="M0 12 Q 28 0 56 12 T 112 12 T 168 12 T 224 12 T 280 12 T 336 12 L 340 12 L 340 22 L 0 22 Z" fill="var(--bg)"/></svg>
+      </div>
+      <div style="padding: 6px 14px 16px;">
+        ${legBlock('arrival', 'Mon arrivée', '🛬', '#e1f5f2')}
+        ${legBlock('departure', 'Mon départ', '🛫', '#fdeee6')}
+
+        <div style="background: var(--bg-raised); border-radius: 16px; padding: 13px 14px; margin-bottom: 14px; box-shadow: 0 3px 10px rgba(14, 95, 116, 0.08);">
+          <div style="font-weight: 700; font-size: 13px; color: var(--sea-deep); margin-bottom: 8px;">🎫 Mes billets</div>
+          ${tickets.map(t => `
+            <div style="display: flex; align-items: center; gap: 8px; background: #f2fbfa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px;">
+              <a href="${t.url}" target="_blank" rel="noopener" style="flex: 1; min-width: 0; color: var(--primary); font-weight: 600; font-size: 11.5px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">📄 ${escapeHtml(t.file_name)}</a>
+              <button onclick="deleteTravelTicket(${t.id})" title="Supprimer" style="background: none; color: var(--accent-pink); border: none; font-size: 13px; cursor: pointer; flex-shrink: 0; padding: 2px 4px;">✕</button>
+            </div>
+          `).join('') || '<div style="font-size: 11px; color: var(--primary-light); margin-bottom: 8px;">Aucun billet pour le moment 🏖️</div>'}
+          <label style="display: inline-block; cursor: pointer; font-size: 11px; padding: 7px 12px; border-radius: 14px; border: 1.5px dashed var(--accent-cyan); color: var(--sea-deep); font-weight: 700;">
+            📎 Ajouter un billet (PDF ou photo)
+            <input type="file" accept="application/pdf,image/*" style="display: none;" onchange="uploadTravelTicket(this)">
+          </label>
+          <span id="ticket-upload-status" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
+        </div>
+
+        <button onclick="saveTravelInfo()" style="width: 100%; border: none; cursor: pointer; background: linear-gradient(135deg, var(--sea-deep) 0%, var(--accent-cyan) 100%); border-radius: 14px; padding: 12px; text-align: center; color: #ffffff; font-weight: 700; font-size: 13.5px; box-shadow: 0 5px 14px rgba(31, 182, 201, 0.35);">🐚 Enregistrer mon voyage</button>
+        <div id="travel-status" style="font-size: 11.5px; color: var(--primary-light); margin-top: 6px; text-align: center;"></div>
+        <div style="text-align: center; font-size: 13px; letter-spacing: 8px; margin-top: 10px;">🌊🐚⭐🐚🌊</div>
+      </div>
+    </div>
+  `;
+}
+
+// ✅ Sélection d'un "galet" de lieu : met à jour le champ caché + les styles des chips,
+// et affiche le champ libre si "Autre" est choisi.
+function selectTravelPlace(prefix, place) {
+  const hidden = document.getElementById(`travel-${prefix}-place`);
+  const customInput = document.getElementById(`travel-${prefix}-place-custom`);
+  const chips = document.querySelectorAll(`#travel-${prefix}-chips button`);
+  const isOther = place === 'Autre';
+
+  hidden.value = isOther ? (customInput.value || '') : place;
+  customInput.style.display = isOther ? 'block' : 'none';
+  if (isOther) customInput.focus();
+
+  chips.forEach(btn => {
+    const sel = btn.dataset.place === place;
+    btn.style.background = sel ? 'var(--sea-deep)' : '#eef6f5';
+    btn.style.color = sel ? '#ffffff' : 'var(--primary-light)';
+    btn.style.fontWeight = sel ? '700' : '500';
+  });
+}
+
+async function saveTravelInfo() {
+  if (!currentUser || !window.supabaseReady) { showNotification('⚠️ Hors ligne — réessaie plus tard', 'error'); return; }
+  const val = (id) => (document.getElementById(id)?.value || '').trim() || null;
+  const statusEl = document.getElementById('travel-status');
+  if (statusEl) statusEl.textContent = '⏳ Enregistrement...';
+  try {
+    const { error } = await window.supabase.from('travel_info').upsert({
+      person_id: currentUser.id,
+      arrival_date: val('travel-arrival-date'),
+      arrival_time: val('travel-arrival-time'),
+      arrival_place: val('travel-arrival-place'),
+      arrival_note: val('travel-arrival-note'),
+      departure_date: val('travel-departure-date'),
+      departure_time: val('travel-departure-time'),
+      departure_place: val('travel-departure-place'),
+      departure_note: val('travel-departure-note'),
+      updated_at: new Date().toISOString()
+    });
+    if (error) throw error;
+    if (statusEl) statusEl.textContent = '✅ Voyage enregistré !';
+    showNotification('🧳 Infos de voyage enregistrées !', 'success');
+  } catch (e) {
+    console.error('Enregistrement voyage échoué:', e);
+    if (statusEl) statusEl.textContent = '❌ Échec, réessaie.';
+    showNotification('❌ Enregistrement impossible', 'error');
+  }
+}
+
+async function uploadTravelTicket(inputEl) {
+  const file = inputEl.files[0];
+  if (!file || !currentUser) return;
+  if (!window.supabaseReady) { showNotification('⚠️ Hors ligne — réessaie plus tard', 'error'); return; }
+  const statusEl = document.getElementById('ticket-upload-status');
+  if (statusEl) statusEl.textContent = '⏳ Envoi...';
+  try {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${currentUser.id}/${Date.now()}-${safeName}`;
+    const url = await uploadFileToStorage('travel-tickets', path, file);
+    const { error } = await window.supabase.from('travel_tickets').insert({
+      person_id: currentUser.id,
+      file_name: file.name,
+      url
+    });
+    if (error) throw error;
+    showNotification('🎫 Billet ajouté !', 'success');
+    loadTravelSection();
+  } catch (e) {
+    console.error('Upload billet échoué:', e);
+    if (statusEl) statusEl.textContent = '❌ Échec';
+    showNotification('❌ Envoi du billet impossible', 'error');
+  }
+}
+
+function deleteTravelTicket(ticketId) {
+  showConfirmation('Supprimer ce billet ?', async () => {
+    try {
+      // Récupérer l'URL pour supprimer aussi le fichier du Storage
+      const { data } = await window.supabase.from('travel_tickets').select('url').eq('id', ticketId).eq('person_id', currentUser.id).maybeSingle();
+      const { error } = await window.supabase.from('travel_tickets').delete().eq('id', ticketId).eq('person_id', currentUser.id);
+      if (error) throw error;
+      if (data && data.url) {
+        const path = data.url.split('/travel-tickets/')[1];
+        if (path) {
+          fetch(`${window.SUPABASE_URL}/storage/v1/object/travel-tickets/${path}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`, 'apikey': window.SUPABASE_ANON_KEY }
+          }).catch(() => {});
+        }
+      }
+      showNotification('🗑️ Billet supprimé', 'success');
+    } catch (e) {
+      showNotification('❌ Suppression impossible', 'error');
+    }
+    loadTravelSection();
+  });
+}
+
+// ============== 🚐 RÉCAP NAVETTES (visible par tout le monde) ==============
+// En haut de "Voir les autres" : toutes les arrivées et tous les départs renseignés
+// dans les fiches "Mon voyage", triés par date puis heure, avec la note navette de
+// chacun — LA page pour organiser les allers-retours gare/aéroports. Les personnes
+// qui n'ont encore rien renseigné sont listées en bas (pratique pour les relancer).
+async function loadShuttleRecap() {
+  const box = document.getElementById('shuttle-recap');
+  if (!box) return;
+  if (!window.supabaseReady) { box.innerHTML = ''; return; }
+
+  let rows = [];
+  try {
+    const { data } = await window.supabase.from('travel_info').select('*');
+    if (data) rows = data;
+  } catch (e) { box.innerHTML = ''; return; }
+
+  const fmtDay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  const placeEmoji = (p) => !p ? '' : (p.includes('Gare') ? '🚉' : (p.includes('Aéroport') ? '✈️' : '📍'));
+
+  const buildLeg = (prefix) => rows
+    .filter(r => r[prefix + '_date'] || r[prefix + '_place']) // ✅ Une vraie navette à organiser (pas juste une note)
+    .map(r => ({
+      name: PARTICIPANTS.find(p => p.id === r.person_id)?.name || '?',
+      date: r[prefix + '_date'] || '9999-12-31',
+      time: r[prefix + '_time'] || '99:99',
+      place: r[prefix + '_place'] || '',
+      note: r[prefix + '_note'] || ''
+    }))
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+  // ✅ Personnes qui viennent/repartent par leurs propres moyens (voiture...) : une note
+  // existe mais aucune date/lieu, donc rien à organiser — à ne pas confondre avec
+  // "pas encore renseigné". Ex : Delphine en voiture, pas besoin de navette.
+  const selfTransport = PARTICIPANTS.filter(p => {
+    const r = rows.find(row => row.person_id === p.id);
+    if (!r) return false;
+    const hasLogistics = r.arrival_date || r.arrival_place || r.departure_date || r.departure_place;
+    const hasNote = r.arrival_note || r.departure_note;
+    return hasNote && !hasLogistics;
+  });
+
+  const legHtml = (entries) => entries.length === 0
+    ? '<div style="font-size: 11px; color: var(--primary-light); padding: 4px 0;">Rien de renseigné pour le moment 🏖️</div>'
+    : entries.map(e => `
+      <div style="display: flex; gap: 8px; align-items: flex-start; background: #f2fbfa; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px;">
+        <div style="flex-shrink: 0; text-align: center; min-width: 58px;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--sea-deep);">${e.date !== '9999-12-31' ? fmtDay(e.date) : '📅 ?'}</div>
+          <div style="font-size: 12.5px; font-weight: 700; color: var(--primary);">${e.time !== '99:99' ? e.time : '—'}</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 12px; color: var(--primary);"><strong>${escapeHtml(e.name)}</strong>${e.place ? ` · ${placeEmoji(e.place)} ${escapeHtml(e.place.replace('Aéroport de ', ''))}` : ''}</div>
+          ${e.note ? `<div style="font-size: 10.5px; color: #8a6a3b; background: #fdf3e3; border-radius: 6px; padding: 3px 7px; margin-top: 3px;">🚕 ${escapeHtml(e.note)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+  const filledIds = new Set(rows.filter(r => r.arrival_date || r.arrival_place || r.departure_date || r.departure_place || r.arrival_note || r.departure_note).map(r => r.person_id));
+  const missing = PARTICIPANTS.filter(p => !filledIds.has(p.id));
+
+  box.innerHTML = `
+    <div style="border-radius: 18px; overflow: hidden; background: var(--bg-raised); box-shadow: 0 6px 20px rgba(12, 47, 58, 0.12);">
+      <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 12px 14px;">
+        <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🚐 Récap navettes</div>
+        <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour organiser les trajets 🐚</div>
+      </div>
+      <div style="padding: 12px 14px;">
+        <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin-bottom: 6px;">🛬 Arrivées</div>
+        ${legHtml(buildLeg('arrival'))}
+        <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin: 10px 0 6px;">🛫 Départs</div>
+        ${legHtml(buildLeg('departure'))}
+        ${selfTransport.length > 0 ? `
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 8px;">🚗 Par leurs propres moyens (pas besoin de navette) : ${selfTransport.map(p => escapeHtml(p.name)).join(', ')}</div>
+        ` : ''}
+        ${missing.length > 0 ? `
+          <div style="font-size: 10.5px; color: var(--primary-light); margin-top: 10px;">✍️ Pas encore renseigné : ${missing.map(p => escapeHtml(p.name)).join(', ')} — remplissez votre fiche 🧳 sur votre profil !</div>
+        ` : '<div style="font-size: 10.5px; color: var(--accent-green); margin-top: 10px; font-weight: 700;">✅ Tout le monde a renseigné son voyage !</div>'}
+      </div>
+    </div>
+  `;
+}
