@@ -105,11 +105,6 @@ const FIXED_CHORES = [
 // ---- Planning du séjour ----
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de planningData,
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-// 🐛 CORRECTIF : passé de 3 à 4 pour forcer l'invalidation du planning en cache sur les
-// téléphones qui l'avaient enregistré avant l'ajout/correction de Mardi (Balade en bateau).
-// Sans ce bump, Object.assign(planningData, parsed.planning) fusionnait l'ancien planning
-// PAR POSITION dans le tableau, donc un ancien planning à 9 jours écrasait silencieusement
-// Mardi (et tous les jours suivants, décalés) avec le contenu d'un autre jour.
 const PLANNING_VERSION = 4;
 
 const planningData = [
@@ -157,7 +152,7 @@ const planningData = [
     { nom: "Fermeture de la maison", emoji: "🔒", horaires: "12h45", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Fermer tous les volets, vérifier que rien n'est oublié, débrancher les prises" },
     { nom: "Dernière douche", emoji: "🚿", horaires: "13h00", lieu: "Piscine", inscription: false, repas: "", apporter: ["Vêtements pour le départ"], comments: [], notes: "" },
     { nom: "Départ en taxi", emoji: "🚕", horaires: "13h30", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
-    { nom: "Déjeuner + départ du train", emoji: "🚆", horaires: "14h00", lieu: "Restaurant devant la gare", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "Train à 15h00" }
+    { nom: "Déjeuner + départs des trains", emoji: "🚆", horaires: "14h00", lieu: "Restaurant devant la gare", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "🐚 CORRECTIF : deux trains différents, pas un seul à 15h00 — Marine : 15h08 (→ Paris Gare de Lyon) · Chunfei, Inès, Audrey : 15h50 (→ Marne-la-Vallée Chessy). Voir la fiche 🧳 de chacune sur son profil pour le détail complet." }
   ]}
 ];
 
