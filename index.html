@@ -932,6 +932,22 @@
     </div>
   </div>
 
+  <!-- CHAT (même pattern que Deezer, juste en dessous) -->
+  <button class="deezer-tab" id="chatTabBtn" onclick="toggleChatPanel()" style="top: calc(50% + 62px); background: var(--accent-pink);">💬<span id="chat-unread-dot" style="display: none; position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px var(--accent-pink);"></span></button>
+  <div class="deezer-panel" id="chatPanel" style="top: calc(50% + 40px); height: min(70vh, 560px);">
+    <div class="deezer-header">
+      <h3>💬 CHAT</h3>
+      <button class="deezer-close" onclick="toggleChatPanel()">✕</button>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px 12px 12px;">
+      <div id="chat-messages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-bottom: 8px;"></div>
+      <div style="display: flex; gap: 8px; padding-top: 8px;">
+        <input type="text" id="chat-input" placeholder="Écris un message..." style="flex: 1; margin-bottom: 0; font-size: 13.5px;" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
+        <button class="btn btn-small btn-primary" onclick="sendChatMessage()" style="flex-shrink: 0;">📤</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATIONS -->
   <div id="notificationsContainer"></div>
 
