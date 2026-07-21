@@ -374,7 +374,7 @@ function checkGalleryMentions() {
       if (c.mentions && c.mentions.includes(currentUser.id) && c.userId !== currentUser.id) {
         const cId = String(c.id || `${item.id}-${c.timestamp}`);
         if (!notifiedIds.includes(cId)) {
-          addNotification(`${c.user} vous a mentionné(e) dans un commentaire: "${c.text.substring(0, 40)}"`, '🔔', 'gallery', false, item.id);
+          addNotification(`${c.user} vous a mentionné(e) dans un commentaire: "${c.text.substring(0, 40)}"`, '🔔', 'gallery', false, item.id, false);
           newlyNotified.push(cId);
         }
       }

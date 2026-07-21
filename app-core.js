@@ -298,6 +298,7 @@ async function enterMainApp() {
       // écrans de se rafraîchir dans le même cycle.
       const safe = (fn) => { try { fn(); } catch (e) { /* écran non actif, ignoré */ } };
       safe(renderFeed);
+      safe(refreshOpenFeedCommentsModal);
       safe(renderGallery);
       safe(renderChallenges);
       safe(renderInscriptions);
@@ -1830,9 +1831,32 @@ function showNotification(msg, type = 'success') {
 // désormais un tableau `readBy` des id de personnes ayant vu la notif. `n.read`
 // (ancien format, avant ce correctif) reste lu en repli pour les notifs déjà stockées
 // localement avant la mise à jour, afin de ne pas tout remarquer comme non-lu d'un coup.
+// 🐛 CORRECTIF (challenge du modèle initial) : avant ce correctif, "lu" était un simple
+// booléen PARTAGÉ par appareil, pas par personne. En passant à un suivi par personne
+// (readBy), TOUT l'historique de la sortie (des dizaines de notifs jamais "vues"
+// individuellement par chacun) serait brutalement redevenu "non lu" pour tout le monde
+// d'un coup — un pic artificiel énorme, pas un vrai reflet de l'activité. On fixe donc un
+// seuil : les notifs antérieures à ce correctif sont considérées lues par défaut pour
+// tout le monde (pas de faux pic rétroactif) ; seules celles créées APRÈS suivent le
+// vrai suivi individuel, ce qui est le comportement recherché pour la suite.
+const NOTIF_PERSONAL_READ_TRACKING_SINCE = '2026-07-21T12:00:00Z';
+
 function isReadByCurrentUser(n) {
-  if (Array.isArray(n.readBy)) return !!(currentUser && n.readBy.includes(currentUser.id));
+  if (Array.isArray(n.readBy)) {
+    if (currentUser && n.readBy.includes(currentUser.id)) return true;
+    const ts = new Date(n.timestamp).getTime();
+    if (!isNaN(ts) && ts < new Date(NOTIF_PERSONAL_READ_TRACKING_SINCE).getTime()) return true;
+    return false;
+  }
   return !!n.read;
+}
+
+function markAllNotificationsRead() {
+  if (!currentUser) return;
+  notifications.forEach(n => markReadForCurrentUser(n));
+  updateNotifBadge();
+  renderNotifications();
+  saveAllData();
 }
 
 function markReadForCurrentUser(n) {
@@ -1841,7 +1865,15 @@ function markReadForCurrentUser(n) {
   if (!n.readBy.includes(currentUser.id)) n.readBy.push(currentUser.id);
 }
 
-function addNotification(msg, emoji = '📌', type = 'general', sync = true, refId = null) {
+// 🐛 CORRECTIF (challenge du modèle) : le paramètre alreadySeenByCaller distingue deux cas
+// bien différents. (1) currentUser vient de FAIRE une action ("Sonia a aimé la photo") :
+// elle l'a forcément déjà "vue" → readBy inclut son id d'emblée. (2) currentUser reçoit
+// PASSIVEMENT une notif créée pour lui sur son propre appareil (ex. checkPrivateMessages,
+// checkGalleryMentions) : il ne l'a pas "vue" juste parce qu'elle vient d'apparaître dans
+// son tableau local — sans cette distinction, un message privé programmé (voir profil de
+// Marine) se serait retrouvé marqué "lu" dès son arrivée, et n'aurait jamais fait sonner le
+// badge pour son destinataire.
+function addNotification(msg, emoji = '📌', type = 'general', sync = true, refId = null, alreadySeenByCaller = true) {
   const notif = {
     id: Date.now(),
     message: msg,
@@ -1849,7 +1881,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
     type: type,
     refId: refId,
     timestamp: new Date(),
-    readBy: currentUser ? [currentUser.id] : [] // ✅ L'auteur de l'action a, par définition, déjà "vu" sa propre notif
+    readBy: (alreadySeenByCaller && currentUser) ? [currentUser.id] : []
   };
   notifications.unshift(notif);
   if (notifications.length > 50) notifications.pop();
@@ -1901,7 +1933,7 @@ async function checkPrivateMessages() {
     if (!notifiedIds.includes(msg.id)) {
       // sync=false : cette notif est strictement locale au destinataire, jamais
       // renvoyée vers Supabase ni visible par les autres.
-      addNotification(msg.message, msg.emoji || '❤️', 'private', false);
+      addNotification(msg.message, msg.emoji || '❤️', 'private', false, null, false);
       newlyNotified.push(msg.id);
     }
   });

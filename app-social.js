@@ -617,6 +617,38 @@ function likeFeedEntry(entryId) {
 // ✅ Remplace l'ancien prompt() natif (moche, et les commentaires n'étaient jamais
 // affichés nulle part, juste comptés) par un vrai panneau, cohérent avec celui de la
 // Galerie : on peut enfin RELIRE les commentaires, pas juste voir leur nombre.
+// ✅ Permet de rafraîchir en live un modal de commentaires resté ouvert pendant qu'un
+// autre participant commente/publie au même moment (voir refreshOpenFeedCommentsModal,
+// appelée après chaque rechargement cloud du fil) — sans ça, il fallait fermer/rouvrir
+// le panneau pour voir les commentaires des autres arriver.
+let openFeedCommentsEntryId = null;
+
+function renderFeedCommentsList(entry) {
+  if (!entry.comments || entry.comments.length === 0) {
+    return `<div style="font-size: 12px; color: var(--primary-light); text-align: center; padding: 20px 0;">Aucun commentaire pour le moment</div>`;
+  }
+  return entry.comments.map(c => `
+    <div style="font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; box-shadow: 0 1px 0 var(--border);">
+      <strong>${escapeHtml(c.user)}:</strong> ${highlightMentions(c.text)}
+      <div style="font-size: 10px; color: var(--primary-light);">${new Date(c.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
+    </div>
+  `).join('');
+}
+
+// ✅ Appelée après chaque rechargement cloud du fil (voir la boucle de polling 25s dans
+// app-core.js) : si un modal de commentaires est ouvert, on ne touche QUE la liste des
+// commentaires (jamais le champ de saisie, pour ne pas effacer ce que la personne est en
+// train de taper) — sans ça, il fallait fermer/rouvrir le panneau pour voir arriver les
+// commentaires des autres pendant qu'on avait le sien ouvert.
+function refreshOpenFeedCommentsModal() {
+  if (openFeedCommentsEntryId === null) return;
+  const listEl = document.getElementById(`feed-comments-list-${openFeedCommentsEntryId}`);
+  if (!listEl) { openFeedCommentsEntryId = null; return; } // modal fermé entre-temps
+  const entry = feed.find(e => e.id === openFeedCommentsEntryId);
+  if (!entry) return;
+  listEl.innerHTML = renderFeedCommentsList(entry);
+}
+
 function toggleFeedComments(entryId) {
   const entry = feed.find(e => e.id === entryId);
   if (!entry) return;
@@ -624,11 +656,10 @@ function toggleFeedComments(entryId) {
 
   let commentsDiv = document.getElementById(`feed-comments-${entryId}`);
   if (commentsDiv) {
-    commentsDiv.remove();
-    const backdrop = document.getElementById(`feed-comments-backdrop-${entryId}`);
-    if (backdrop) backdrop.remove();
+    closeFeedCommentsModal(entryId);
     return;
   }
+  openFeedCommentsEntryId = entryId;
 
   const backdrop = document.createElement('div');
   backdrop.id = `feed-comments-backdrop-${entryId}`;
@@ -645,20 +676,10 @@ function toggleFeedComments(entryId) {
       💬 Commentaires
       <button onclick="closeFeedCommentsModal(${entryId})" style="background: none; border: none; font-size: 18px; color: var(--primary-light); cursor: pointer;">✕</button>
     </div>
-    <div style="overflow-y: auto; flex: 1; margin-bottom: 12px;">
+    <div id="feed-comments-list-${entryId}" style="overflow-y: auto; flex: 1; margin-bottom: 12px;">
+      ${renderFeedCommentsList(entry)}
+    </div>
   `;
-  if (entry.comments.length === 0) {
-    html += `<div style="font-size: 12px; color: var(--primary-light); text-align: center; padding: 20px 0;">Aucun commentaire pour le moment</div>`;
-  }
-  entry.comments.forEach(c => {
-    html += `
-      <div style="font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; box-shadow: 0 1px 0 var(--border);">
-        <strong>${escapeHtml(c.user)}:</strong> ${highlightMentions(c.text)}
-        <div style="font-size: 10px; color: var(--primary-light);">${new Date(c.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
-      </div>
-    `;
-  });
-  html += `</div>`;
   html += `
     <div style="display: flex; gap: 8px; padding-top: 8px; box-shadow: 0 -1px 0 var(--border);">
       <input type="text" placeholder="Commenter... @pseudo pour mentionner" id="feed-comment-${entryId}" style="flex: 1; margin-bottom: 0; font-size: 13px;">
@@ -678,6 +699,7 @@ function closeFeedCommentsModal(entryId) {
     if (el) el.remove();
     const backdrop = document.getElementById(`feed-comments-backdrop-${entryId}`);
     if (backdrop) backdrop.remove();
+    if (openFeedCommentsEntryId === entryId) openFeedCommentsEntryId = null;
   } catch (err) {
     console.error('Erreur fermeture modal commentaires du fil:', err);
   }
