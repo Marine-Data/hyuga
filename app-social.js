@@ -550,16 +550,36 @@ function addFeedEntry(message, emoji = '📌', refType = null, refId = null) {
   return entry;
 }
 
+// ✅ Filtre du fil : les publications volontaires (composeur en haut du fil) se noient
+// vite au milieu des événements automatiques ("a aimé...", "a coché..."). Trois puces
+// permettent de basculer d'un tap. Note : les publications manuelles antérieures au
+// 21/07 (avant que le flag "manual" soit persisté) apparaissent dans "activité".
+let feedFilterMode = 'all';
+
+function setFeedFilter(mode) {
+  feedFilterMode = mode;
+  renderFeed();
+}
+
 function renderFeed() {
   const content = document.getElementById('feed-content');
   if (!content) return; // ✅ Évite de planter si l'élément n'existe pas encore
 
   try {
-    if (feed.length === 0) {
-      content.innerHTML = '<div style="padding: 40px 20px; text-align: center;"><p style="color: var(--primary-light); font-size: 14px;">📭 Aucune activité pour le moment</p></div>';
+    const chip = (mode, label) => `<button onclick="setFeedFilter('${mode}')" style="border: none; cursor: pointer; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: ${feedFilterMode === mode ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${feedFilterMode === mode ? 'white' : 'var(--primary)'};">${label}</button>`;
+    const filterBar = `<div style="display: flex; gap: 8px; margin-bottom: 14px;">${chip('all', 'Tout')}${chip('posts', '💬 Publications')}${chip('auto', '🤖 Activité')}</div>`;
+
+    const visibleFeed = feed.filter(entry => {
+      if (feedFilterMode === 'posts') return !!entry.manual;
+      if (feedFilterMode === 'auto') return !entry.manual;
+      return true;
+    });
+
+    if (visibleFeed.length === 0) {
+      content.innerHTML = filterBar + `<div style="padding: 40px 20px; text-align: center;"><p style="color: var(--primary-light); font-size: 14px;">${feedFilterMode === 'posts' ? '💬 Aucune publication — écris la première dans le champ ci-dessus !' : '📭 Aucune activité pour le moment'}</p></div>`;
       return;
     }
-    content.innerHTML = feed.map(entry => {
+    content.innerHTML = filterBar + visibleFeed.map(entry => {
     const date = new Date(entry.timestamp);
     const hours = String(date.getHours()).padStart(2, '0');
     const mins = String(date.getMinutes()).padStart(2, '0');
@@ -586,7 +606,7 @@ function renderFeed() {
             <div style="font-size: 13px; color: var(--primary); margin-bottom: 10px; line-height: 1.4;">${highlightMentions(entry.message)}</div>
             ${entry.refType ? `<div onclick="openFeedEntry('${entry.refType}', '${escapeHtml(String(entry.refId))}')" style="cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--accent-sand); margin: -4px 0 10px;">Voir →</div>` : ''}
             <div style="display: flex; gap: 12px;">
-              <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️ ${entry.likes.length}</button>
+              <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️</button><span onclick="showLikersPanel(${JSON.stringify(entry.likes)})" style="font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; cursor: pointer; padding: 4px 2px;">${entry.likes.length}</span>
               <button onclick="toggleFeedComments(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); font-weight: 500; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)'; this.style.color='var(--primary)';" onmouseout="this.style.transform='scale(1)'; this.style.color='var(--primary-light)';">💬 ${entry.comments.length}</button>
             </div>
           </div>

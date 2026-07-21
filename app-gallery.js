@@ -62,7 +62,7 @@ function renderGallery() {
   // pour ne pas les confondre avec une photo cassée dans une si petite vignette.
   if (galleryViewMode === 'grid') {
     const gridHtml = items.map(item => `
-      <div onclick="viewGallery(${galleryItems.indexOf(item)})" style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); cursor: pointer; overflow: hidden;">
+      <div onclick="openGalleryLightbox(${item.id})" style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); cursor: pointer; overflow: hidden;">
         ${item.type === 'image'
           ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
           : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;" playsinline muted preload="metadata"></video>
@@ -100,10 +100,10 @@ function renderGallery() {
         <button onclick="event.stopPropagation(); editGalleryItem(${item.id})" style="background: var(--bg-sunken); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; color: var(--primary-light); cursor: pointer;">✏️</button>
       </div>
 
-      <!-- Photo/vidéo pleine largeur -->
+      <!-- Photo/vidéo pleine largeur (tap = plein écran) -->
       <div style="width: 100%; aspect-ratio: 4/5; background: var(--bg-sunken); position: relative;">
         ${item.type === 'image'
-          ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
+          ? `<img src="${item.src}" alt="" onclick="openGalleryLightbox(${item.id})" style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in;">`
           : `<video src="${item.src}" controls playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
         ${item.location ? `<div class="ig-location-badge">📍 ${escapeHtml(item.location)}</div>` : ''}
       </div>
@@ -571,6 +571,43 @@ function filterGalleryByTag(tagName) {
 // ✅ Depuis une miniature en mode grille : bascule vers le fil détaillé (photo, likes,
 // commentaires) et défile jusqu'au bon souvenir — remplace l'ancien viewGallery() qui
 // se contentait d'une alerte texte sans afficher la photo.
+// ✅ Plein écran (lightbox) : tap sur une photo → image entière sur fond noir, non
+// recadrée (object-fit: contain, contrairement aux vignettes qui rognent en "cover").
+// Zoom pincé natif du navigateur, flèches ‹ › pour passer d'une photo à l'autre,
+// tap sur le fond ou ✕ pour fermer.
+function openGalleryLightbox(itemId) {
+  const idx = galleryItems.findIndex(i => i.id === itemId);
+  if (idx === -1) return;
+  const item = galleryItems[idx];
+
+  document.getElementById('gallery-lightbox')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'gallery-lightbox';
+  overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 99999; display: flex; align-items: center; justify-content: center; touch-action: pinch-zoom;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const media = item.type === 'image'
+    ? `<img src="${item.src}" style="max-width: 100vw; max-height: 100vh; object-fit: contain; display: block;">`
+    : `<video src="${item.src}" controls autoplay playsinline style="max-width: 100vw; max-height: 100vh; display: block;"></video>`;
+
+  const prevId = idx > 0 ? galleryItems[idx - 1].id : null;
+  const nextId = idx < galleryItems.length - 1 ? galleryItems[idx + 1].id : null;
+  const navBtnStyle = 'position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 22px; width: 42px; height: 42px; border-radius: 50%; cursor: pointer;';
+
+  overlay.innerHTML = `
+    ${media}
+    <button onclick="document.getElementById('gallery-lightbox').remove()" style="position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 20px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">✕</button>
+    ${prevId !== null ? `<button onclick="event.stopPropagation(); openGalleryLightbox(${prevId})" style="${navBtnStyle} left: 10px;">‹</button>` : ''}
+    ${nextId !== null ? `<button onclick="event.stopPropagation(); openGalleryLightbox(${nextId})" style="${navBtnStyle} right: 10px;">›</button>` : ''}
+    <div style="position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.85); font-size: 12.5px; padding: 0 20px;">
+      ${escapeHtml(item.creator)}${item.location ? ` · 📍 ${escapeHtml(item.location)}` : ''}
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
 function viewGallery(idx) {
   const item = galleryItems[idx];
   if (!item) return;
@@ -580,3 +617,4 @@ function viewGallery(idx) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 60);
 }
+

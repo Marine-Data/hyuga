@@ -75,7 +75,7 @@ function renderChallenges() {
               <input type="file" accept="image/*,video/*" style="display: none;" onchange="event.stopPropagation(); submitChallengeProof(${ch.id}, this)">
             </label>
           `}
-          <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; border: none;" onclick="event.stopPropagation(); likeCh(${ch.id})">❤️ ${likesCount}</button>
+          <button class="btn btn-small" style="background: ${userLiked ? 'linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%)' : 'var(--bg-sunken)'}; color: ${userLiked ? 'white' : 'var(--primary)'}; flex: 1; border: none;" onclick="event.stopPropagation(); likeCh(${ch.id})">❤️ <span onclick="event.stopPropagation(); showLikersPanel(${JSON.stringify(ch.likes || [])})" style="text-decoration: underline; text-underline-offset: 2px;">${likesCount}</span></button>
           <button class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1; border: none;" onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})">💬 ${ch.comments.length}</button>
         </div>
         <div id="ch-comments-${ch.id}" style="display: none; margin-top: 10px; padding: 12px; background: var(--bg-sunken); border-radius: 8px;">

@@ -260,6 +260,7 @@ async function enterMainApp() {
   renderHome(); // ✅ Rafraîchir le widget d'activité récente sur Home
   checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
   checkPrivateMessages(); // ✅ Notifie si un message privé (voir profil de Marine) est arrivé
+  updateConnectivityBanner(); // ✅ Signale honnêtement un fonctionnement hors-ligne/local
   renderDaySelector();
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
@@ -308,6 +309,7 @@ async function enterMainApp() {
       safe(renderTresor);
       safe(renderNotifications);
       safe(updateNotifBadge);
+      safe(updateConnectivityBanner);
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
       safe(refreshSecretMissionXpCache);
@@ -398,7 +400,7 @@ async function finishProfileSetup() {
   selectedProfileData.regimes = document.getElementById('completeRegimesInput').value.trim();
   
   if (!selectedProfileData.pseudo) {
-    alert('⚠️ Rentre un pseudo !');
+    showNotification('⚠️ Rentre un pseudo !', 'error');
     return;
   }
   
@@ -670,7 +672,8 @@ async function loadFromSupabaseCloud() {
           // la page rechargeait ou que le polling 25s re-fetchait le fil. On les stocke
           // dans le même blob JSON que likes/comments (pas de colonne dédiée nécessaire).
           refType: parsedData.refType || null,
-          refId: parsedData.refId || null
+          refId: parsedData.refId || null,
+          manual: parsedData.manual || false // ✅ Distingue publication volontaire / activité auto (filtre du fil)
         };
       });
     }
@@ -771,6 +774,31 @@ async function loadFromSupabaseCloud() {
     console.log('📱 Utilisation des données locales (Supabase non disponible)');
   }
 }
+
+// ✅ Bandeau "hors ligne" (leçon de l'incident du 21/07) : quand l'appareil est sans
+// réseau OU que la liaison Supabase n'a pas pu s'établir (CDN bloqué, réseau filtré...),
+// l'app continue de fonctionner en local en silence — et on croit à tort que tout est
+// synchronisé. Ce bandeau discret le signale honnêtement. Vérifié au démarrage, sur les
+// événements online/offline du navigateur, et à chaque cycle de synchro (25s).
+function updateConnectivityBanner() {
+  const offline = !navigator.onLine || !window.supabaseReady;
+  let banner = document.getElementById('connectivity-banner');
+  if (offline) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'connectivity-banner';
+      banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 99998; background: #b45309; color: #fff; font-size: 12px; font-weight: 600; text-align: center; padding: 7px 12px calc(7px + env(safe-area-inset-top)/4); padding-top: max(7px, env(safe-area-inset-top));';
+      document.body.appendChild(banner);
+    }
+    banner.textContent = !navigator.onLine
+      ? '📡 Hors ligne — tes actions seront synchronisées au retour du réseau'
+      : '⚠️ Liaison au cloud impossible sur ce réseau — tes actions restent sur cet appareil pour l\'instant';
+  } else if (banner) {
+    banner.remove();
+  }
+}
+window.addEventListener('online', updateConnectivityBanner);
+window.addEventListener('offline', updateConnectivityBanner);
 
 function saveAllData() {
   const data = {
@@ -881,7 +909,7 @@ function saveAllData() {
         // 🐛 CORRECTIF : refType/refId n'étaient jamais envoyés vers Supabase — le lien
         // "Voir →" du fil d'activité (renderFeed) n'existait donc que le temps de la
         // session en cours, avant le premier rechargement ou le premier polling 25s.
-        data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [], refType: entry.refType || null, refId: entry.refId || null }),
+        data: JSON.stringify({ likes: entry.likes || [], comments: entry.comments || [], refType: entry.refType || null, refId: entry.refId || null, manual: entry.manual || false }),
         timestamp: entry.timestamp instanceof Date ? entry.timestamp.toISOString() : entry.timestamp
       }).catch(err => console.error('Sync Supabase échouée:', err));
     });
@@ -1893,6 +1921,42 @@ async function refreshLikesFromCloud(table, id, likesExtractor) {
   } catch (e) {
     return null;
   }
+}
+
+// ✅ Panneau générique "Aimé par" (même style que celui de la galerie) : reçoit une
+// liste d'ids de participants et l'affiche en panneau glissant. Utilisé par le fil
+// d'activité et les défis — la galerie garde le sien (showGalleryLikers).
+function showLikersPanel(likeIds) {
+  if (!likeIds || likeIds.length === 0) return;
+  document.getElementById('likers-panel')?.remove();
+  document.getElementById('likers-panel-backdrop')?.remove();
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'likers-panel-backdrop';
+  backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998;';
+  backdrop.onclick = () => { document.getElementById('likers-panel')?.remove(); backdrop.remove(); };
+
+  const container = document.createElement('div');
+  container.id = 'likers-panel';
+  container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); padding: 12px 20px 24px; border-radius: 16px 16px 0 0; max-height: 60vh; overflow-y: auto; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); z-index: 9999;';
+
+  const people = likeIds.map(id => PARTICIPANTS.find(p => p.id === id)).filter(Boolean);
+  container.innerHTML = `
+    <div style="width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px;"></div>
+    <div style="font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+      ❤️ Aimé par
+      <button onclick="document.getElementById('likers-panel').remove(); document.getElementById('likers-panel-backdrop').remove();" style="background: none; border: none; font-size: 18px; color: var(--primary-light); cursor: pointer;">✕</button>
+    </div>
+    ${people.map(p => `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13.5px; color: var(--primary); cursor: pointer;" onclick="document.getElementById('likers-panel').remove(); document.getElementById('likers-panel-backdrop').remove(); showPublicProfileFromFeed(${p.id});">
+        <span style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-sunken); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-pink);">${escapeHtml(p.name.charAt(0))}</span>
+        <strong>${escapeHtml(p.name)}</strong>
+      </div>
+    `).join('')}
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
 }
 
 function showNotification(msg, type = 'success') {
