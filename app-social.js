@@ -776,3 +776,183 @@ function deleteFeedEntry(entryId) {
   });
 }
 
+
+// ============== 💬 CHAT DE GROUPE (panneau indépendant, sous le bouton 🎵) ==============
+// Architecture volontairement différente du reste de l'app : le chat est 100% cloud
+// (insertion directe + lecture + TEMPS RÉEL via Supabase Realtime), jamais inclus dans
+// saveAllData/localStorage — donc aucun risque d'écrasement "dernière écriture gagne"
+// ni de résurrection. Repli : si le temps réel ne se connecte pas (réseau filtré...),
+// un rafraîchissement léger toutes les 15s prend le relais quand le panneau est ouvert.
+let chatMessages = [];
+let chatRealtimeOk = false;
+let chatInitDone = false;
+
+function toggleChatPanel() {
+  const panel = document.getElementById('chatPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    loadChatMessages().then(() => {
+      renderChat();
+      markChatRead();
+    });
+  }
+}
+
+async function loadChatMessages() {
+  if (!window.supabaseReady || !window.supabase) return;
+  try {
+    const { data, error } = await window.supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(300);
+    if (!error && data) chatMessages = data;
+  } catch (e) { /* hors-ligne : on garde ce qu'on a */ }
+}
+
+function renderChat() {
+  const box = document.getElementById('chat-messages');
+  if (!box) return;
+
+  if (chatMessages.length === 0) {
+    box.innerHTML = '<div style="text-align: center; color: var(--primary-light); font-size: 12.5px; padding: 30px 10px;">💬 Aucun message — lance la conversation !</div>';
+    return;
+  }
+
+  let lastDay = null;
+  let lastPersonId = null;
+  box.innerHTML = chatMessages.map(msg => {
+    const p = PARTICIPANTS.find(pp => pp.id === msg.person_id) || { name: '?' };
+    const mine = currentUser && msg.person_id === currentUser.id;
+    const d = new Date(msg.created_at);
+    const dayKey = d.toDateString();
+    const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    // Séparateur de jour
+    let sep = '';
+    if (dayKey !== lastDay) {
+      sep = `<div style="text-align: center; font-size: 10.5px; color: var(--primary-light); margin: 12px 0 6px;">${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`;
+      lastDay = dayKey;
+      lastPersonId = null; // nouveau jour → réafficher le nom
+    }
+
+    // Nom affiché seulement au premier message d'une série (pas le sien)
+    const showName = !mine && msg.person_id !== lastPersonId;
+    lastPersonId = msg.person_id;
+
+    return `${sep}
+      <div style="display: flex; ${mine ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
+        <div style="max-width: 80%; padding: 7px 11px; border-radius: ${mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px'}; font-size: 13px; line-height: 1.4; ${mine
+          ? 'background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white;'
+          : 'background: var(--bg-sunken); color: var(--primary);'}">
+          ${showName ? `<div style="font-size: 10.5px; font-weight: 700; margin-bottom: 2px; ${mine ? 'color: rgba(255,255,255,0.85);' : 'color: var(--accent-pink);'}">${escapeHtml(p.name)}</div>` : ''}
+          ${mine ? escapeHtml(msg.text) : highlightMentions(msg.text)}
+          <div style="font-size: 9.5px; margin-top: 2px; text-align: right; ${mine ? 'color: rgba(255,255,255,0.7);' : 'color: var(--primary-light);'}">${time}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentUser) return;
+  if (!window.supabaseReady || !window.supabase) {
+    showNotification('⚠️ Hors ligne — le chat nécessite une connexion', 'error');
+    return;
+  }
+  input.value = '';
+  try {
+    const { data, error } = await window.supabase
+      .from('chat_messages')
+      .insert({ person_id: currentUser.id, text })
+      .select()
+      .single();
+    if (error) throw error;
+    // Affichage immédiat (le temps réel dédoublonnera par id)
+    if (data && !chatMessages.some(m => m.id === data.id)) {
+      chatMessages.push(data);
+      renderChat();
+      markChatRead();
+    }
+  } catch (err) {
+    console.error('Envoi chat échoué:', err);
+    input.value = text; // ne pas perdre le message tapé
+    showNotification('❌ Message non envoyé, réessaie', 'error');
+  }
+}
+
+function markChatRead() {
+  if (chatMessages.length > 0) {
+    localStorage.setItem('chatLastReadAt', chatMessages[chatMessages.length - 1].created_at);
+  }
+  const dot = document.getElementById('chat-unread-dot');
+  if (dot) dot.style.display = 'none';
+}
+
+function updateChatUnreadDot() {
+  const dot = document.getElementById('chat-unread-dot');
+  const panel = document.getElementById('chatPanel');
+  if (!dot || chatMessages.length === 0) return;
+  if (panel && panel.classList.contains('open')) { markChatRead(); return; }
+  const lastRead = localStorage.getItem('chatLastReadAt') || '';
+  const lastMsg = chatMessages[chatMessages.length - 1];
+  // Ne pas signaler ses propres messages comme non lus
+  if (lastMsg.created_at > lastRead && (!currentUser || lastMsg.person_id !== currentUser.id)) {
+    dot.style.display = 'block';
+  }
+}
+
+// ✅ Initialisation différée : attend que Supabase soit prêt, puis 1) charge
+// l'historique (pour le point "non lu"), 2) s'abonne au temps réel — chaque
+// nouveau message arrive instantanément, panneau ouvert ou non.
+(function initChatWhenReady() {
+  const timer = setInterval(async () => {
+    if (chatInitDone) { clearInterval(timer); return; }
+    if (!window.supabaseReady || !window.supabase || !window.currentUser && !currentUser) return;
+    chatInitDone = true;
+    clearInterval(timer);
+
+    await loadChatMessages();
+    updateChatUnreadDot();
+
+    try {
+      window.supabase
+        .channel('chat-room')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+          if (!chatMessages.some(m => m.id === payload.new.id)) {
+            chatMessages.push(payload.new);
+            const panel = document.getElementById('chatPanel');
+            if (panel && panel.classList.contains('open')) {
+              renderChat();
+              markChatRead();
+            } else {
+              updateChatUnreadDot();
+            }
+          }
+        })
+        .subscribe((status) => { chatRealtimeOk = (status === 'SUBSCRIBED'); });
+    } catch (e) {
+      console.warn('Temps réel indisponible, repli sur rafraîchissement périodique', e);
+    }
+
+    // Repli : si le temps réel n'a pas pris, rafraîchir toutes les 15s (panneau ouvert
+    // seulement) et vérifier le point "non lu" toutes les 60s.
+    setInterval(async () => {
+      const panel = document.getElementById('chatPanel');
+      if (!chatRealtimeOk && panel && panel.classList.contains('open')) {
+        await loadChatMessages();
+        renderChat();
+        markChatRead();
+      }
+    }, 15000);
+    setInterval(async () => {
+      if (!chatRealtimeOk) {
+        await loadChatMessages();
+        updateChatUnreadDot();
+      }
+    }, 60000);
+  }, 500);
+})();
