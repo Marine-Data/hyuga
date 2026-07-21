@@ -1333,7 +1333,14 @@ async function loadShuttleRecap() {
         <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🗺️ Récap des arrivées et départs</div>
         <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour que tout le monde soit au courant 🐚</div>
       </div>
-      <div style="padding: 12px 14px;">
+      <div style="padding: 12px 14px 0;">
+        <div style="background: #f2fbfa; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;">
+          <div style="font-weight: 700; font-size: 12px; color: var(--sea-deep); margin-bottom: 2px;">🏡 Adresse de la maison</div>
+          <div style="font-size: 12px; color: var(--primary);">972 route du barrage, Le Revest-les-Eaux</div>
+          <a href="https://www.reseaumistral.com/" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--sea-deep); text-decoration: none;">🚌 Voir les bus (Réseau Mistral) →</a>
+        </div>
+      </div>
+      <div style="padding: 0 14px 16px;">
         <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin-bottom: 6px;">🛬 Arrivées</div>
         ${legHtml(buildLeg('arrival'))}
         <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin: 10px 0 6px;">🛫 Départs</div>
