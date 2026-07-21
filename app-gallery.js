@@ -180,10 +180,26 @@ function uploadGallery() {
   reader.onload = (e) => {
     const isImage = input.files[0].type.startsWith('image');
 
-    const finishUpload = (src) => {
+    const finishUpload = async (src) => {
+      // ✅ POINT CLÉ (audit) : on envoie désormais le fichier vers Supabase Storage et on
+      // ne garde que son URL — avant, l'image entière (200-350 Ko de base64) partait dans
+      // la table gallery_items ET dans le localStorage de chaque téléphone, dont le quota
+      // a déjà été atteint une fois. Repli : si l'upload Storage échoue (hors-ligne...),
+      // on garde le base64 comme avant, l'app continue de fonctionner à l'identique.
+      let finalSrc = src;
+      if (window.supabaseReady && src.startsWith('data:')) {
+        try {
+          const blob = dataURLToBlob(src);
+          const ext = isImage ? 'jpg' : (input.files[0].name.split('.').pop() || 'mp4');
+          const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          finalSrc = await uploadFileToStorage('gallery-photos', path, blob);
+        } catch (err) {
+          console.warn('Upload Storage échoué, repli en base64 :', err);
+        }
+      }
       const item = {
         id: Date.now(),
-        src: src,
+        src: finalSrc,
         type: isImage ? 'image' : 'video',
         location: location,
         description: desc,
@@ -221,11 +237,15 @@ function uploadGallery() {
   reader.readAsDataURL(input.files[0]);
 }
 
-function likeGalleryItem(itemId) {
+async function likeGalleryItem(itemId) {
   const item = galleryItems.find(i => i.id === itemId);
   if (!item) return;
   
   if (!item.likes) item.likes = [];
+  // ✅ Base la bascule sur la version cloud la plus fraîche (voir refreshLikesFromCloud
+  // dans app-core.js) pour ne plus écraser le like posé par quelqu'un d'autre entre-temps.
+  const cloudLikes = await refreshLikesFromCloud('gallery_items', itemId);
+  if (cloudLikes !== null) item.likes = cloudLikes;
   const idx = item.likes.indexOf(currentUser.id);
   
   if (idx > -1) {

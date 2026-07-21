@@ -1,12 +1,72 @@
 // ============== SARAILLON ULTIMATE - Service Worker ==============
-// Gère la réception des notifications push et le clic dessus.
+// Gère la réception des notifications push, le clic dessus, et le mode HORS-LIGNE.
 
-self.addEventListener('install', () => {
+// ✅ (audit) Cache hors-ligne : jusqu'ici le service worker ne gérait que les push —
+// sans réseau, la PWA affichait une page blanche, précisément dans le scénario "île
+// avec du réseau capricieux" pour lequel elle existe. Stratégie : les fichiers de
+// l'app sont servis depuis le cache (démarrage instantané, même hors-ligne) et mis à
+// jour en arrière-plan à chaque visite ("stale-while-revalidate"). Les appels Supabase
+// ne sont JAMAIS mis en cache (données vivantes). Pour déployer une grosse mise à jour
+// immédiatement, incrémenter CACHE_VERSION ci-dessous.
+const CACHE_VERSION = 'saraillon-v1';
+const APP_SHELL = [
+  './',
+  './index.html',
+  './styles.css',
+  './manifest.json',
+  './saraillon-data.js',
+  './app-core.js',
+  './app-init.js',
+  './app-anim.js',
+  './app-activities.js',
+  './app-challenges.js',
+  './app-features.js',
+  './app-gallery.js',
+  './app-misc.js',
+  './app-planning.js',
+  './app-social.js',
+  './icon192.png',
+  './icon512.png'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_VERSION).then((cache) =>
+      // ✅ Ajout fichier par fichier : un seul 404 ne doit pas faire échouer tout le précache
+      Promise.allSettled(APP_SHELL.map((f) => cache.add(f)))
+    )
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // Jamais de cache pour Supabase (données/temps réel) ni les domaines externes (polices...)
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      const fetchAndUpdate = fetch(req).then((res) => {
+        if (res && res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+        }
+        return res;
+      }).catch(() => cached || (req.mode === 'navigate' ? caches.match('./index.html') : undefined));
+      // Cache d'abord (instantané), mise à jour réseau en arrière-plan
+      return cached || fetchAndUpdate;
+    })
+  );
 });
 
 self.addEventListener('push', (event) => {
@@ -20,38 +80,21 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || '🏝️ SARAILLON', {
       body: data.body || '',
-      // 🐛 CORRECTIF : un tag fixe partagé par toutes les notifs pouvait faire que
-      // plusieurs envois rapprochés s'écrasent silencieusement entre eux (le dernier
-      // remplace le précédent sans toujours redéclencher une alerte visible/sonore
-      // selon l'appareil). Le tag est maintenant unique à chaque envoi.
-      tag: `saraillon-notif-${Date.now()}`,
+      tag: 'saraillon-notif',
       renotify: true,
-      vibrate: [100, 50, 100],
-      // 🆕 Mémorise vers quel onglet naviguer si on clique sur la notif (ex: "inscriptions")
-      data: { tab: data.tab || null }
+      vibrate: [100, 50, 100]
     })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  // 🆕 CORRECTIF : le clic sur une notif se contentait d'ouvrir/focus l'app à la racine,
-  // sans jamais naviguer vers l'onglet concerné (ex: cliquer sur le rappel d'inscriptions
-  // ne menait pas à l'onglet Inscriptions). On transmet maintenant la cible au client déjà
-  // ouvert via postMessage, ou via un paramètre d'URL si l'app doit s'ouvrir depuis zéro.
-  const targetTab = event.notification.data && event.notification.data.tab;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ('focus' in client) {
-          client.focus();
-          if (targetTab && 'postMessage' in client) client.postMessage({ type: 'navigate', tab: targetTab });
-          return;
-        }
+        if ('focus' in client) return client.focus();
       }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetTab ? `./?openTab=${targetTab}` : './');
-      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
     })
   );
 });

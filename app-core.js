@@ -513,6 +513,17 @@ function loadAllData() {
   updateNotifBadge();
 }
 
+// ✅ (audit) Union des commentaires locaux et cloud par id : un commentaire posté sur un
+// autre téléphone dans la fenêtre de synchro n'est plus écrasé par "dernière écriture
+// gagne" — les commentaires ne sont jamais supprimés dans l'app, l'union est donc sûre.
+function mergeCommentsById(localArr, cloudArr) {
+  const merged = [...(cloudArr || [])];
+  const ids = new Set(merged.map(c => c && c.id));
+  (localArr || []).forEach(c => { if (c && !ids.has(c.id)) merged.push(c); });
+  merged.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return merged;
+}
+
 // 🌐 Load data from Supabase (async)
 async function loadFromSupabaseCloud() {
   // Attendre que Supabase soit prêt
@@ -565,7 +576,7 @@ async function loadFromSupabaseCloud() {
           existing.completedBy = row.completed_by || [];
           existing.proofs = row.proofs || {};
           existing.likes = row.likes || [];
-          existing.comments = row.comments || [];
+          existing.comments = mergeCommentsById(existing.comments, row.comments); // ✅ union, pas d'écrasement
         } else {
           // Défi créé par quelqu'un d'autre, jamais vu sur cet appareil.
           challenges.push({
@@ -590,6 +601,8 @@ async function loadFromSupabaseCloud() {
     const galleryData = await window.loadFromSupabase('gallery_items');
     if (galleryData && galleryData.length > 0) {
       console.log(`✅ Loaded ${galleryData.length} gallery items from Supabase`);
+      const localGalleryById = {};
+      galleryItems.forEach(g => { localGalleryById[g.id] = g; });
       galleryItems = galleryData.map(item => ({
         id: item.id,
         src: item.image_url,
@@ -603,7 +616,7 @@ async function loadFromSupabaseCloud() {
         timestamp: item.timestamp || item.created_at || new Date(),
         tags: item.tags || [],
         likes: item.likes || [],
-        comments: item.comments || []
+        comments: mergeCommentsById((localGalleryById[item.id] || {}).comments, item.comments) // ✅ union, pas d'écrasement
       }));
     }
     
@@ -611,6 +624,8 @@ async function loadFromSupabaseCloud() {
     const feedData = await window.loadFromSupabase('feed_entries');
     if (feedData && feedData.length > 0) {
       console.log(`✅ Loaded ${feedData.length} feed entries from Supabase`);
+      const localFeedById = {};
+      feed.forEach(f => { localFeedById[f.id] = f; });
       feed = feedData.map(entry => {
         const parsedData = entry.data ? JSON.parse(entry.data) : { likes: [], comments: [] };
         return {
@@ -622,7 +637,7 @@ async function loadFromSupabaseCloud() {
           emoji: entry.emoji,
           timestamp: entry.timestamp,
           likes: parsedData.likes || [],
-          comments: parsedData.comments || [],
+          comments: mergeCommentsById((localFeedById[entry.id] || {}).comments, parsedData.comments), // ✅ union, pas d'écrasement
           // 🐛 CORRECTIF : refType/refId n'étaient ni envoyés ni relus depuis Supabase,
           // donc le lien "Voir →" du fil d'activité (renderFeed) disparaissait dès que
           // la page rechargeait ou que le polling 25s re-fetchait le fil. On les stocke
@@ -981,6 +996,18 @@ async function uploadFileToStorage(bucket, path, file) {
   }
 
   return `${window.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+// ✅ Convertit un dataURL base64 (sortie de compressImage/FileReader) en Blob uploadable
+// vers Supabase Storage — utilisé par la galerie pour ne plus stocker les images en
+// texte dans la base (voir uploadToGallery).
+function dataURLToBlob(dataURL) {
+  const [header, b64] = dataURL.split(',');
+  const mime = (header.match(/data:(.*?);/) || [])[1] || 'application/octet-stream';
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 }
 
 // ============== GARDE-FOU ANTI-ÉCRASEMENT (uploads à chemin fixe) ==============
@@ -1816,6 +1843,26 @@ function confirmConfirmation(id, confirmed) {
   delete window[`confirmCallback_${id}`];
 }
 
+// ============== ANTI-ÉCRASEMENT DES LIKES CONCURRENTS (audit) ==============
+// 🐛 Problème structurel : les likes sont un tableau stocké dans UNE colonne, et la
+// synchro fonctionne en "dernière écriture gagne". Deux personnes qui likent la même
+// photo à quelques secondes d'intervalle depuis deux téléphones → celui qui sauvegarde
+// en dernier écrase l'autre, un like disparaît silencieusement au polling suivant.
+// Correctif pragmatique : juste avant de basculer un like, on RELIT la version cloud
+// de ce seul élément (la vérité la plus fraîche), on applique la bascule dessus, et on
+// renvoie immédiatement cette ligne — la fenêtre de conflit passe de ~25s à ~0,2s.
+// En cas d'échec réseau, on retombe sur l'ancien comportement local (jamais bloquant).
+async function refreshLikesFromCloud(table, id, likesExtractor) {
+  if (!window.supabaseReady || !window.supabase) return null;
+  try {
+    const { data, error } = await window.supabase.from(table).select('*').eq('id', id).maybeSingle();
+    if (error || !data) return null;
+    return likesExtractor ? likesExtractor(data) : (data.likes || []);
+  } catch (e) {
+    return null;
+  }
+}
+
 function showNotification(msg, type = 'success') {
   const notif = document.createElement('div');
   notif.className = `notification ${type}`;
@@ -1888,7 +1935,13 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
   updateNotifBadge();
   renderNotifications();
   saveAllData();
-  sendPushNotification(msg, emoji);
+  // ✅ (audit anti-fatigue) Push système SEULEMENT pour l'important : planning, corvées,
+  // surprises, trésor, défis relevés. Les likes/commentaires/activité du fil restent
+  // dans la cloche 🔔 de l'app (avec leur badge), mais ne réveillent plus le téléphone
+  // de 9 personnes à chaque ❤️ — sinon tout le monde finit par couper les notifs et
+  // rate les vraies infos. Les messages privés ont leur propre canal (send-private-message).
+  const PUSH_WORTHY_TYPES = ['planning', 'corvees', 'surprises', 'tresor', 'challenge', 'inscriptions'];
+  if (PUSH_WORTHY_TYPES.includes(type)) sendPushNotification(msg, emoji);
 
   // ✅ Synchroniser vers Supabase pour que les autres appareils reçoivent la notification
   // (sauf les notifications personnalisées comme "vous a mentionné", qui n'ont de sens que localement)

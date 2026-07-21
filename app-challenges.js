@@ -411,10 +411,13 @@ function createChallenge() {
   }
 }
 
-function likeCh(id) {
+async function likeCh(id) {
   const ch = challenges.find(c => c.id === id);
   if (ch) {
     if (!ch.likes) ch.likes = [];
+    // ✅ Version cloud la plus fraîche avant bascule (voir refreshLikesFromCloud, app-core.js)
+    const cloudLikes = await refreshLikesFromCloud('challenges', id);
+    if (cloudLikes !== null) ch.likes = cloudLikes;
     const idx = ch.likes.indexOf(currentUser.id);
     if (idx > -1) {
       ch.likes.splice(idx, 1);

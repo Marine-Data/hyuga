@@ -599,9 +599,15 @@ function renderFeed() {
   }
 }
 
-function likeFeedEntry(entryId) {
+async function likeFeedEntry(entryId) {
   const entry = feed.find(e => e.id === entryId);
   if (entry) {
+    // ✅ Version cloud la plus fraîche avant bascule (les likes du fil vivent dans le
+    // blob JSON "data" de feed_entries — voir refreshLikesFromCloud, app-core.js)
+    const cloudLikes = await refreshLikesFromCloud('feed_entries', entryId, (row) => {
+      try { return (row.data ? JSON.parse(row.data) : {}).likes || []; } catch (e) { return null; }
+    });
+    if (cloudLikes !== null) entry.likes = cloudLikes;
     const idx = entry.likes.indexOf(currentUser.id);
     if (idx > -1) {
       entry.likes.splice(idx, 1);
