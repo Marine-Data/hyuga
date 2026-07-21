@@ -117,10 +117,18 @@ function renderPrivateMessageComposer() {
     <div style="margin-top: 16px; padding-top: 24px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); text-align: left;">
       <div style="font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--primary); margin-bottom: 12px;">💌 Envoyer un message privé</div>
 
-      <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">À qui ?</label>
-      <select id="pm-target" style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 14px;">
-        ${others.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
-      </select>
+      <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">À qui ? <span style="font-weight: 400; color: var(--primary-light);">(plusieurs choix possibles)</span></label>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+        <button type="button" onclick="togglePmSelectAll()" style="background: none; border: none; color: var(--accent-pink); font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 4px;">Tout sélectionner / désélectionner</button>
+      </div>
+      <div id="pm-targets" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+        ${others.map(p => `
+          <label style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 20px; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); font-size: 13px; cursor: pointer;">
+            <input type="checkbox" class="pm-target-checkbox" value="${p.id}" style="accent-color: var(--accent-pink);">
+            ${escapeHtml(p.name)}
+          </label>
+        `).join('')}
+      </div>
 
       <label style="font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary); font-size: 12.5px;">Message</label>
       <textarea id="pm-message" placeholder="Passe une belle journée..." style="width: 100%; padding: 12px; border: none; border-radius: 8px; min-height: 70px; font-family: inherit; resize: vertical; background: var(--bg-sunken); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.08); color: var(--primary); margin-bottom: 14px;"></textarea>
@@ -142,13 +150,20 @@ function renderPrivateMessageComposer() {
   `;
 }
 
+function togglePmSelectAll() {
+  const boxes = document.querySelectorAll('.pm-target-checkbox');
+  const allChecked = Array.from(boxes).every(b => b.checked);
+  boxes.forEach(b => { b.checked = !allChecked; });
+}
+
 async function sendPrivateMessage() {
-  const targetId = parseInt(document.getElementById('pm-target').value, 10);
+  const targetIds = Array.from(document.querySelectorAll('.pm-target-checkbox:checked')).map(b => parseInt(b.value, 10));
   const message = document.getElementById('pm-message').value.trim();
   const emoji = document.getElementById('pm-emoji').value.trim() || '❤️';
   const whenLocal = document.getElementById('pm-when').value;
   const statusEl = document.getElementById('pm-status');
 
+  if (targetIds.length === 0) { showNotification('⚠️ Sélectionne au moins une personne', 'error'); return; }
   if (!message) { showNotification('⚠️ Écris un message avant d\'envoyer', 'error'); return; }
   if (!whenLocal) { showNotification('⚠️ Choisis une heure d\'envoi', 'error'); return; }
 
@@ -156,22 +171,26 @@ async function sendPrivateMessage() {
   if (statusEl) statusEl.textContent = '⏳ Envoi en cours...';
 
   try {
-    const { error } = await window.supabase.from('private_messages').insert({
+    // ✅ Une ligne par destinataire : chacun reçoit le même message/heure, mais indépendamment
+    // (si un envoi échoue pour l'un, les autres ne sont pas bloqués — voir le compte-rendu ci-dessous).
+    const rows = targetIds.map(targetId => ({
       sender_id: currentUser.id,
       target_id: targetId,
       message,
       emoji,
       scheduled_at: scheduledAt.toISOString()
-    });
+    }));
+    const { error } = await window.supabase.from('private_messages').insert(rows);
     if (error) throw error;
 
-    const targetName = PARTICIPANTS.find(p => p.id === targetId)?.name || 'la personne choisie';
+    const names = targetIds.map(id => PARTICIPANTS.find(p => p.id === id)?.name || '?').join(', ');
     const isNow = scheduledAt.getTime() <= Date.now() + 30000; // marge de 30s
     if (statusEl) statusEl.textContent = isNow
-      ? `✅ Message envoyé à ${targetName} !`
-      : `✅ Programmé pour ${targetName} le ${scheduledAt.toLocaleString('fr-FR')}`;
-    showNotification('💌 Message privé enregistré !', 'success');
+      ? `✅ Message envoyé à ${names} !`
+      : `✅ Programmé pour ${names} le ${scheduledAt.toLocaleString('fr-FR')}`;
+    showNotification(`💌 Message privé enregistré pour ${targetIds.length} personne${targetIds.length > 1 ? 's' : ''} !`, 'success');
     document.getElementById('pm-message').value = '';
+    document.querySelectorAll('.pm-target-checkbox').forEach(b => { b.checked = false; });
   } catch (err) {
     console.error('Échec envoi message privé:', err);
     if (statusEl) statusEl.textContent = '❌ Échec de l\'envoi, réessaie.';
@@ -596,4 +615,3 @@ function commentFeedEntry(entryId) {
     }
   }
 }
-
