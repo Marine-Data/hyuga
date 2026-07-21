@@ -261,6 +261,7 @@ async function enterMainApp() {
   checkGalleryMentions(); // ✅ Notifie si quelqu'un a mentionné l'utilisateur avec @pseudo
   checkPrivateMessages(); // ✅ Notifie si un message privé (voir profil de Marine) est arrivé
   updateConnectivityBanner(); // ✅ Signale honnêtement un fonctionnement hors-ligne/local
+  updatePushActivationBanner(); // ✅ Incite à activer le push tant que ce n'est pas fait sur cet appareil
   renderDaySelector();
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
@@ -311,6 +312,7 @@ async function enterMainApp() {
       safe(renderNotifications);
       safe(updateNotifBadge);
       safe(updateConnectivityBanner);
+      safe(updatePushActivationBanner);
       safe(renderHomeGroupSpirit);
       safe(renderSyncStatus);
       safe(refreshSecretMissionXpCache);
@@ -803,6 +805,35 @@ function updateConnectivityBanner() {
 }
 window.addEventListener('online', updateConnectivityBanner);
 window.addEventListener('offline', updateConnectivityBanner);
+
+// ✅ Rappel d'activation des push (demandé le 21/07) : la moitié du groupe n'avait
+// jamais activé les push, donc ratait tout (surprises, messages privés, récap du
+// matin...) sans même le savoir — elles ne voyaient ces infos que dans la cloche 🔔,
+// s'il leur arrivait de l'ouvrir. Ce bandeau apparaît tant que ce n'est pas activé SUR
+// CET APPAREIL, avec un bouton direct (pas besoin d'aller chercher dans le profil).
+// Rejouable par session (le ✕ le cache jusqu'à la prochaine ouverture de l'app).
+let pushBannerDismissed = false;
+function updatePushActivationBanner() {
+  const alreadyOn = localStorage.getItem('pushActivated') === 'true';
+  const supported = ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+  let banner = document.getElementById('push-activation-banner');
+
+  if (alreadyOn || !supported || pushBannerDismissed) {
+    if (banner) banner.remove();
+    return;
+  }
+  if (banner) return; // déjà affiché
+
+  banner = document.createElement('div');
+  banner.id = 'push-activation-banner';
+  banner.style.cssText = 'position: fixed; left: 12px; right: 12px; bottom: 84px; z-index: 9997; background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: #fff; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-size: 12.5px;';
+  banner.innerHTML = `
+    <div style="flex: 1;">🔔 Active les notifications pour ne rien rater du séjour (surprises, messages, récap du matin...) !</div>
+    <button onclick="activerNotificationsPush(); setTimeout(updatePushActivationBanner, 400);" style="background: #fff; color: var(--accent-gold); border: none; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; flex-shrink: 0;">Activer</button>
+    <button onclick="pushBannerDismissed = true; document.getElementById('push-activation-banner')?.remove();" style="background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 0 2px;">✕</button>
+  `;
+  document.body.appendChild(banner);
+}
 
 function saveAllData() {
   const data = {
