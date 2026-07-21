@@ -469,7 +469,7 @@ function renderAllProfiles() {
       }).join('')}
     </div>
   `;
-  loadShuttleRecap(); // ✅ 🚐 Récap des arrivées/départs de tout le monde
+  loadShuttleRecap(); // ✅ 🗺️ Récap des arrivées/départs de tout le monde
 }
 
 function showPublicProfile(userId) {
@@ -1073,7 +1073,7 @@ function updateChatUnreadDot() {
 // ============== 🧳 MON VOYAGE (arrivée / départ / billets) ==============
 // Chaque personne renseigne sur SON profil : jour, heure et lieu d'arrivée et de
 // départ (Gare de Toulon / Aéroport de Marseille / Aéroport de Hyères / Autre),
-// une note navette ("venez me chercher à..."), et peut téléverser ses billets
+// une note libre (info à partager), et peut téléverser ses billets
 // (PDF ou photo). 100% cloud-natif : lecture/écriture directes dans Supabase,
 // jamais dans saveAllData → aucun risque d'écrasement entre appareils.
 const TRAVEL_PLACES = ['Gare de Toulon', 'Aéroport de Marseille', 'Aéroport de Hyères', 'Autre'];
@@ -1093,7 +1093,7 @@ async function loadTravelSection() {
   } catch (e) { /* hors-ligne : section vide */ }
 
   // ✅ Design "Méditerranée" validé le 21/07 : bandeau mer avec vague, cartes blanches
-  // arrondies, lieux en "galets" tapables, note navette sur sable doré, bouton en
+  // arrondies, lieux en "galets" tapables, note libre sur sable doré, bouton en
   // dégradé mer (eau profonde → turquoise lagon, couleurs officielles de l'app —
   // pas d'orange/corail sur ce bouton, à la demande de Marine), frise de coquillages.
   const inputStyle = 'width: 100%; padding: 9px 10px; border: 1px solid rgba(31, 182, 201, 0.25); border-radius: 10px; background: #f2fbfa; color: var(--primary); font-size: 12.5px;';
@@ -1130,8 +1130,8 @@ async function loadTravelSection() {
       </div>
       ${placeChips(prefix, info[prefix + '_place'])}
       <div style="background: #fdf3e3; border-radius: 10px; padding: 8px 10px;">
-        <label style="${labelStyle} color: var(--accent-sand);">${prefix === 'arrival' ? '🚕 OÙ / QUAND VENIR ME CHERCHER ?' : '🚕 OÙ / QUAND ME DÉPOSER ?'}</label>
-        <input type="text" id="travel-${prefix}-note" value="${escapeHtml(info[prefix + '_note'] || '')}" placeholder="${prefix === 'arrival' ? 'Ex : avion à Marseille 18h40 puis train, récup sortie gare 22h05' : 'Ex : dépose à 13h30 devant le hall 1'}" style="width: 100%; border: none; background: transparent; color: #8a6a3b; font-size: 11.5px; padding: 2px 0;">
+        <label style="${labelStyle} color: var(--accent-sand);">${prefix === 'arrival' ? '📍 UN DÉTAIL À PARTAGER ?' : '📍 UN DÉTAIL À PARTAGER ?'}</label>
+        <input type="text" id="travel-${prefix}-note" value="${escapeHtml(info[prefix + '_note'] || '')}" placeholder="${prefix === 'arrival' ? 'Ex : avion à Marseille 18h40 puis train, arrivée gare 22h05' : 'Ex : départ prévu vers 13h30'}" style="width: 100%; border: none; background: transparent; color: #8a6a3b; font-size: 11.5px; padding: 2px 0;">
       </div>
     </div>
   `;
@@ -1140,7 +1140,7 @@ async function loadTravelSection() {
     <div style="border-radius: 22px; overflow: hidden; background: var(--bg); box-shadow: 0 10px 30px rgba(12, 47, 58, 0.14); text-align: left;">
       <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 16px 16px 0;">
         <div style="font-family: var(--font-display); font-size: 17px; font-weight: 500; color: #ffffff; letter-spacing: 0.3px;">🧳 Mon voyage</div>
-        <div style="font-size: 11.5px; color: #d7f4ef; margin-top: 2px;">Dis-nous quand et où — on s'occupe de la navette 🚕</div>
+        <div style="font-size: 11.5px; color: #d7f4ef; margin-top: 2px;">Dis-nous quand et où, pour que tout le monde sache 🐚</div>
         <div style="text-align: right; font-size: 14px; letter-spacing: 6px;">🐚⭐🐚</div>
         <svg viewBox="0 0 340 22" preserveAspectRatio="none" style="display: block; width: calc(100% + 32px); margin: 0 -16px; height: 22px;" aria-hidden="true"><path d="M0 12 Q 28 0 56 12 T 112 12 T 168 12 T 224 12 T 280 12 T 336 12 L 340 12 L 340 22 L 0 22 Z" fill="var(--bg)"/></svg>
       </div>
@@ -1268,9 +1268,9 @@ function deleteTravelTicket(ticketId) {
   });
 }
 
-// ============== 🚐 RÉCAP NAVETTES (visible par tout le monde) ==============
+// ============== 🗺️ RÉCAP ARRIVÉES/DÉPARTS (visible par tout le monde) ==============
 // En haut de "Voir les autres" : toutes les arrivées et tous les départs renseignés
-// dans les fiches "Mon voyage", triés par date puis heure, avec la note navette de
+// dans les fiches "Mon voyage", triés par date puis heure, avec la note libre de
 // chacun — LA page pour organiser les allers-retours gare/aéroports. Les personnes
 // qui n'ont encore rien renseigné sont listées en bas (pratique pour les relancer).
 async function loadShuttleRecap() {
@@ -1288,7 +1288,7 @@ async function loadShuttleRecap() {
   const placeEmoji = (p) => !p ? '' : (p.includes('Gare') ? '🚉' : (p.includes('Aéroport') ? '✈️' : '📍'));
 
   const buildLeg = (prefix) => rows
-    .filter(r => r[prefix + '_date'] || r[prefix + '_place'] || r[prefix + '_time'])
+    .filter(r => r[prefix + '_date'] || r[prefix + '_place']) // ✅ Une vraie info date/lieu à afficher (pas juste une note)
     .map(r => ({
       name: PARTICIPANTS.find(p => p.id === r.person_id)?.name || '?',
       date: r[prefix + '_date'] || '9999-12-31',
@@ -1297,6 +1297,17 @@ async function loadShuttleRecap() {
       note: r[prefix + '_note'] || ''
     }))
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+  // ✅ Personnes qui viennent/repartent par leurs propres moyens (voiture...) : une note
+  // existe mais aucune date/lieu, donc rien à organiser — à ne pas confondre avec
+  // "pas encore renseigné". Ex : Delphine en voiture, rien à signaler côté horaires.
+  const selfTransport = PARTICIPANTS.filter(p => {
+    const r = rows.find(row => row.person_id === p.id);
+    if (!r) return false;
+    const hasLogistics = r.arrival_date || r.arrival_place || r.departure_date || r.departure_place;
+    const hasNote = r.arrival_note || r.departure_note;
+    return hasNote && !hasLogistics;
+  });
 
   const legHtml = (entries) => entries.length === 0
     ? '<div style="font-size: 11px; color: var(--primary-light); padding: 4px 0;">Rien de renseigné pour le moment 🏖️</div>'
@@ -1308,25 +1319,42 @@ async function loadShuttleRecap() {
         </div>
         <div style="flex: 1; min-width: 0;">
           <div style="font-size: 12px; color: var(--primary);"><strong>${escapeHtml(e.name)}</strong>${e.place ? ` · ${placeEmoji(e.place)} ${escapeHtml(e.place.replace('Aéroport de ', ''))}` : ''}</div>
-          ${e.note ? `<div style="font-size: 10.5px; color: #8a6a3b; background: #fdf3e3; border-radius: 6px; padding: 3px 7px; margin-top: 3px;">🚕 ${escapeHtml(e.note)}</div>` : ''}
+          ${e.note ? `<div style="font-size: 10.5px; color: #8a6a3b; background: #fdf3e3; border-radius: 6px; padding: 3px 7px; margin-top: 3px;">📍 ${escapeHtml(e.note)}</div>` : ''}
         </div>
       </div>
     `).join('');
 
-  const filledIds = new Set(rows.filter(r => r.arrival_date || r.arrival_place || r.departure_date || r.departure_place).map(r => r.person_id));
+  const filledIds = new Set(rows.filter(r => r.arrival_date || r.arrival_place || r.departure_date || r.departure_place || r.arrival_note || r.departure_note).map(r => r.person_id));
   const missing = PARTICIPANTS.filter(p => !filledIds.has(p.id));
 
   box.innerHTML = `
     <div style="border-radius: 18px; overflow: hidden; background: var(--bg-raised); box-shadow: 0 6px 20px rgba(12, 47, 58, 0.12);">
       <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 12px 14px;">
-        <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🚐 Récap navettes</div>
-        <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour organiser les trajets 🐚</div>
+        <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🗺️ Récap des arrivées et départs</div>
+        <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour que tout le monde soit au courant 🐚</div>
       </div>
-      <div style="padding: 12px 14px;">
+      <div style="padding: 12px 14px 0;">
+        <div style="background: #f2fbfa; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;">
+          <div style="font-weight: 700; font-size: 12px; color: var(--sea-deep); margin-bottom: 2px;">🏡 Adresse de la maison</div>
+          <div style="font-size: 12px; color: var(--primary);">972 route du barrage, Le Revest-les-Eaux</div>
+          <a href="https://www.reseaumistral.com/" target="_blank" rel="noopener" style="display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--sea-deep); text-decoration: none;">🚌 Voir les bus (Réseau Mistral) →</a>
+        </div>
+      </div>
+      <div style="padding: 0 14px 16px;">
         <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin-bottom: 6px;">🛬 Arrivées</div>
         ${legHtml(buildLeg('arrival'))}
         <div style="font-weight: 700; font-size: 12.5px; color: var(--sea-deep); margin: 10px 0 6px;">🛫 Départs</div>
         ${legHtml(buildLeg('departure'))}
+        ${selfTransport.length > 0 ? `
+          <div style="margin-top: 8px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">🚗 Par leurs propres moyens</div>
+            ${selfTransport.map(p => {
+              const r = rows.find(row => row.person_id === p.id) || {};
+              const note = r.arrival_note || r.departure_note || '';
+              return `<div style="font-size: 11px; color: var(--primary); margin-bottom: 4px;"><strong>${escapeHtml(p.name)}</strong>${note ? ` — ${escapeHtml(note)}` : ''}</div>`;
+            }).join('')}
+          </div>
+        ` : ''}
         ${missing.length > 0 ? `
           <div style="font-size: 10.5px; color: var(--primary-light); margin-top: 10px;">✍️ Pas encore renseigné : ${missing.map(p => escapeHtml(p.name)).join(', ')} — remplissez votre fiche 🧳 sur votre profil !</div>
         ` : '<div style="font-size: 10.5px; color: var(--accent-green); margin-top: 10px; font-weight: 700;">✅ Tout le monde a renseigné son voyage !</div>'}
