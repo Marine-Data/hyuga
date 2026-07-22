@@ -453,8 +453,11 @@ async function runSpin() {
   const absentToday = DAY_ABSENCES[selectedDay] || [];
   const presentWheelPeople = PARTICIPANTS.filter(p => p.chores && !absentToday.includes(p.name));
 
+  // ✅ halfDay : une activité d'une demi-journée (la plongée du mercredi matin) ne
+  // dispense PAS des corvées de jour — on est rentrées pour le déjeuner. La règle
+  // d'exemption vise les sorties à la journée, comme le bateau du mardi.
   const available = presentWheelPeople.filter(p => !activitiesInscription.some(act => {
-    if (act.dayIdx !== selectedDay) return false;
+    if (act.dayIdx !== selectedDay || act.halfDay) return false;
     const key = `${p.id}-${act.dayIdx}-${act.actIdx}`;
     return inscriptions[key] === true;
   }));
@@ -485,7 +488,7 @@ async function runSpin() {
   const shuffleArr = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
 
   const registeredWheelPeople = presentWheelPeople.filter(p => activitiesInscription.some(act => {
-    if (act.dayIdx !== selectedDay) return false;
+    if (act.dayIdx !== selectedDay || act.halfDay) return false;
     return inscriptions[`${p.id}-${act.dayIdx}-${act.actIdx}`] === true;
   }));
 

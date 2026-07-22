@@ -30,7 +30,7 @@ function computeActivitiesInscription() {
   const result = [];
   planningData.forEach((day, dayIdx) => {
     (day.activities || []).forEach((act, actIdx) => {
-      if (act.inscription) result.push({ dayIdx, actIdx, nom: act.nom, emoji: act.emoji, jour: day.jour });
+      if (act.inscription) result.push({ dayIdx, actIdx, nom: act.nom, emoji: act.emoji, jour: day.jour, halfDay: !!act.halfDay });
     });
   });
   return result;
@@ -41,6 +41,10 @@ let activitiesInscription = computeActivitiesInscription();
 let previousTab = null;
 let currentViewingProfileId = null;
 let checklistValise = {};
+// ✅ État partagé des réservations (miroir local de la table Supabase "reservations").
+// La LISTE, elle, n'est jamais stockée : elle est recalculée depuis planningData à
+// chaque affichage — voir computeReservations().
+let reservationsDone = {};
 
 let shoppingList = [];
 let choreLog = []; // ✅ Historique des corvées accomplies : { id, personId, personName, choreName, emoji, xp, timestamp }
@@ -275,6 +279,7 @@ async function enterMainApp() {
   updatePushActivationBanner(); // ✅ Incite à activer le push tant que ce n'est pas fait sur cet appareil
   renderDaySelector();
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
+  await loadReservationsCloud(); // ✅ Réservations : qui a déjà appelé quel restaurant
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
   ensureTodaySecretMission(); // ✅ Mission secrète privée du jour
   refreshSecretMissionXpCache();
@@ -310,6 +315,7 @@ async function enterMainApp() {
     // voyaient des versions figées et différentes de l'app (le cas Marine/Mathieu).
     setInterval(async () => {
       await loadChoreAssignmentsCloud();
+      await loadReservationsCloud();
       await loadTresorFromCloud();
       await loadFromSupabaseCloud();
       await checkPrivateMessages(); // ✅ Message privé (profil de Marine) arrivé entre-temps
@@ -1319,6 +1325,7 @@ function switchTab(tab) {
   // Corvées: PAS d'appel automatique - attend le clic SPIN!
   if (tab === 'settings') renderSettings();
   if (tab === 'vie-pratique') renderViePratique();
+  if (tab === 'reservations') renderReservations();
   
   document.getElementById('backBtn').style.display = tab !== 'home' ? 'inline-block' : 'none';
   const homeBtnEl = document.getElementById('homeBtn');
@@ -1647,6 +1654,110 @@ function goToTravelRecapFromPratique() {
 // ✅ Onglet "Vie pratique" — regroupe Dépenses / Valise / Grand Tirage / Courses / Sondages
 // avec un aperçu chiffré réel sur chaque carte (montant, %, corvée du jour, nb d'articles),
 // pour ne pas avoir à ouvrir chaque outil juste pour savoir où on en est.
+// ============== RÉSERVATIONS À FAIRE ==============
+// ✅ La liste est DÉRIVÉE de planningData : toute activité portant un champ
+// "reservation" y apparaît. Aucune liste parallèle à maintenir — ajouter une
+// réservation = ajouter le champ sur l'activité du planning. Seul l'état "c'est
+// réservé, et par qui" est partagé via Supabase, pour que deux personnes
+// n'appellent pas le même restaurant.
+function computeReservations() {
+  const list = [];
+  planningData.forEach((day, dayIdx) => {
+    (day.activities || []).forEach((act, actIdx) => {
+      if (!act.reservation) return;
+      let combien = act.reservation;
+      // Activité sur inscription : le nombre de couverts suit les inscrites en direct.
+      if (act.inscription) {
+        const n = PARTICIPANTS.filter(p => inscriptions[`${p.id}-${dayIdx}-${actIdx}`] === true).length;
+        combien = n > 0 ? `${n} inscrite${n > 1 ? 's' : ''}` : 'personne inscrite pour l\'instant';
+      }
+      list.push({
+        key: `${dayIdx}-${actIdx}`, dayIdx, actIdx,
+        nom: act.nom, emoji: act.emoji || '\u{1F4CC}',
+        jour: day.jour, date: day.date, lieu: act.lieu || '', combien
+      });
+    });
+  });
+  return list.sort((a, b) => a.dayIdx - b.dayIdx || a.actIdx - b.actIdx);
+}
+
+async function loadReservationsCloud() {
+  if (!window.supabaseReady) return;
+  const rows = await window.loadFromSupabase('reservations');
+  if (!rows) return;
+  reservationsDone = {};
+  rows.forEach(r => { reservationsDone[r.id] = r; });
+  if (document.querySelector('.tab-content.active') && document.querySelector('.tab-content.active').id === 'reservations') renderReservations();
+}
+
+async function toggleReservation(key) {
+  const existing = reservationsDone[key];
+  const done = !(existing && existing.done);
+  reservationsDone[key] = {
+    id: key, done,
+    person_id: done && currentUser ? currentUser.id : null,
+    person_name: done && currentUser ? currentUser.name : null
+  };
+  renderReservations();
+  if (window.supabaseReady && window.syncToSupabase) {
+    window.syncToSupabase('reservations', {
+      id: key, done,
+      person_id: reservationsDone[key].person_id,
+      person_name: reservationsDone[key].person_name,
+      updated_at: new Date().toISOString()
+    }).catch(err => console.error('Sync réservations échouée:', err));
+  }
+  if (done) showNotification('\u{1F4DE} Réservation notée comme faite', 'success');
+}
+
+function renderReservations() {
+  const container = document.getElementById('reservations-content');
+  if (!container) return;
+  const list = computeReservations();
+  const faites = list.filter(r => reservationsDone[r.key] && reservationsDone[r.key].done).length;
+  const pct = list.length ? Math.round((faites / list.length) * 100) : 0;
+  // La prochaine échéance non réservée est mise en avant : c'est celle à appeler aujourd'hui.
+  const prochaine = list.find(r => !(reservationsDone[r.key] && reservationsDone[r.key].done));
+
+  container.innerHTML = `
+    <div class="card" style="background: linear-gradient(135deg, var(--sea-deep, #0e7a90) 0%, var(--accent-cyan, #1fb6c9) 100%); color: #fff; padding: 18px; border-radius: 16px; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font-size: 26px;">\u{1F4DE}</div>
+        <div style="flex: 1;">
+          <div class="title-serif" style="font-size: 18px; color: #fff;">Réservations</div>
+          <div style="font-size: 12px; color: #d9f4f8;">${faites} faite${faites > 1 ? 's' : ''} sur ${list.length}</div>
+        </div>
+        <div style="font-size: 20px; font-weight: 800;">${pct}%</div>
+      </div>
+      <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,0.3); overflow: hidden; margin-top: 12px;">
+        <div style="height: 100%; width: ${pct}%; background: #fff; transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      ${list.map(r => {
+        const st = reservationsDone[r.key] || {};
+        const done = !!st.done;
+        const urgent = !done && prochaine && prochaine.key === r.key;
+        const fond = done ? 'var(--bg-sunken)' : (urgent ? 'linear-gradient(135deg, #fdf3dd 0%, #fbe7bd 100%)' : 'var(--bg-raised)');
+        return `
+          <div onclick="toggleReservation('${r.key}')" style="cursor: pointer; display: flex; align-items: flex-start; gap: 11px; background: ${fond}; border-radius: 14px; padding: 13px 14px; box-shadow: 0 2px 8px rgba(12, 47, 58, 0.06); ${done ? 'opacity: 0.6;' : ''}">
+            <div style="font-size: 19px; flex-shrink: 0; line-height: 1.2;">${done ? '\u2705' : r.emoji}</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--primary); ${done ? 'text-decoration: line-through;' : ''}">${escapeHtml(r.nom)}</div>
+              <div style="font-size: 11px; color: var(--primary-soft); margin-top: 2px;">${escapeHtml(r.jour)} ${escapeHtml(r.date.replace(' 2026', ''))}${r.lieu ? ' · ' + escapeHtml(r.lieu) : ''} · ${escapeHtml(r.combien)}</div>
+              ${done && st.person_name ? `<div style="font-size: 10.5px; color: var(--accent-cyan); margin-top: 3px; font-weight: 700;">Réservé par ${escapeHtml(st.person_name)}</div>` : ''}
+              ${urgent ? `<div style="font-size: 10.5px; color: #a8730f; margin-top: 3px; font-weight: 700;">⏰ La prochaine à appeler</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="font-size: 10.5px; color: var(--primary-soft); text-align: center; margin-top: 14px; line-height: 1.5;">
+      Liste générée depuis le planning. Touche une ligne pour la cocher —<br>tout le groupe voit qui a appelé.
+    </div>
+  `;
+}
+
 function renderViePratique() {
   const container = document.getElementById('vie-pratique-cards');
   if (!container) return;
@@ -1676,6 +1787,12 @@ function renderViePratique() {
   const myChoreToday = (typeof cloudChoreAssignments !== 'undefined' ? cloudChoreAssignments : [])
     .find(r => r.day_idx === dayIdx && String(r.person_id) === String(currentUser.id));
 
+  // Réservations : dérivées du planning, état partagé via Supabase
+  const resaList = computeReservations();
+  const resaTotal = resaList.length;
+  const resaFaites = resaList.filter(r => reservationsDone[r.key] && reservationsDone[r.key].done).length;
+  const resaPct = resaTotal ? Math.round((resaFaites / resaTotal) * 100) : 0;
+
   // Courses : articles restant à acheter
   const shoppingLeft = shoppingList.filter(i => !i.done).length;
 
@@ -1704,6 +1821,11 @@ function renderViePratique() {
       tab: 'corvees', icon: '🎡', bg: 'linear-gradient(135deg,#fdeccf,#e35b2e)',
       title: 'Le Grand Tirage', detail: myChoreToday ? `Aujourd'hui : ${myChoreToday.emoji || ''} ${escapeHtml(myChoreToday.chore_name)}` : "Pas encore de tirage pour aujourd'hui",
       right: '→'
+    },
+    {
+      tab: 'reservations', icon: '📞', bg: 'linear-gradient(135deg,#dff0f2,#0e7a90)',
+      title: 'Réservations', detail: resaTotal ? `${resaFaites} faite${resaFaites > 1 ? 's' : ''} sur ${resaTotal}` : 'Rien à réserver',
+      right: resaTotal ? `${resaPct}%` : '—'
     },
     {
       tab: 'shopping', icon: '🛒', bg: 'linear-gradient(135deg,#e3ecd8,#6fe0a0)',
