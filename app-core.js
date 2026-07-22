@@ -20,11 +20,22 @@ let currentUser = PARTICIPANTS[0];
 let inscriptions = {
   // Structure: { "personId-dayIdx-actIdx": true/false }
 };
-let activitiesInscription = [
-  { dayIdx: 3, actIdx: 0, nom: "Plongée", emoji: "🤿", jour: "Lundi" },
-  { dayIdx: 4, actIdx: 0, nom: "Bateau", emoji: "⛵", jour: "Mardi" },
-  { dayIdx: 6, actIdx: 0, nom: "Via Ferrata", emoji: "🧗", jour: "Jeudi" }
-];
+// 🐛 CORRECTIF (audit 21/07) : cette liste était codée en dur, séparée de planningData —
+// exactement le même piège que celui déjà corrigé côté serveur pour le planning du
+// matin (le "train à 15h00"). Preuve qu'il avait déjà dérivé : l'activité s'appelle
+// réellement "Balade en bateau" dans planningData, mais cette liste disait juste
+// "Bateau". Désormais calculée directement depuis planningData (activités avec
+// inscription:true) — ne peut plus se désynchroniser, même si le planning change.
+function computeActivitiesInscription() {
+  const result = [];
+  planningData.forEach((day, dayIdx) => {
+    (day.activities || []).forEach((act, actIdx) => {
+      if (act.inscription) result.push({ dayIdx, actIdx, nom: act.nom, emoji: act.emoji, jour: day.jour });
+    });
+  });
+  return result;
+}
+let activitiesInscription = computeActivitiesInscription();
 
 // SESSION 4: PROFILS PERSONNELS & CHECK-LIST VALISE
 let previousTab = null;
@@ -129,7 +140,7 @@ function renderProfileSelectCarousel() {
       ${portrait(centerP, 190, 1, 0, '0 0 50px rgba(255, 203, 5, 0.5), 0 20px 40px rgba(0,0,0,0.4)')}
       <div style="margin-top: 14px; display: inline-block; background: ${centerP.c}; color: ${centerP.text}; padding: 3px 12px; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);">${centerP.label}</div>
       <div style="margin-top: 8px; font-family: var(--font-display); font-weight: 500; font-size: 15px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6);">${centerP.p.name.toUpperCase()}</div>
-      ${(['Marine', 'Mathieu'].includes(centerP.p.name) && new Date() < new Date('2026-07-18')) ? `<div style="margin-top: 4px; display: inline-block; background: rgba(239, 68, 68, 0.12); color: var(--danger); padding: 2px 10px; border-radius: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;">🧪 PROFIL TEST — jusqu'au 17/07</div>` : ''}
+      
     </div>
     <div onclick="shiftProfileCarousel(1)" style="position: absolute; right: -6px; cursor: pointer;">
       ${portrait(nextP, 68, 0.4, 2, '0 8px 20px rgba(0,0,0,0.3)')}
@@ -279,7 +290,15 @@ async function enterMainApp() {
 
   if (!autoSaveStarted) {
     autoSaveStarted = true;
-    setInterval(() => { saveAllData(); }, 30000); // ✅ Auto-save toutes les 30s
+    // 🐛 CORRECTIF (audit 21/07) : ce timer resynchronisait TOUT (saveAllData synce
+    // l'intégralité des données : défis, galerie, fil, notifications...) toutes les
+    // 30 SECONDES, sur CHAQUE téléphone ouvert, même sans la moindre action de
+    // l'utilisateur. Avec 8 personnes connectées en même temps pendant le séjour, ça
+    // fait beaucoup de requêtes inutiles. Ce timer n'est qu'un filet de sécurité —
+    // chaque action réelle (like, coche, ajout...) appelle déjà saveAllData()
+    // explicitement au moment où elle se produit. Espacé à 2 minutes : toujours un
+    // filet de sécurité efficace, 4x moins de charge.
+    setInterval(() => { saveAllData(); }, 120000);
   }
 
   if (!window.__choreCloudPollStarted) {
