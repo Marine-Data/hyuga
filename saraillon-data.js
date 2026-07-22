@@ -168,7 +168,7 @@ const planningData = [
     { nom: "Ranger l'extérieur", emoji: "🪑", horaires: "12h15", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Tables, chaises, stores, coup de balai, aspirateur dans la voiture" },
     { nom: "Fermeture de la maison", emoji: "🔒", horaires: "12h45", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Fermer tous les volets, vérifier que rien n'est oublié, débrancher les prises" },
     { nom: "Douche dehors à la piscine", emoji: "🚿", horaires: "13h00", lieu: "Piscine de Saraillon", inscription: false, repas: "", apporter: ["Vêtements pour le départ"], comments: [], notes: "" },
-    { nom: "Delphine nous dépose à la gare", emoji: "🚕", horaires: "13h45", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Delphine repart en voiture et peut déposer tout le monde pour les trains de 15h08 et 15h50." },
+    { nom: "Delphine nous dépose à la gare", emoji: "🚕", horaires: "13h30", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Delphine repart en voiture et peut déposer tout le monde pour les trains de 15h08 et 15h50." },
     { nom: "Déjeuner ensemble à la gare", emoji: "🍽️", horaires: "14h00", lieu: "Gare de Toulon", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "" },
     { nom: "Sur le quai", emoji: "🚆", horaires: "14h50", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Marine : 15h08 → Paris Gare de Lyon. Chunfei, Inès, Audrey : 15h50 → Marne-la-Vallée Chessy. Nawaëlle : 16h00 à l'aéroport de Marseille (se débrouille pour le trajet Toulon → aéroport). 🧹 Corvées : pas de tirage ce jour-là." }
   ]}
