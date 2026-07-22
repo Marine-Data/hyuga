@@ -2227,6 +2227,17 @@ function toggleNotifications() {
   renderNotifications();
 }
 
+// 🐛 CORRECTIF : openGalleryNotification/openTresorNotification/openChallengeNotification
+// appelaient toggleNotifications() sans condition — pensé pour refermer la cloche
+// quand on clique DEPUIS elle. Mais ces mêmes fonctions sont aussi utilisées par
+// "Voir →" dans le fil d'activité, où la cloche n'est pas ouverte : "basculer" l'ouvrait
+// donc à la place de la fermer. Cette fonction ne fait jamais que FERMER si déjà
+// ouverte, jamais ouvrir.
+function closeNotificationsIfOpen() {
+  const panel = document.getElementById('notifPanel');
+  if (panel && panel.classList.contains('open')) panel.classList.remove('open');
+}
+
 function renderNotifications() {
   // ✅ Groupage des ❤️ : les likes portant sur le MÊME élément (type + refId) sont
   // fusionnés en une seule ligne "❤️ 3 personnes ont aimé votre photo" — à 9
@@ -2303,7 +2314,7 @@ function markReadGroup(ids) {
 // modal des commentaires si la notif concerne un commentaire ou une mention — sinon
 // on n'aurait retrouvé que la photo, pas le commentaire lui-même.
 function openGalleryNotification(itemId, openComments = false) {
-  toggleNotifications();
+  closeNotificationsIfOpen();
   switchTab('gallery');
   if (typeof setGalleryViewMode === 'function') setGalleryViewMode('feed');
   setTimeout(() => {
@@ -2316,7 +2327,7 @@ function openGalleryNotification(itemId, openComments = false) {
 // ✅ Depuis une notification de Trésor trouvé : ouvre Défis > Trésor et défile
 // jusqu'à l'objet précis concerné.
 function openTresorNotification(itemId) {
-  toggleNotifications();
+  closeNotificationsIfOpen();
   switchTab('challenges');
   switchQuestPanel('tresor');
   setTimeout(() => {
@@ -2328,7 +2339,7 @@ function openTresorNotification(itemId) {
 // ✅ Depuis une notification de Défi relevé : ouvre Défis et déplie directement la
 // carte du défi concerné, au lieu d'atterrir sur la liste générale.
 function openChallengeNotification(challengeId) {
-  toggleNotifications();
+  closeNotificationsIfOpen();
   switchTab('challenges');
   setTimeout(() => {
     const el = document.getElementById(`ch-detail-${challengeId}`);
