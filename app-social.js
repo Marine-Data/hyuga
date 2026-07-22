@@ -859,7 +859,10 @@ async function loadChatMessages() {
       .select('*')
       .order('created_at', { ascending: true })
       .limit(300);
-    if (!error && data) chatMessages = data;
+    if (!error && data) {
+      chatMessages = data;
+      chatMessages.forEach(checkChatMentionForMessage); // ✅ Rattrape les mentions manquées hors-ligne
+    }
   } catch (e) { /* hors-ligne : on garde ce qu'on a */ }
 }
 
@@ -903,7 +906,8 @@ function renderChat() {
       }).join('');
 
     return `${sep}
-      <div style="display: flex; ${mine ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
+      <div style="display: flex; align-items: flex-end; gap: 4px; ${mine ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}">
+        ${mine ? `<button onclick="deleteChatMessage(${msg.id})" title="Supprimer" style="background: none; border: none; color: var(--primary-light); font-size: 12px; cursor: pointer; padding: 4px; flex-shrink: 0;">🗑️</button>` : ''}
         <div onclick="showChatReactionPicker(${msg.id}, this)" style="max-width: 80%; padding: 7px 11px; border-radius: ${mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px'}; font-size: 13px; line-height: 1.4; cursor: pointer; ${mine
           ? 'background: linear-gradient(135deg, var(--accent-pink) 0%, #d946a6 100%); color: white;'
           : 'background: var(--bg-sunken); color: var(--primary);'}">
@@ -988,6 +992,43 @@ async function toggleChatReaction(msgId, emoji) {
   }
 }
 
+// ✅ (audit 21/07, point 4) Suppression — le fil et la galerie l'avaient déjà, pas le
+// chat. Uniquement ses propres messages (double vérification : côté affichage ET côté
+// requête Supabase avec .eq('person_id', currentUser.id)).
+function deleteChatMessage(msgId) {
+  showConfirmation('Supprimer ce message ?', async () => {
+    try {
+      const { error } = await window.supabase.from('chat_messages').delete().eq('id', msgId).eq('person_id', currentUser.id);
+      if (error) throw error;
+      chatMessages = chatMessages.filter(m => m.id !== msgId);
+      renderChat();
+    } catch (e) {
+      console.error('Suppression message chat échouée:', e);
+      showNotification('❌ Suppression impossible', 'error');
+    }
+  });
+}
+
+// ✅ (audit 21/07, point 4) Les @mentions dans le chat ne notifiaient personne,
+// contrairement à la galerie et au fil — incohérent. Dédup via localStorage (comme
+// checkGalleryMentions/checkPrivateMessages) pour ne jamais notifier deux fois le
+// même message. alreadySeenByCaller=false : reçu passivement, pas encore "vu".
+function checkChatMentionForMessage(msg) {
+  if (!currentUser || msg.person_id === currentUser.id || !msg.text) return;
+  const mentioned = parseMentions(msg.text);
+  if (!mentioned.includes(currentUser.id)) return;
+
+  const notifiedKey = 'notifiedChatMentionIds';
+  let notifiedIds = [];
+  try { notifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]'); } catch (e) { notifiedIds = []; }
+  if (notifiedIds.includes(msg.id)) return;
+
+  const p = PARTICIPANTS.find(pp => pp.id === msg.person_id);
+  addNotification(`💬 ${p ? p.name : 'Quelqu\'un'} t'a mentionné(e) dans le chat : "${msg.text.substring(0, 40)}"`, '🔔', 'chat', false, null, false);
+  notifiedIds.push(msg.id);
+  localStorage.setItem(notifiedKey, JSON.stringify(notifiedIds));
+}
+
 function markChatRead() {
   if (chatMessages.length > 0) {
     localStorage.setItem('chatLastReadAt', chatMessages[chatMessages.length - 1].created_at);
@@ -1028,6 +1069,7 @@ function updateChatUnreadDot() {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
           if (!chatMessages.some(m => m.id === payload.new.id)) {
             chatMessages.push(payload.new);
+            checkChatMentionForMessage(payload.new); // ✅ Notifie si @mention en temps réel
             const panel = document.getElementById('chatPanel');
             if (panel && panel.classList.contains('open')) {
               renderChat();

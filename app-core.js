@@ -824,14 +824,25 @@ function updatePushActivationBanner() {
   }
   if (banner) return; // déjà affiché
 
+  // ✅ (audit 21/07, point 5) Si la personne a explicitement refusé au niveau du
+  // navigateur, cliquer "Activer" ne redemande RIEN — le navigateur bloque un nouveau
+  // prompt silencieusement, ça n'aurait donc aucun effet et serait juste frustrant.
+  // Dans ce cas précis, on l'oriente vers les réglages du téléphone à la place.
+  const denied = Notification.permission === 'denied';
+
   banner = document.createElement('div');
   banner.id = 'push-activation-banner';
   banner.style.cssText = 'position: fixed; left: 12px; right: 12px; bottom: 84px; z-index: 9997; background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: #fff; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-size: 12.5px;';
-  banner.innerHTML = `
-    <div style="flex: 1;">🔔 Active les notifications pour ne rien rater du séjour (surprises, messages, récap du matin...) !</div>
-    <button onclick="activerNotificationsPush(); setTimeout(updatePushActivationBanner, 400);" style="background: #fff; color: var(--accent-gold); border: none; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; flex-shrink: 0;">Activer</button>
-    <button onclick="pushBannerDismissed = true; document.getElementById('push-activation-banner')?.remove();" style="background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 0 2px;">✕</button>
-  `;
+  banner.innerHTML = denied
+    ? `
+      <div style="flex: 1;">🔕 Les notifications sont bloquées pour cette app. Va dans les réglages de ton téléphone (Notifications → Saraillon) pour les réactiver.</div>
+      <button onclick="pushBannerDismissed = true; document.getElementById('push-activation-banner')?.remove();" style="background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 0 2px;">✕</button>
+    `
+    : `
+      <div style="flex: 1;">🔔 Active les notifications pour ne rien rater du séjour (surprises, messages, récap du matin...) !</div>
+      <button onclick="activerNotificationsPush(); setTimeout(updatePushActivationBanner, 400);" style="background: #fff; color: var(--accent-gold); border: none; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; flex-shrink: 0;">Activer</button>
+      <button onclick="pushBannerDismissed = true; document.getElementById('push-activation-banner')?.remove();" style="background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 0 2px;">✕</button>
+    `;
   document.body.appendChild(banner);
 }
 
@@ -2087,7 +2098,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
   // dans la cloche 🔔 de l'app (avec leur badge), mais ne réveillent plus le téléphone
   // de 9 personnes à chaque ❤️ — sinon tout le monde finit par couper les notifs et
   // rate les vraies infos. Les messages privés ont leur propre canal (send-private-message).
-  const PUSH_WORTHY_TYPES = ['planning', 'corvees', 'surprises', 'tresor', 'challenge', 'inscriptions'];
+  const PUSH_WORTHY_TYPES = ['planning', 'corvees', 'surprises', 'tresor', 'challenge', 'inscriptions', 'chat'];
   if (PUSH_WORTHY_TYPES.includes(type)) sendPushNotification(msg, emoji);
 
   // ✅ Synchroniser vers Supabase pour que les autres appareils reçoivent la notification
