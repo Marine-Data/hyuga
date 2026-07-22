@@ -670,6 +670,12 @@ async function loadFromSupabaseCloud() {
         likes: item.likes || [],
         comments: mergeCommentsById((localGalleryById[item.id] || {}).comments, item.comments) // ✅ union, pas d'écrasement
       }));
+      // 🐛 CORRECTIF (même bug que le fil) : window.loadFromSupabase() ne trie jamais
+      // (select('*') sans order by) — renderGallery() fait un .reverse() en supposant
+      // que le tableau arrive du plus ancien au plus récent, ce qui n'est pas garanti.
+      // Tri explicite croissant ici pour que ce .reverse() produise vraiment le plus
+      // récent en premier.
+      galleryItems.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
     
     // Load feed
@@ -785,9 +791,10 @@ async function loadFromSupabaseCloud() {
         closesAt: p.closes_at || null,
         resultNotified: p.result_notified || false
       }));
+      // 🐛 CORRECTIF (même bug que le fil/galerie) : renderPolls() fait un .reverse()
+      // en supposant un ordre croissant, jamais garanti sans tri explicite.
+      polls.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
-
-    // Load dépenses
     const expensesData = await window.loadFromSupabase('expenses');
     if (expensesData && expensesData.length > 0) {
       console.log(`✅ Loaded ${expensesData.length} expenses from Supabase`);
@@ -799,6 +806,9 @@ async function loadFromSupabaseCloud() {
         splitAmong: e.split_among || [],
         timestamp: e.created_at || new Date()
       }));
+      // 🐛 CORRECTIF (même bug) : renderExpenses() fait un .reverse() en supposant
+      // un ordre croissant, jamais garanti sans tri explicite.
+      expenses.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
 
     console.log('✅ Données chargées depuis Supabase!');
@@ -1513,8 +1523,11 @@ function renderHome() {
   const feedContainer = document.getElementById('home-feed');
   if (!feedContainer) return;
 
-  // Récupérer les derniers mouvements du feed
-  const feedItems = feed.slice(-8).reverse();  // Derniers 8, inversés pour le plus récent d'abord
+  // 🐛 CORRECTIF : depuis que `feed` est trié décroissant (le plus récent en premier,
+  // voir loadFromSupabaseCloud), prendre les 8 premiers suffit — l'ancien
+  // `.slice(-8).reverse()` supposait un ordre croissant et aurait pris les 8 entrées
+  // les plus ANCIENNES à la place, avec ce nouveau tri.
+  const feedItems = feed.slice(0, 8);
   
   if (feedItems.length === 0) {
     feedContainer.innerHTML = '<div style="font-size: 13px; color: var(--primary-light); text-align: center; padding: 12px;">Aucune activité pour le moment</div>';
