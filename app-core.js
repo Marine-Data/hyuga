@@ -2117,7 +2117,7 @@ function markReadForCurrentUser(n) {
 // son tableau local — sans cette distinction, un message privé programmé (voir profil de
 // Marine) se serait retrouvé marqué "lu" dès son arrivée, et n'aurait jamais fait sonner le
 // badge pour son destinataire.
-function addNotification(msg, emoji = '📌', type = 'general', sync = true, refId = null, alreadySeenByCaller = true) {
+function addNotification(msg, emoji = '📌', type = 'general', sync = true, refId = null, alreadySeenByCaller = true, pushOverride = null) {
   const notif = {
     id: Date.now(),
     message: msg,
@@ -2137,8 +2137,17 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
   // dans la cloche 🔔 de l'app (avec leur badge), mais ne réveillent plus le téléphone
   // de 9 personnes à chaque ❤️ — sinon tout le monde finit par couper les notifs et
   // rate les vraies infos. Les messages privés ont leur propre canal (send-private-message).
+  // 🐛 CORRECTIF (22/07) : ce filtre ne gouvernait QUE la notification locale du
+  // navigateur. Le vrai push multi-appareils partait d'un trigger Postgres qui, lui,
+  // ne regardait que le type — et 'challenge' couvre aussi bien "défi relevé" (à
+  // pousser) qu'un simple ❤️ ou 💬 sur un défi (à ne pas pousser). Résultat : les
+  // likes et commentaires réveillaient quand même tout le monde. La décision est
+  // maintenant prise ICI une seule fois, puis transmise à Supabase dans la colonne
+  // "push" que le trigger est désormais seul à consulter — les deux ne peuvent plus
+  // diverger. pushOverride = false permet à un appelant de se taire explicitement.
   const PUSH_WORTHY_TYPES = ['planning', 'corvees', 'surprises', 'tresor', 'challenge', 'inscriptions', 'chat'];
-  if (PUSH_WORTHY_TYPES.includes(type)) sendPushNotification(msg, emoji);
+  const shouldPush = (pushOverride === null) ? PUSH_WORTHY_TYPES.includes(type) : !!pushOverride;
+  if (shouldPush) sendPushNotification(msg, emoji);
 
   // ✅ Synchroniser vers Supabase pour que les autres appareils reçoivent la notification
   // (sauf les notifications personnalisées comme "vous a mentionné", qui n'ont de sens que localement)
@@ -2150,6 +2159,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
       type: notif.type,
       ref_id: refId,
       author_id: currentUser ? currentUser.id : null,
+      push: shouldPush,
       // 🐛 CORRECTIF : jamais envoyée jusqu'ici — sans cette date explicite, une
       // notification affichait "maintenant" à chaque rechargement (25s, autre
       // téléphone...) au lieu de sa vraie date/heure d'origine.

@@ -346,7 +346,7 @@ function duplicateChallenge(id) {
   challenges.unshift(copy);
   saveAllData();
   renderChallenges();
-  addNotification(`📋 ${ch.isQuest ? (ch.questLabel || 'Quête') : 'Challenge de ' + ch.creator} dupliqué`, '📋', 'challenge');
+  addNotification(`📋 ${ch.isQuest ? (ch.questLabel || 'Quête') : 'Challenge de ' + ch.creator} dupliqué`, '📋', 'challenge', true, null, true, false);
   showNotification('📋 Challenge dupliqué !', 'success');
 }
 
@@ -373,7 +373,7 @@ function createChallenge() {
         ch.creator = creator.toUpperCase();
         ch.description = desc;
         if (media) ch.media = media;
-        addNotification(`✏️ Challenge de ${ch.creator} modifié`, '✏️', 'challenge');
+        addNotification(`✏️ Challenge de ${ch.creator} modifié`, '✏️', 'challenge', true, null, true, false);
       }
       currentEditChallenge = null;
     } else {
@@ -429,7 +429,7 @@ async function likeCh(id) {
       ch.likes.splice(idx, 1);
     } else {
       ch.likes.push(currentUser.id);
-      addNotification(`❤️ ${currentUser.name} a aimé le challenge de ${ch.creator}`, '❤️', 'challenge');
+      addNotification(`❤️ ${currentUser.name} a aimé le challenge de ${ch.creator}`, '❤️', 'challenge', true, null, true, false);
       addFeedEntry(`a aimé le challenge de ${ch.creator}`, '❤️', 'challenge', ch.id);
     }
     saveAllData();
@@ -452,7 +452,7 @@ function addChallengeComment(id) {
       saveAllData();
       input.value = '';
       renderChallenges();
-      addNotification(`💬 ${currentUser.name} a commenté le challenge de ${ch.creator}`, '💬', 'challenge');
+      addNotification(`💬 ${currentUser.name} a commenté le challenge de ${ch.creator}`, '💬', 'challenge', true, null, true, false);
       addFeedEntry(`a commenté le challenge de ${ch.creator}: "${commentText.substring(0, 40)}"`, '💬', 'challenge', ch.id);
     }
   }

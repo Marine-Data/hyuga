@@ -4,7 +4,7 @@
 // 1) MÉTÉO DU JOUR
 // ---------------------------------------------------------------
 // 🔧 Coordonnées de la maison — à ajuster si besoin (actuellement Toulon/Var,
-// zone du séjour d'après les activités du planning : Mont Faron, Le Mourillon...)
+// zone du séjour d'après les activités du planning : Le Revest, Le Mourillon, Hyères...)
 const WEATHER_LOCATION = { lat: 43.1242, lon: 5.9280, label: 'Toulon' };
 
 function weatherCodeToInfo(code) {

@@ -43,7 +43,7 @@ function closePlanningDay() {
 }
 
 // ✅ Correspondance jour → photo d'activité (uploadées dans Réglages)
-const DAY_PHOTO_MAP = ['gare', 'avion', 'surprise', 'plongee', 'bateau', 'paddle', 'viaferrata', 'concert', 'piscine'];
+const DAY_PHOTO_MAP = ['gare', 'avion', 'magaud', 'surprise', 'bateau', 'paddle', 'concert', 'almanarre', 'piscine'];
 
 function renderPlanningDayDetail(dayIdx) {
   const day = planningData[dayIdx];
@@ -316,7 +316,7 @@ function exportPlanning() {
   link.href = URL.createObjectURL(blob);
   link.download = 'saraillon-planning.csv';
   link.click();
-  addNotification('✅ Planning exporté', '✅', 'planning');
+  addNotification('✅ Planning exporté', '✅', 'planning', true, null, true, false);
 }
 
 // ============== CORVEES ==============
@@ -351,6 +351,14 @@ function selectDay(idx) {
     .sort((a, b) => CHRONO_ORDER.indexOf(a.chore.name) - CHRONO_ORDER.indexOf(b.chore.name));
   renderChoresDisplay();
   updateSpinBtnLockState();
+
+  // ✅ La légende sous le bouton explique les journées sans tirage.
+  const caption = document.getElementById('spin-caption');
+  if (caption) {
+    caption.textContent = NO_DRAW_DAYS[selectedDay]
+      ? `Pas de corvées ce jour-là : ${NO_DRAW_DAYS[selectedDay]}`
+      : 'Touche pour lancer le tirage';
+  }
 }
 
 // ✅ Garde-fou : une seule ligne par personne et par jour (la plus récente). Protège
@@ -372,13 +380,24 @@ function dedupeChoreRows(rows) {
 function updateSpinBtnLockState() {
   const btn = document.getElementById('spin-btn');
   if (!btn) return;
+  // ✅ Certaines journées n'ont pas de tirage du tout (arrivée à 1h du matin, journée
+  // entière à Marseille, jour du départ) — le bouton est verrouillé et dit pourquoi.
+  if (NO_DRAW_DAYS[selectedDay]) {
+    btn.innerHTML = '🌙 Pas de tirage';
+    btn.style.opacity = '0.55';
+    btn.style.cursor = 'not-allowed';
+    return;
+  }
+
   const alreadyDrawn = cloudChoreAssignments.some(r => r.day_idx === selectedDay);
   if (alreadyDrawn) {
-    btn.textContent = '🔒 Déjà tiré';
+    btn.innerHTML = '🔒 Déjà tiré';
     btn.style.opacity = '0.55';
     btn.style.cursor = 'not-allowed';
   } else {
-    btn.textContent = '🎡 SPIN!';
+    // 🐛 CORRECTIF : l'ancien code écrivait "🎡 SPIN!" et écrasait le libellé "TIRER !"
+    // avec son dé animé. Le bouton retrouve maintenant son état d'origine.
+    btn.innerHTML = '<span class="dice">🎲</span>TIRER !';
     btn.style.opacity = '1';
     btn.style.cursor = 'pointer';
   }
@@ -387,6 +406,13 @@ function updateSpinBtnLockState() {
 function spinRoulette() {
   const btn = document.getElementById('spin-btn');
   if (btn.disabled) return;
+
+  // ✅ Journées sans tirage prévu au planning : on explique au lieu de tirer dans le vide.
+  const noDrawReason = NO_DRAW_DAYS[selectedDay];
+  if (noDrawReason) {
+    showNotification(`🌙 Pas de corvées ce jour-là — ${noDrawReason}.`, 'error');
+    return;
+  }
 
   // ✅ Un jour déjà tiré est verrouillé pour de bon : impossible de le retirer et donc
   // d'écraser le résultat existant. On peut toujours tourner la roue pour un autre jour
@@ -420,7 +446,13 @@ async function runSpin() {
   }
   cloudChoreAssignments = cloudChoreAssignments.filter(r => r.day_idx !== selectedDay);
 
-  const available = PARTICIPANTS.filter(p => p.chores && !activitiesInscription.some(act => {
+  // ✅ Les personnes pas encore arrivées ou déjà reparties ce jour-là sortent de la
+  // roue. Sans ça, rien n'empêchait de tirer "Préparer dîner" pour Mathilde le 29
+  // alors qu'elle avait pris son train la veille à 9h50.
+  const absentToday = DAY_ABSENCES[selectedDay] || [];
+  const presentWheelPeople = PARTICIPANTS.filter(p => p.chores && !absentToday.includes(p.name));
+
+  const available = presentWheelPeople.filter(p => !activitiesInscription.some(act => {
     if (act.dayIdx !== selectedDay) return false;
     const key = `${p.id}-${act.dayIdx}-${act.actIdx}`;
     return inscriptions[key] === true;
@@ -430,8 +462,7 @@ async function runSpin() {
     // ✅ Même si toutes les personnes de la roue sont inscrites à l'activité, les
     // corvées du SOIR restent tirables (elles seront rentrées) — on ne s'arrête ici
     // que s'il n'y a vraiment personne d'éligible du tout ce jour-là.
-    const anyWheelPeople = PARTICIPANTS.some(p => p.chores);
-    if (!anyWheelPeople) {
+    if (presentWheelPeople.length === 0) {
       document.getElementById('chores-display').innerHTML = '<div style="text-align: center; color: var(--primary-light); padding: 40px 20px;"><p style="margin: 0; font-size: 14px;">🎉 Personne d\'éligible !</p></div>';
       btn.disabled = false;
       return;
@@ -446,13 +477,13 @@ async function runSpin() {
   // 2) Quand il manque du monde, ce ne sont plus des corvées AU HASARD qui sautent :
   //    les vitales (courses, déjeuner, dîner) sont attribuées d'abord, et les corvées
   //    de confort (aspirateur en premier) sautent en dernier recours — fini le risque
-  //    qu'un dîner saute silencieusement un soir de plongée.
+  //    qu'un dîner saute silencieusement un soir de sortie en bateau.
   // Invariant conservé : une seule corvée par personne.
   const EVENING_CHORE_NAMES = ['Préparer dîner', 'Sortir poubelles soir'];
   const CHORE_PRIORITY = ['Faire courses', 'Préparer déjeuner', 'Préparer dîner', 'Rentrer poubelles matin', 'Sortir poubelles soir', 'Passer aspirateur'];
   const shuffleArr = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
 
-  const registeredWheelPeople = PARTICIPANTS.filter(p => p.chores && activitiesInscription.some(act => {
+  const registeredWheelPeople = presentWheelPeople.filter(p => activitiesInscription.some(act => {
     if (act.dayIdx !== selectedDay) return false;
     return inscriptions[`${p.id}-${act.dayIdx}-${act.actIdx}`] === true;
   }));

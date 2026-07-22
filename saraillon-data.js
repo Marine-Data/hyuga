@@ -128,7 +128,7 @@ const planningData = [
   { jour: "Lundi", date: "24 août 2026", activities: [
     { nom: "Surprises", emoji: "💎", horaires: "10h30 – 17h30", lieu: "Saraillon", inscription: false, repas: "", apporter: ["Son âme d'enfant 🧒"], comments: [], notes: "Premier jour avec tout le monde ! Réparties en 2 équipes. Vous n'êtes pas prêtes !" },
     { nom: "Pizzas du Colombier", emoji: "🍕", horaires: "Midi", lieu: "Saraillon", inscription: false, repas: "Déjeuner", apporter: [], comments: [], notes: "📞 À commander." },
-    { nom: "Restaurant La Ferme des Olivades", emoji: "🫒", horaires: "Soir", lieu: "Ollioules", inscription: false, repas: "Dîner", apporter: ["Tenue de soirée"], comments: [], notes: "Le restaurant de Marco. 📞 À réserver pour 9 personnes. 🧹 Corvées : à tirer." }
+    { nom: "Restaurant La Ferme des Olivades", emoji: "🫒", horaires: "Soir", lieu: "Ollioules", inscription: false, repas: "Dîner", apporter: ["Tenue de soirée"], comments: [], notes: "Le restaurant de Marco. 📞 À réserver pour 8 personnes. 🧹 Corvées : à tirer." }
   ]},
   { jour: "Mardi", date: "25 août 2026", activities: [
     { nom: "Balade en bateau", emoji: "⛵", horaires: "Journée", lieu: "Îles du Levant ou Porquerolles", inscription: true, repas: "Pique-nique partagé", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil", "Chapeau / casquette", "Coupe-vent léger", "Anti-mal de mer", "Masque, tuba et palmes", "Pique-nique à partager", "Boissons", "Une bouteille de champagne 🍾"], comments: [], notes: "📞 À réserver. Prévoir le pique-nique et les boissons du bateau, le matériel de snorkeling et les médicaments contre le mal de mer. Inscrites : Mathilde, Nawaëlle, Marine, Delphine." },
@@ -172,6 +172,31 @@ const planningData = [
     { nom: "Sur le quai", emoji: "🚆", horaires: "14h50", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Marine : 15h08 → Paris Gare de Lyon. Chunfei, Inès, Audrey : 15h50 → Marne-la-Vallée Chessy. Nawaëlle : 16h00 à l'aéroport de Marseille (se débrouille pour le trajet Toulon → aéroport). 🧹 Corvées : pas de tirage ce jour-là." }
   ]}
 ];
+
+// ---- Règles de tirage des corvées, jour par jour ----
+// ⚠️ Index alignés sur planningData (0 = vendredi 21/08 … 9 = dimanche 30/08).
+//
+// NO_DRAW_DAYS : journées où il n'y a pas de tirage du tout (arrivée à 1h du matin,
+// journée entière hors de la maison, jour du départ). La roue est verrouillée ces
+// jours-là et affiche la raison, plutôt que de laisser tirer des corvées fantômes.
+//
+// DAY_ABSENCES : personnes pas encore arrivées ou déjà reparties ce jour-là. Elles
+// sortent de la roue même si elles ont chores: true — avant, rien n'empêchait de
+// tirer une corvée pour Mathilde le 29 alors qu'elle était partie la veille.
+const NO_DRAW_DAYS = {
+  0: "on rentre à 1h du matin",
+  1: "journée entière à Marseille",
+  9: "jour du départ, la checklist remplace le tirage"
+};
+
+const DAY_ABSENCES = {
+  0: ["Nawaelle", "Sonia", "Mathilde"], // Nawaëlle arrive le 22 au matin, Sonia et Mathilde le 23 au soir
+  1: ["Sonia", "Mathilde"],
+  2: ["Sonia", "Mathilde"],             // elles arrivent à 22h10, après le tirage
+  7: ["Sonia", "Mathilde"],             // reparties le 28 au matin
+  8: ["Sonia", "Mathilde"],
+  9: ["Sonia", "Mathilde"]
+};
 
 // ---- Avatars par défaut (photos de profil) ----
 let personalsData = {
