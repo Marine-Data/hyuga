@@ -11,7 +11,7 @@ const PARTICIPANTS = [
   { id: 2, name: "Chunfei", pseudo: "", bio: "Intense et franche, n'a pas la langue dans sa poche. Danseuse professionnelle et comédienne diplômée du Cours Florent 🎭", avatar: null, email: "chunfei@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 3, name: "Mathilde", pseudo: "", bio: "Aventurière de l'extrême ⛵ navigatrice et exploratrice, féministe et bosseuse incroyable 💪", avatar: null, email: "mathilde@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
   { id: 4, name: "Nawaelle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
-  { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: false },
+  { id: 5, name: "Sonia", pseudo: "", bio: "Entrepreneuse et sportive 🏋️‍♀️ mille carrières : coach sportive, armée, marché, investissement immobilier", avatar: null, email: "sonia@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 6, name: "Inès", pseudo: "", bio: "Pétillante et attachante, toujours partante pour un cocktail 🍹 drôle, curieuse des autres, voit toujours le verre à moitié plein", avatar: null, email: "ines@email.com", phone: "06 XX XX XX", regimes: "Sans porc", chores: true },
   { id: 8, name: "Marine", pseudo: "", bio: "", avatar: null, email: "marine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: false },
   { id: 9, name: "Audrey", pseudo: "", bio: "Une amie en or 🪙 toujours prête à rendre service, drôle, un style vestimentaire qui détrône tout le monde. Danse comme une queen et chante tous les styles, partante pour toute nouvelle aventure 👩‍🎤", avatar: null, email: "audrey@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true }
@@ -156,7 +156,8 @@ const planningData = [
     { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine de Saraillon", inscription: false, repas: "Petit-déj + Déjeuner", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil"], comments: [], notes: "" },
     { nom: "Mariage et baptême à la mairie", emoji: "💍", horaires: "À confirmer", lieu: "Mairie du Revest-les-Eaux", inscription: false, repas: "", apporter: ["Tenue habillée"], comments: [], notes: "Pour Marine. ⏰ Horaires à vérifier." },
     { nom: "Après-midi plage", emoji: "🏖️", horaires: "Après-midi", lieu: "Plage", inscription: false, repas: "", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Livre / enceinte"], comments: [], notes: "" },
-    { nom: "Cocktail de mariage d'Hélène", emoji: "🥂", horaires: "Soirée", lieu: "Piscine de Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Réception à la piscine. ❓ À trouver : une soirée pour nous ailleurs, pour ne pas gêner les invités d'Hélène. 🧹 Corvées : à tirer sans Sonia ni Mathilde." }
+    { nom: "Cocktail de mariage d'Hélène", emoji: "🥂", horaires: "Soirée", lieu: "Piscine de Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "Réception à la piscine — on laisse la place aux invités d'Hélène et on file dîner au Mourillon." },
+    { nom: "Dîner au restaurant au Mourillon", emoji: "🍽️", horaires: "Soir", lieu: "Le Mourillon", inscription: false, repas: "Dîner", apporter: ["Tenue de soirée", "Cash / carte"], comments: [], notes: "Notre soirée à nous, hors de la maison. 📞 À réserver pour 6 personnes (Sonia et Mathilde sont reparties la veille). 🧹 Corvées : à tirer sans Sonia ni Mathilde." }
   ]},
   { jour: "Dimanche", date: "30 août 2026", activities: [
     { nom: "Laver les draps et les étendre", emoji: "🧺", horaires: "09h00", lieu: "Saraillon", inscription: false, repas: "", apporter: [], comments: [], notes: "" },
@@ -183,6 +184,17 @@ const planningData = [
 // DAY_ABSENCES : personnes pas encore arrivées ou déjà reparties ce jour-là. Elles
 // sortent de la roue même si elles ont chores: true — avant, rien n'empêchait de
 // tirer une corvée pour Mathilde le 29 alors qu'elle était partie la veille.
+// DAY_SKIPPED_CHORES : les jours où un repas est pris dehors, la corvée correspondante
+// n'a plus lieu d'être. Elle est retirée du pool AVANT le tirage — donc elle n'apparaît
+// pas non plus dans l'alerte "pas assez de monde", qui reste réservée aux vrais manques.
+const DAY_SKIPPED_CHORES = {
+  2: { chores: ["Préparer dîner"], reason: "dîner au restaurant à l'Anse Magaud" },
+  3: { chores: ["Préparer déjeuner", "Préparer dîner"], reason: "pizzas du Colombier à midi, Olivades le soir" },
+  6: { chores: ["Préparer dîner"], reason: "dîner au Colombier après la visite du village" },
+  7: { chores: ["Préparer dîner"], reason: "restaurant à Hyères" },
+  8: { chores: ["Préparer dîner"], reason: "dîner au restaurant au Mourillon" }
+};
+
 const NO_DRAW_DAYS = {
   0: "on rentre à 1h du matin",
   1: "journée entière à Marseille",

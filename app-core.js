@@ -2135,7 +2135,7 @@ function addNotification(msg, emoji = '📌', type = 'general', sync = true, ref
   // ✅ (audit anti-fatigue) Push système SEULEMENT pour l'important : planning, corvées,
   // surprises, trésor, défis relevés. Les likes/commentaires/activité du fil restent
   // dans la cloche 🔔 de l'app (avec leur badge), mais ne réveillent plus le téléphone
-  // de 9 personnes à chaque ❤️ — sinon tout le monde finit par couper les notifs et
+  // de 8 personnes à chaque ❤️ — sinon tout le monde finit par couper les notifs et
   // rate les vraies infos. Les messages privés ont leur propre canal (send-private-message).
   // 🐛 CORRECTIF (22/07) : ce filtre ne gouvernait QUE la notification locale du
   // navigateur. Le vrai push multi-appareils partait d'un trigger Postgres qui, lui,

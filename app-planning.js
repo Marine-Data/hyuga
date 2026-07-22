@@ -355,9 +355,10 @@ function selectDay(idx) {
   // ✅ La légende sous le bouton explique les journées sans tirage.
   const caption = document.getElementById('spin-caption');
   if (caption) {
+    const skipped = DAY_SKIPPED_CHORES[selectedDay];
     caption.textContent = NO_DRAW_DAYS[selectedDay]
       ? `Pas de corvées ce jour-là : ${NO_DRAW_DAYS[selectedDay]}`
-      : 'Touche pour lancer le tirage';
+      : (skipped ? `🍽️ ${skipped.reason} — rien à cuisiner` : 'Touche pour lancer le tirage');
   }
 }
 
@@ -491,7 +492,13 @@ async function runSpin() {
   const dayPool = shuffleArr(available.slice());            // non-inscrites : corvées de jour
   const eveningPool = shuffleArr(registeredWheelPeople.slice()); // inscrites : corvées du soir en priorité
 
-  const sortedChores = CHORES.slice().sort((a, b) => CHORE_PRIORITY.indexOf(a.name) - CHORE_PRIORITY.indexOf(b.name));
+  // ✅ Repas pris dehors : la corvée correspondante sort du pool avant même le tirage.
+  // Elle n'est donc pas comptée comme "non attribuée faute de monde" — elle n'existe
+  // simplement pas ce jour-là.
+  const skippedToday = (DAY_SKIPPED_CHORES[selectedDay] || {}).chores || [];
+  const sortedChores = CHORES
+    .filter(c => !skippedToday.includes(c.name))
+    .sort((a, b) => CHORE_PRIORITY.indexOf(a.name) - CHORE_PRIORITY.indexOf(b.name));
 
   currentChoreAssignments = [];
   const droppedChores = [];
