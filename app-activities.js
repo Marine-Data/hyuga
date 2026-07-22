@@ -62,6 +62,17 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
   if (inscriptions[key] === true) {
     // Désinscrire
     delete inscriptions[key];
+    // 🐛 CORRECTIF (22/07) : la désinscription n'était QUE locale. saveAllData()
+    // ne pousse vers Supabase que les clés à true et ne supprime jamais rien — la ligne
+    // restait donc en base, et le prochain téléphone qui rechargeait la réinscrivait
+    // partout. C'est arrivé pour de vrai : Inès s'est désinscrite de la plongée le
+    // 18/07, et son inscription est réapparue. On supprime maintenant la ligne en base.
+    if (window.supabaseReady && window.supabase) {
+      window.supabase.from('inscriptions')
+        .delete()
+        .match({ person_id: personId, day_idx: dayIdx, act_idx: actIdx })
+        .then(({ error }) => { if (error) console.error('Suppression inscription échouée:', error); });
+    }
     addNotification(`❌ ${person.name} désinscrite de ${activity.nom}`, '❌', 'inscriptions');
     addFeedEntry(`s'est désinscrite de ${activity.nom}`, '❌', 'planning', `${dayIdx}:${actIdx}`);
   } else {
