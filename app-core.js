@@ -680,6 +680,13 @@ async function loadFromSupabaseCloud() {
           manual: parsedData.manual || false // ✅ Distingue publication volontaire / activité auto (filtre du fil)
         };
       });
+      // 🐛 CORRECTIF : window.loadFromSupabase() fait un select('*') SANS order by —
+      // Postgres ne garantit aucun ordre de retour. Tant que le fil restait local
+      // (ajout via unshift, donc récent en premier), l'ordre semblait bon ; mais
+      // chaque rechargement cloud (toutes les 25s) remplaçait le tableau dans un ordre
+      // non garanti, mélangeant le fil. Tri explicite ici, décroissant (le plus récent
+      // en premier), pour ne plus jamais dépendre de l'ordre de retour de la base.
+      feed.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
     
     // Load checklist valise
