@@ -1329,16 +1329,29 @@ async function loadShuttleRecap() {
   const fmtDay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
   const placeEmoji = (p) => !p ? '' : (p.includes('Gare') ? '🚉' : (p.includes('Aéroport') ? '✈️' : '📍'));
 
-  const buildLeg = (prefix) => rows
-    .filter(r => r[prefix + '_date'] || r[prefix + '_place']) // ✅ Une vraie info date/lieu à afficher (pas juste une note)
-    .map(r => ({
-      name: PARTICIPANTS.find(p => p.id === r.person_id)?.name || '?',
-      date: r[prefix + '_date'] || '9999-12-31',
-      time: r[prefix + '_time'] || '99:99',
-      place: r[prefix + '_place'] || '',
-      note: r[prefix + '_note'] || ''
-    }))
-    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  // 🐛 CORRECTIF (21/07) : avant, chaque personne avait sa propre carte même quand
+  // plusieurs voyageaient ensemble (même train, même horaire) — Chunfei/Inès/Audrey
+  // s'affichaient sur 3 lignes identiques au lieu d'une seule avec les 3 noms. On
+  // regroupe maintenant par (date, heure, lieu, note) : les données étaient déjà
+  // identiques pour elles, seul l'affichage ne fusionnait jamais.
+  const buildLeg = (prefix) => {
+    const groups = {};
+    rows
+      .filter(r => r[prefix + '_date'] || r[prefix + '_place'])
+      .forEach(r => {
+        const date = r[prefix + '_date'] || '9999-12-31';
+        const time = r[prefix + '_time'] || '99:99';
+        const place = r[prefix + '_place'] || '';
+        const note = r[prefix + '_note'] || '';
+        const key = `${date}|${time}|${place}|${note}`;
+        if (!groups[key]) groups[key] = { names: [], date, time, place, note };
+        const name = PARTICIPANTS.find(p => p.id === r.person_id)?.name;
+        if (name) groups[key].names.push(name);
+      });
+    return Object.values(groups)
+      .filter(g => g.names.length > 0)
+      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  };
 
   // ✅ Personnes qui viennent/repartent par leurs propres moyens (voiture...) : une note
   // existe mais aucune date/lieu, donc rien à organiser — à ne pas confondre avec
@@ -1360,7 +1373,7 @@ async function loadShuttleRecap() {
           <div style="font-size: 12.5px; font-weight: 700; color: var(--primary);">${e.time !== '99:99' ? e.time : '—'}</div>
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 12px; color: var(--primary);"><strong>${escapeHtml(e.name)}</strong>${e.place ? ` · ${placeEmoji(e.place)} ${escapeHtml(e.place.replace('Aéroport de ', ''))}` : ''}</div>
+          <div style="font-size: 12px; color: var(--primary);"><strong>${e.names.map(escapeHtml).join(', ')}</strong>${e.place ? ` · ${placeEmoji(e.place)} ${escapeHtml(e.place.replace('Aéroport de ', ''))}` : ''}</div>
           ${e.note ? `<div style="font-size: 10.5px; color: #8a6a3b; background: #fdf3e3; border-radius: 6px; padding: 3px 7px; margin-top: 3px;">📍 ${escapeHtml(e.note)}</div>` : ''}
         </div>
       </div>
