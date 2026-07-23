@@ -202,10 +202,9 @@ function renderChallenges() {
           <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" style="border: none; background: none; color: rgba(74,44,0,0.5); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
         </div>`
       : `
-        <label class="jeu-btn btn-go" style="position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 16px 0; border-radius: 13px; cursor: pointer; box-sizing: border-box; overflow: hidden; background: linear-gradient(180deg, #d6f4fd 0%, #9fe4f4 52%, #6dd2e8 100%); --ombre-btn: #3ba3bc;">
-          <span style="position: absolute; inset: 0; border-radius: 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -2px 0 rgba(20,105,124,.28);"></span>
-          <span style="position: relative; font-size: 13px; color: #0a4655;">▶</span>
-          <span class="jeu-arcade" style="position: relative; font-size: 13px; color: #0a4655; letter-spacing: 2.4px;">Go</span>
+        <label class="btn-go" style="position: relative; display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 15px 0; cursor: pointer; box-sizing: border-box;">
+          <span style="position: relative; font-size: 11px; color: #f4b942;">▶</span>
+          <span class="jeu-arcade" style="position: relative; font-size: 12px; color: #f4b942; letter-spacing: 3px;">Go</span>
           <input type="file" accept="image/*,video/*" style="display: none;" onchange="event.stopPropagation(); submitChallengeProof(${ch.id}, this)">
         </label>`}
 
