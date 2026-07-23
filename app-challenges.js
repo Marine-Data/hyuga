@@ -40,7 +40,7 @@ function avatarDefi(personne, taille, bordure) {
   // Certaines ont un emoji en guise d'avatar plutôt qu'une photo.
   const contenu = (photo && typeof photo === 'string' && !photo.startsWith('data:') && photo.length <= 4)
     ? photo : escapeHtml(personne.name.charAt(0));
-  return `<div style="${base} background: ${couleurParticipante(personne.name)}; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: ${Math.round(taille * 0.42)}px;">${contenu}</div>`;
+  return `<div style="${base} background: ${couleurParticipante(personne.name)}; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: ${Math.round(taille * 0.42)}px;">${contenu}</div>`;
 }
 
 // ✅ Bandeau de score — rendu à part car il vit AU-DESSUS des sous-onglets
@@ -65,8 +65,7 @@ function renderChallengesScore() {
   else phrase = 'lance-toi, tout est à gagner';
 
   el.innerHTML = `
-    <div onclick="toggleClassementDefis()" style="cursor: pointer; position: relative; border-radius: 26px; background: linear-gradient(160deg, #0e7a90, #1fb6c9); box-shadow: 0 6px 0 #06323d; padding: 20px; overflow: hidden; margin-bottom: ${classementDeplie ? '10px' : '18px'};">
-      <div style="position: absolute; top: -36px; right: -36px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.08);"></div>
+    <div onclick="toggleClassementDefis()" class="jeu-cadre" style="cursor: pointer; position: relative; border-radius: 8px; border: 1px solid rgba(244,185,66,.35); background: linear-gradient(165deg, rgba(14,122,144,.55), rgba(3,24,30,.85)); padding: 20px; overflow: hidden; margin-bottom: ${classementDeplie ? '10px' : '18px'};">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
         <span class="jeu-arcade" style="color: rgba(255,253,247,.72); font-size: 10px;">Ton score</span>
         <div style="text-align: right;">
@@ -75,11 +74,11 @@ function renderChallengesScore() {
         </div>
       </div>
       <div class="jeu-hero" style="color: #fffdf7; font-size: 52px; line-height: 1; margin: 10px 0 14px; position: relative;">${monXp}<span class="jeu-arcade" style="font-size: 14px; color: #f4b942; letter-spacing: 1px; margin-left: 4px;">XP</span></div>
-      <div style="height: 18px; border-radius: 9px; background: rgba(0,0,0,0.24); overflow: hidden; position: relative;">
-        <div style="height: 100%; width: ${pct}%; border-radius: 9px; background: linear-gradient(90deg, #f4b942, #ffe08a);"></div>
+      <div style="height: 7px; border-radius: 4px; background: rgba(255,253,247,0.1); overflow: hidden; position: relative;">
+        <div style="height: 100%; width: ${pct}%; border-radius: 4px; background: #1fb6c9;"></div>
       </div>
-      <div style="color: #fffdf7; font-size: 13px; font-weight: 600; margin-top: 10px; position: relative;">${releves} défi${releves > 1 ? 's' : ''} relevé${releves > 1 ? 's' : ''} sur ${challenges.length} · ${phrase}</div>
-      <div style="text-align: center; color: rgba(255,253,247,0.65); font-size: 17px; margin-top: 6px; position: relative; line-height: 1;">${classementDeplie ? '▴' : '▾'}</div>
+      <div class="jeu-texte" style="color: rgba(232,246,250,.72); font-size: 12.5px; margin-top: 9px; position: relative;">${releves}/${challenges.length} complétés · ${phrase}</div>
+      <div style="text-align: center; color: rgba(232,246,250,0.4); font-size: 15px; margin-top: 8px; position: relative; line-height: 1;">${classementDeplie ? '▴' : '▾'}</div>
     </div>
     <div id="classement-content" style="display: ${classementDeplie ? 'block' : 'none'}; margin-bottom: 18px;"></div>
   `;
@@ -96,8 +95,8 @@ function renderChallenges() {
   if (challenges.length === 0) {
     zone.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: rgba(255,253,247,0.75);">
       <div style="font-size: 40px; margin-bottom: 12px;">🎯</div>
-      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 17px; color: #fffdf7;">Aucun défi pour l'instant</div>
-      <div style="font-size: 13px; margin-top: 6px;">Lance le premier avec le bouton « Créer ».</div>
+      <div class="jeu-titre" style="font-size: 17px; color: #fffdf7;">Aucun défi disponible</div>
+      <div class="jeu-texte" style="font-size: 13px; margin-top: 6px;">Lance le premier avec le bouton « + ».</div>
     </div>`;
     return;
   }
@@ -119,10 +118,8 @@ function renderChallenges() {
     const detail = (ch.description || '').trim();
     const detailCourt = detail.length > 150 ? detail.slice(0, 150) + '…' : detail;
 
-    // 🎨 Plus de vert : les quêtes prennent l'or (elles valent 30 à 50 XP), les défis
-    // gardent le corail. Le vert jurait avec la palette Méditerranée.
-    const teinte = ch.isQuest ? '#f4b942' : '#1fb6c9';
-    const fondJauge = ch.isQuest ? 'rgba(244,185,66,0.18)' : 'rgba(31,182,201,0.15)';
+    // 🎨 Règle stricte : l'or ne dit qu'une chose, « ça vaut des points / c'est gagné ».
+    // Le type de défi passe par le liseré de gauche, la progression est toujours cyan.
 
     const visibles = completedBy.slice(0, 4);
     const surplus = completedBy.length - visibles.length;
@@ -135,71 +132,68 @@ function renderChallenges() {
       : '');
 
     return `
-    <div style="background: #fffdf7; border-radius: 24px; box-shadow: 0 6px 0 rgba(6,50,61,0.4); padding: 17px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 11px;">
+    <div class="jeu-carte jeu-cadre${parMoi ? ' est-complete' : ''}" style="--liseré: ${ch.isQuest ? '#f4b942' : '#1fb6c9'};">
 
       <div style="display: flex; align-items: flex-start; gap: 10px;">
         <div style="flex: 1; min-width: 0;">
           ${ch.isQuest
-            ? `<span class="jeu-arcade" style="display: inline-block; background: #f4b942; color: #4a2c00; font-size: 9px; padding: 6px 10px; border-radius: 8px; box-shadow: 0 3px 0 #c99a3f; margin-bottom: 9px;">Quête</span>`
-            : `<div class="jeu-arcade" style="color: #ef6a7c; font-size: 9px; margin-bottom: 8px;">Proposé par ${escapeHtml(ch.creator || '?')}</div>`}
-          <div style="font-family: 'Baloo 2', sans-serif; color: #0c2f3a; font-size: 21px; font-weight: 800; line-height: 1.15;">${escapeHtml(titre)}</div>
+            ? `<div class="jeu-arcade" style="color: #f4b942; font-size: 9px; margin-bottom: 8px;">Quête</div>`
+            : `<div class="jeu-arcade" style="color: #ef6a7c; font-size: 9px; margin-bottom: 8px;">${escapeHtml(ch.creator || '?')}</div>`}
+          <div class="jeu-titre" style="color: #fffdf7; font-size: 21px; line-height: 1.2;">${escapeHtml(titre)}</div>
         </div>
-        <span class="jeu-score" style="background: #f4b942; color: #4a2c00; font-size: 13px; padding: 7px 11px; border-radius: 11px; box-shadow: 0 4px 0 #c99a3f; white-space: nowrap; flex-shrink: 0;">+${xp}</span>
+        <span class="jeu-score" style="color: #f4b942; font-size: 15px; white-space: nowrap; flex-shrink: 0; padding-top: 2px;">+${xp}<span class="jeu-arcade" style="font-size: 8px; margin-left: 2px;">XP</span></span>
       </div>
 
-      ${detail ? `<div style="font-size: 13.5px; line-height: 1.5; color: rgba(12,47,58,0.72);">${escapeHtml(detailCourt).replace(/\n/g, '<br>')}${detail.length > 150 ? ` <span onclick="event.stopPropagation(); this.parentElement.innerHTML = this.dataset.full" data-full="${escapeHtml(detail).replace(/"/g, '&quot;').replace(/\n/g, '<br>')}" style="color: #0e7a90; font-weight: 700; cursor: pointer;">voir plus</span>` : ''}</div>` : ''}
+      ${detail ? `<div class="jeu-texte" style="font-size: 13.5px; line-height: 1.55; color: rgba(232,246,250,0.68);">${escapeHtml(detailCourt).replace(/\n/g, '<br>')}${detail.length > 150 ? ` <span onclick="event.stopPropagation(); this.parentElement.innerHTML = this.dataset.full" data-full="${escapeHtml(detail).replace(/"/g, '&quot;').replace(/\n/g, '<br>')}" style="color: #1fb6c9; font-weight: 700; cursor: pointer;">voir plus</span>` : ''}</div>` : ''}
 
-      ${ch.media ? `<div style="border-radius: 18px; overflow: hidden; ${ch.media.type === 'video' ? 'background: #000;' : ''}">${ch.media.type === 'video'
+      ${ch.media ? `<div style="border-radius: 6px; overflow: hidden; ${ch.media.type === 'video' ? 'background: #000;' : ''}">${ch.media.type === 'video'
         ? `<video src="${ch.media.src}" style="width: 100%; max-height: 60vh; display: block;" controls playsinline preload="metadata"></video>`
         : `<img src="${ch.media.src}" style="width: 100%; height: auto; display: block;">`}</div>` : ''}
 
       <div onclick="showLikersPanel(${JSON.stringify(completedBy)})" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
         ${completedBy.length > 0 ? `<div style="display: flex;">${avatars}</div>` : ''}
-        <span style="font-size: 12.5px; color: #0c2f3a; font-weight: 600;">${completedBy.length === 0 ? 'Personne ne l\'a encore relevé' : `${completedBy.length} sur ${PARTICIPANTS.length} l'ont relevé`}</span>
+        <span class="jeu-texte" style="font-size: 12.5px; color: rgba(232,246,250,0.8);">${completedBy.length === 0 ? 'Personne ne l\'a encore relevé' : `${completedBy.length} sur ${PARTICIPANTS.length} l'ont relevé`}</span>
       </div>
 
-      <div style="height: 14px; border-radius: 7px; background: ${fondJauge}; overflow: hidden;">
-        <div style="height: 100%; width: ${pct}%; border-radius: 7px; background: ${teinte};"></div>
+      <div style="height: 6px; border-radius: 3px; background: rgba(255,253,247,0.1); overflow: hidden;">
+        <div style="height: 100%; width: ${pct}%; border-radius: 3px; background: #1fb6c9;"></div>
       </div>
 
       <div style="display: flex; align-items: center; gap: 16px;">
-        <button onclick="event.stopPropagation(); likeCh(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 6px; color: ${jaime ? '#ef6a7c' : 'rgba(12,47,58,0.45)'}; font-weight: 700; font-size: 14px;">
+        <button onclick="event.stopPropagation(); likeCh(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 6px; color: ${jaime ? '#ef6a7c' : 'rgba(232,246,250,0.45)'}; font-weight: 700; font-size: 14px;">
           <span style="font-size: 16px;">♥</span>${(ch.likes || []).length}
         </button>
-        <button onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; color: rgba(12,47,58,0.6); font-weight: 700; font-size: 14px;">💬 ${(ch.comments || []).length}</button>
+        <button onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; color: rgba(232,246,250,0.6); font-weight: 700; font-size: 14px;">💬 ${(ch.comments || []).length}</button>
         <div style="flex: 1;"></div>
         ${estAutrice ? `
         <div style="position: relative;">
-          <button onclick="event.stopPropagation(); toggleMenuDefi(${ch.id})" aria-label="Options du défi" style="border: none; background: none; padding: 4px 6px; cursor: pointer; color: rgba(12,47,58,0.45); font-size: 18px; line-height: 1;">⋯</button>
+          <button onclick="event.stopPropagation(); toggleMenuDefi(${ch.id})" aria-label="Options du défi" style="border: none; background: none; padding: 4px 6px; cursor: pointer; color: rgba(232,246,250,0.45); font-size: 18px; line-height: 1;">⋯</button>
           ${menuDefiOuvert === ch.id ? `
-          <div style="position: absolute; right: 0; top: 28px; background: #fffdf7; border-radius: 14px; box-shadow: 0 6px 18px rgba(6,50,61,0.3); padding: 8px; display: flex; flex-direction: column; z-index: 6; min-width: 132px;">
-            <button onclick="event.stopPropagation(); menuDefiOuvert = null; editChallenge(${ch.id})" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #0c2f3a; font-weight: 600;">Modifier</button>
-            <button onclick="event.stopPropagation(); menuDefiOuvert = null; duplicateChallenge(${ch.id})" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #0c2f3a; font-weight: 600;">Dupliquer</button>
-            <button onclick="event.stopPropagation(); menuDefiOuvert = null; confirmDeleteChallenge(${ch.id})" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #ef6a7c; font-weight: 700;">Supprimer</button>
+          <div style="position: absolute; right: 0; top: 28px; background: #06333f; border: 1px solid rgba(255,253,247,.14); border-radius: 6px; box-shadow: 0 8px 22px rgba(0,0,0,.5); padding: 6px; display: flex; flex-direction: column; z-index: 6; min-width: 132px;">
+            <button onclick="event.stopPropagation(); menuDefiOuvert = null; editChallenge(${ch.id})" class="jeu-texte" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #e8f6fa; font-weight: 600;">Modifier</button>
+            <button onclick="event.stopPropagation(); menuDefiOuvert = null; duplicateChallenge(${ch.id})" class="jeu-texte" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #e8f6fa; font-weight: 600;">Dupliquer</button>
+            <button onclick="event.stopPropagation(); menuDefiOuvert = null; confirmDeleteChallenge(${ch.id})" class="jeu-texte" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #ef6a7c; font-weight: 700;">Supprimer</button>
           </div>` : ''}
         </div>` : ''}
       </div>
 
       <div id="ch-comments-${ch.id}" style="display: none; flex-direction: column; gap: 8px;">
         ${(ch.comments || []).map(c => `
-          <div style="background: rgba(14,122,144,0.06); border-radius: 12px; padding: 9px 11px;">
-            <span style="font-size: 12px; font-weight: 700; color: #0e7a90;">${escapeHtml(c.author)} </span>
-            <span style="font-size: 12.5px; color: #0c2f3a;">${escapeHtml(c.text)}</span>
+          <div style="background: rgba(255,253,247,0.05); border-radius: 5px; padding: 9px 11px;">
+            <span class="jeu-arcade" style="font-size: 9px; color: #1fb6c9;">${escapeHtml(c.author)} </span>
+            <span class="jeu-texte" style="font-size: 12.5px; color: rgba(232,246,250,.85);">${escapeHtml(c.text)}</span>
           </div>`).join('')}
         <div style="display: flex; gap: 8px;">
-          <input id="ch-comment-${ch.id}" placeholder="Écrire un commentaire…" style="flex: 1; border: none; background: rgba(12,47,58,0.06); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: #0c2f3a; margin-bottom: 0;">
-          <button onclick="addChallengeComment(${ch.id})" style="border: none; background: #0e7a90; color: #fffdf7; font-weight: 700; padding: 0 15px; border-radius: 12px; box-shadow: 0 3px 0 #06323d; cursor: pointer;">OK</button>
+          <input id="ch-comment-${ch.id}" placeholder="Écrire un commentaire…" class="jeu-texte" style="flex: 1; border: 1px solid rgba(255,253,247,.12); background: rgba(0,0,0,.25); border-radius: 5px; padding: 10px 12px; font-size: 13px; color: #e8f6fa; margin-bottom: 0;">
+          <button onclick="addChallengeComment(${ch.id})" class="jeu-arcade" style="border: 1px solid rgba(31,182,201,.5); background: rgba(31,182,201,.15); color: #1fb6c9; font-size: 10px; padding: 0 15px; border-radius: 5px; cursor: pointer;">OK</button>
         </div>
       </div>
 
       ${parMoi ? `
-        <div style="display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #fdf3dd, #f9e6bd); border-radius: 16px; padding: 12px 14px;">
-          <span style="font-size: 16px;">🏅</span>
-          <span style="flex: 1;">
-            <span class="jeu-arcade" style="display: block; font-size: 10px; color: #8a6414;">Complété</span>
-            <span style="display: block; font-size: 13px; font-weight: 700; color: #4a2c00; margin-top: 4px;">+${xp} XP dans la poche</span>
-          </span>
-          <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" style="border: none; background: none; color: rgba(74,44,0,0.5); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
+        <div style="display: flex; align-items: center; gap: 11px; border: 1px solid rgba(244,185,66,.4); border-radius: 6px; padding: 12px 14px; background: rgba(244,185,66,.09);">
+          <span style="font-size: 15px; color: #f4b942;">✦</span>
+          <span class="jeu-arcade" style="flex: 1; font-size: 10px; color: #f4b942;">Complété · +${xp} XP</span>
+          <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" class="jeu-texte" style="border: none; background: none; color: rgba(232,246,250,0.45); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
         </div>`
       : `
         <label class="btn-go" style="position: relative; display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 15px 0; cursor: pointer; box-sizing: border-box;">
@@ -390,7 +384,8 @@ function renderHomeLeaderboard() {
   // d'une section sombre. Il devient un tableau de scores d'arcade : les trois premières
   // sur un podium, les autres en lignes de score.
   const maxXp = ranking.length ? Math.max(ranking[0].xp, 1) : 1;
-  const orMedaille = ['#f4b942', '#d8dde3', '#c9803f'];
+  // Or, argent, bronze — l'or reste réservé à la première, conformément à la règle.
+  const orMedaille = ['#f4b942', '#b9c8ce', '#a9713c'];
   const hauteurs = [78, 58, 46];
   const ordrePodium = [1, 0, 2]; // 2e, 1re, 3e — comme sur un vrai podium
 
@@ -404,17 +399,17 @@ function renderHomeLeaderboard() {
     return `
       <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;">
         <span style="display: inline-block; border-radius: 50%; box-shadow: 0 0 0 3px ${orMedaille[idx]};">${avatarDefi(r.p, idx === 0 ? 52 : 42, null)}</span>
-        <div class="jeu-titre" style="font-size: 13px; color: #fffdf7; text-align: center; line-height: 1.1;">${escapeHtml(r.p.name)}${moi ? '<br><span class="jeu-arcade" style="font-size: 6.5px; color: #f4b942;">TOI</span>' : ''}</div>
-        <div style="width: 100%; height: ${hauteurs[idx]}px; border-radius: 12px 12px 0 0; background: linear-gradient(180deg, ${orMedaille[idx]}, rgba(0,0,0,0.25)); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 8px; gap: 3px;">
-          <span class="jeu-arcade" style="font-size: 15px; color: #2a1a00;">${idx + 1}</span>
-          <span class="jeu-arcade" style="font-size: 8px; color: #2a1a00;">${r.xp}</span>
+        <div class="jeu-titre" style="font-size: 13px; color: #fffdf7; text-align: center; line-height: 1.1;">${escapeHtml(r.p.name)}${moi ? '<br><span class="jeu-arcade" style="font-size: 7px; color: #f4b942;">Toi</span>' : ''}</div>
+        <div style="width: 100%; height: ${hauteurs[idx]}px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, ${orMedaille[idx]}22, rgba(255,253,247,0.04)); border-top: 2px solid ${orMedaille[idx]}; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 9px; gap: 4px;">
+          <span class="jeu-hero" style="font-size: 19px; color: ${orMedaille[idx]}; line-height: 1;">${idx + 1}</span>
+          <span class="jeu-score" style="font-size: 10px; color: rgba(232,246,250,.65);">${r.xp}</span>
         </div>
       </div>`;
   };
 
   container.innerHTML = `
-    <div style="border-radius: 24px; background: linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.18)); padding: 18px 14px 0; margin-bottom: 14px;">
-      <div class="jeu-arcade" style="font-size: 9px; color: #f4b942; letter-spacing: 1px; text-align: center; margin-bottom: 16px;">TABLEAU DES SCORES</div>
+    <div class="jeu-cadre" style="border-radius: 8px; border: 1px solid rgba(255,253,247,.1); background: rgba(0,0,0,0.3); padding: 18px 14px 0; margin-bottom: 12px;">
+      <div class="jeu-arcade" style="font-size: 9px; color: rgba(232,246,250,.6); text-align: center; margin-bottom: 16px;">Tableau des scores</div>
       <div style="display: flex; align-items: flex-end; gap: 8px;">
         ${ordrePodium.map(marche).join('')}
       </div>
@@ -425,13 +420,13 @@ function renderHomeLeaderboard() {
         const moi = r.p.id === currentUser.id;
         const pct = Math.round((r.xp / maxXp) * 100);
         return `
-        <div style="position: relative; border-radius: 14px; overflow: hidden; background: ${moi ? 'rgba(244,185,66,0.2)' : 'rgba(255,253,247,0.08)'};">
-          <div style="position: absolute; inset: 0 auto 0 0; width: ${pct}%; background: rgba(31,182,201,0.22);"></div>
+        <div style="position: relative; border-radius: 5px; overflow: hidden; border: 1px solid ${moi ? 'rgba(244,185,66,.35)' : 'rgba(255,253,247,.08)'}; background: rgba(255,253,247,0.04);">
+          <div style="position: absolute; inset: 0 auto 0 0; width: ${pct}%; background: rgba(31,182,201,0.18);"></div>
           <div style="position: relative; display: flex; align-items: center; gap: 11px; padding: 11px 13px;">
-            <span class="jeu-arcade" style="font-size: 10px; color: rgba(255,253,247,0.5); width: 20px;">${i + 4}</span>
+            <span class="jeu-score" style="font-size: 11px; color: rgba(232,246,250,0.45); width: 20px;">${i + 4}</span>
             ${avatarDefi(r.p, 30, null)}
-            <span class="jeu-titre" style="flex: 1; font-size: 15px; color: #fffdf7;">${escapeHtml(r.p.name)}${moi ? ' <span class="jeu-arcade" style="font-size: 7px; color: #f4b942;">TOI</span>' : ''}</span>
-            <span class="jeu-arcade" style="font-size: 10px; color: #f4b942;">${r.xp}</span>
+            <span class="jeu-titre" style="flex: 1; font-size: 15px; color: #fffdf7;">${escapeHtml(r.p.name)}${moi ? ' <span class="jeu-arcade" style="font-size: 7px; color: #f4b942;">Toi</span>' : ''}</span>
+            <span class="jeu-score" style="font-size: 12px; color: #f4b942;">${r.xp}</span>
           </div>
         </div>`;
       }).join('')}

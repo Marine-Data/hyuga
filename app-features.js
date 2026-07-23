@@ -363,7 +363,7 @@ function renderTresor() {
   if (!container) return;
 
   if (treasureHuntItems.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 34px; color: rgba(255,253,247,0.7); font-size: 13px;">Chargement de la chasse au trésor…</div>';
+    container.innerHTML = '<div class="jeu-texte" style="text-align:center; padding: 34px; color: rgba(232,246,250,0.6); font-size: 13px;">Chargement de la chasse au trésor…</div>';
     return;
   }
 
@@ -376,14 +376,14 @@ function renderTresor() {
   // jurait avec le reste de la section. Il devient un tableau de butin : chaque objet
   // est une carte, verrouillée tant qu'on ne l'a pas trouvée, puis dorée avec sa preuve.
   let html = `
-    <div style="position: relative; border-radius: 24px; background: linear-gradient(160deg, #c99a3f, #8a6414); box-shadow: 0 6px 0 rgba(6,43,53,0.5); padding: 20px; overflow: hidden; margin-bottom: 18px;">
-      <div style="position: absolute; top: -40px; right: -30px; font-size: 120px; opacity: 0.13; line-height: 1;">🗺️</div>
+    <div class="jeu-cadre" style="position: relative; border-radius: 8px; border: 1px solid rgba(244,185,66,.35); background: linear-gradient(165deg, rgba(14,122,144,.5), rgba(3,24,30,.85)); padding: 20px; overflow: hidden; margin-bottom: 16px;">
+      <div style="position: absolute; top: -34px; right: -24px; font-size: 118px; opacity: 0.07; line-height: 1;">🗺️</div>
       <div style="position: relative;">
-        <span class="jeu-arcade" style="font-size: 10px; color: #ffe9b8; letter-spacing: 1px;">BUTIN</span>
-        <div class="jeu-arcade" style="font-size: 32px; color: #fffdf7; text-shadow: 0 3px 0 rgba(0,0,0,0.25); margin: 12px 0 4px;">${trouves}<span style="font-size: 15px; color: #ffe9b8;">/${total}</span></div>
-        <div class="jeu-texte" style="font-size: 13px; color: #ffe9b8;">objets trouvés · ${xpTotal} XP amassés</div>
-        <div style="height: 16px; border-radius: 8px; background: rgba(0,0,0,0.28); overflow: hidden; margin-top: 13px;">
-          <div style="height: 100%; width: ${pct}%; border-radius: 8px; background: linear-gradient(90deg, #f4b942, #fffdf7);"></div>
+        <span class="jeu-arcade" style="font-size: 10px; color: rgba(232,246,250,.7);">Butin</span>
+        <div class="jeu-hero" style="font-size: 44px; color: #fffdf7; margin: 8px 0 4px; line-height: 1;">${trouves}<span style="font-size: 17px; color: rgba(232,246,250,.5);">/${total}</span></div>
+        <div class="jeu-texte" style="font-size: 12.5px; color: rgba(232,246,250,.7);">objets trouvés · <span class="jeu-score" style="color: #f4b942;">${xpTotal} XP</span></div>
+        <div style="height: 7px; border-radius: 4px; background: rgba(255,253,247,0.1); overflow: hidden; margin-top: 13px;">
+          <div style="height: 100%; width: ${pct}%; border-radius: 4px; background: #1fb6c9;"></div>
         </div>
       </div>
     </div>
@@ -392,31 +392,31 @@ function renderTresor() {
   html += treasureHuntItems.map(item => {
     const trouve = !!item.found;
     return `
-      <div id="tresor-item-${item.id}" class="jeu-carte" style="${trouve ? 'background: linear-gradient(160deg, #fff6e2, #f9e6bd);' : 'background: rgba(255,253,247,0.09); box-shadow: none;'} gap: 11px;">
+      <div id="tresor-item-${item.id}" class="jeu-carte jeu-cadre${trouve ? ' est-complete' : ''}" style="--liseré: ${trouve ? '#f4b942' : 'rgba(255,253,247,.15)'}; gap: 11px;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <label style="cursor: pointer; flex-shrink: 0; width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 21px; background: ${trouve ? '#f4b942' : 'rgba(0,0,0,0.22)'}; ${trouve ? 'box-shadow: 0 3px 0 #c99a3f;' : ''}">
+          <label style="cursor: pointer; flex-shrink: 0; width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 21px; background: rgba(255,253,247,.07); border: 1px solid ${trouve ? 'rgba(244,185,66,.5)' : 'rgba(255,253,247,.12)'};">
             <span style="${trouve ? '' : 'opacity: .45; filter: grayscale(1);'}">${item.emoji || '🗺️'}</span>
             <input type="checkbox" ${trouve ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="display: none;">
           </label>
           <div style="flex: 1; min-width: 0;">
-            <div class="jeu-titre" style="font-size: 16px; color: ${trouve ? '#4a2c00' : '#fffdf7'}; line-height: 1.2;">${escapeHtml(item.item)}</div>
+            <div class="jeu-titre" style="font-size: 16px; color: #fffdf7; line-height: 1.25;">${escapeHtml(item.item)}</div>
             ${item.found_by
-              ? `<div class="jeu-texte" style="font-size: 11.5px; color: #8a6414; margin-top: 3px;">déniché par ${escapeHtml(item.found_by)}</div>`
-              : `<div class="jeu-arcade" style="font-size: 7.5px; color: rgba(255,253,247,0.5); margin-top: 5px; letter-spacing: .5px;">PAS ENCORE TROUVÉ</div>`}
+              ? `<div class="jeu-texte" style="font-size: 11.5px; color: rgba(232,246,250,.6); margin-top: 3px;">déniché par ${escapeHtml(item.found_by)}</div>`
+              : `<div class="jeu-arcade" style="font-size: 8px; color: rgba(232,246,250,0.4); margin-top: 5px;">Pas encore trouvé</div>`}
           </div>
-          <span class="jeu-arcade" style="flex-shrink: 0; font-size: 9px; padding: 7px 8px; border-radius: 10px; background: ${trouve ? '#f4b942' : 'rgba(244,185,66,0.16)'}; color: ${trouve ? '#4a2c00' : '#f4b942'}; ${trouve ? 'box-shadow: 0 3px 0 #c99a3f;' : ''}">+${item.xp}</span>
+          <span class="jeu-score" style="flex-shrink: 0; font-size: 14px; color: #f4b942;">+${item.xp}</span>
         </div>
 
         ${item.photo_url ? `
           <div style="border-radius: 14px; overflow: hidden; max-height: 240px;">
             <img src="${item.photo_url}" style="width: 100%; height: auto; display: block;">
           </div>` : `
-          <label class="jeu-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 14px; cursor: pointer; background: ${trouve ? 'rgba(201,154,63,0.18)' : 'rgba(255,253,247,0.1)'}; color: ${trouve ? '#8a6414' : 'rgba(255,253,247,0.85)'}; --ombre-btn: transparent;">
-            <span style="font-size: 15px;">📷</span>
-            <span class="jeu-arcade" style="font-size: 8.5px; letter-spacing: .4px;">AJOUTER LA PREUVE</span>
+          <label class="btn-go" style="display: flex; align-items: center; justify-content: center; gap: 9px; padding: 13px; cursor: pointer;">
+            <span style="font-size: 13px; color: #f4b942;">📷</span>
+            <span class="jeu-arcade" style="font-size: 10px; color: #f4b942; letter-spacing: 2px;">Preuve</span>
             <input type="file" accept="image/*" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
           </label>
-          <span id="tresor-progress-${item.id}" class="jeu-texte" style="font-size: 11px; color: rgba(255,253,247,0.7); text-align: center;"></span>`}
+          <span id="tresor-progress-${item.id}" class="jeu-texte" style="font-size: 11px; color: rgba(232,246,250,0.6); text-align: center;"></span>`}
       </div>`;
   }).join('');
 

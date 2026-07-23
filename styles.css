@@ -1207,65 +1207,117 @@
     }
 
     /* BOTTOM TAB BAR - NAVIGATION (floating pill style) */
-    /* ============ SECTION DÉFIS — ambiance jeu ============
-       ✅ Refonte du 23/07. Seul onglet de l'app à quitter le fond sable : un dégradé
-       mer profonde qui descend vers la nuit, pour que les couleurs vives ressortent.
-       🎨 (23/07) Press Start 2P (police 8 bits) a été abandonnée : GTA, WoW et LoL
-       n'utilisent pas de pixel art mais des grasses nettes. Le trio est désormais
-       Bricolage Grotesque pour les gros chiffres, Inter en capitales espacées pour les
-       micro-libellés, et Space Mono pour les scores. Baloo 2 garde les titres. */
+    /* ============ SECTION DÉFIS — client de jeu ============
+       ✅ Refonte du 23/07, poussée à fond : cette section assume d'être « l'app de jeu
+       dans l'app ». Fond marin qui descend vers la nuit, cartes SOMBRES (et non plus
+       crème), cadres à filets fins et accents d'angle façon client LoL.
+
+       🎨 RÈGLE DE COULEUR, à tenir absolument :
+         • OR (#f4b942)   = ce qui a de la valeur ou ce qui est gagné. Rien d'autre.
+                            → badge d'XP, marqueur « complété », 1re du podium.
+         • CYAN (#1fb6c9) = la progression, individuelle ou collective. Rien d'autre.
+                            → jauges, barres de score.
+         • CORAIL         = uniquement l'autrice d'un défi.
+         L'or servait avant à huit choses différentes : il ne signalait donc plus rien.
+
+       ✍️ DEUX POLICES seulement dans cette section (il y en avait cinq) :
+         • Bricolage Grotesque — titres, libellés, gros chiffres
+         • Space Mono          — scores et compteurs, à chasse fixe */
     #challenges {
-      background: linear-gradient(180deg, #1fb6c9 0%, #0e7a90 26%, #083f4d 62%, #062b35 100%);
+      background:
+        linear-gradient(180deg, #0e7a90 0%, #08505f 32%, #052a34 68%, #03181e 100%);
       background-attachment: local;
       min-height: 100%;
     }
-    #challenges .content { padding-bottom: 120px; }
+    /* Trame très discrète, comme les fonds d'interface de jeu. */
+    #challenges .content {
+      padding-bottom: 120px;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 1px, transparent 1px 3px);
+    }
 
-    /* Micro-libellés : capitales fines et espacées, comme les surtitres de menus de jeu. */
+    /* Libellés : capitales espacées, la voix des menus de jeu. */
     .jeu-arcade {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Bricolage Grotesque', sans-serif;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1.6px;
+      letter-spacing: 1.7px;
     }
-    /* Chiffres : mono à chasse fixe, les scores ne dansent pas quand ils changent. */
+    /* Chiffres : chasse fixe, les scores ne dansent pas quand ils changent. */
     .jeu-score {
       font-family: 'Space Mono', monospace;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
-    /* Très gros chiffres du bandeau. */
     .jeu-hero {
-      font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+      font-family: 'Bricolage Grotesque', sans-serif;
       font-weight: 800;
-      letter-spacing: -1.5px;
+      letter-spacing: -2px;
       font-variant-numeric: tabular-nums;
     }
-    .jeu-titre  { font-family: 'Baloo 2', sans-serif; font-weight: 800; }
-    .jeu-texte  { font-family: 'Josefin Sans', sans-serif; font-weight: 600; }
+    .jeu-titre { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; letter-spacing: -0.2px; }
+    .jeu-texte { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 400; }
 
-    /* Effet touche épaisse : le bouton s'enfonce vraiment sous le doigt. */
-    .jeu-btn { transition: transform 0.06s ease, box-shadow 0.06s ease; }
-    .jeu-btn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--ombre-btn, #093f4a) !important; }
+    /* Cadre à filet fin + accents d'angle dorés : la signature visuelle de la section. */
+    .jeu-cadre { position: relative; }
+    .jeu-cadre::before,
+    .jeu-cadre::after {
+      content: "";
+      position: absolute;
+      width: 11px; height: 11px;
+      border-color: rgba(244, 185, 66, .55);
+      border-style: solid;
+      pointer-events: none;
+    }
+    .jeu-cadre::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+    .jeu-cadre::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
+    /* Cartes SOMBRES : le fond marin redevient visible entre elles, et le bouton doré
+       cesse d'être un îlot au milieu de blocs crème. */
     .jeu-carte {
-      background: #fffdf7;
-      border-radius: 22px;
-      box-shadow: 0 6px 0 rgba(6, 43, 53, 0.45);
+      position: relative;
+      background: linear-gradient(180deg, rgba(12, 68, 84, .82), rgba(4, 34, 43, .88));
+      border: 1px solid rgba(255, 253, 247, .11);
+      border-radius: 8px;
       padding: 16px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      color: #e8f6fa;
     }
+    /* Liseré de gauche = valeur du défi. Or pour les quêtes (30 à 50 XP), cyan sinon. */
+    .jeu-carte::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 12px; bottom: 12px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--liseré, #1fb6c9);
+    }
+    /* Un défi déjà complété s'efface légèrement, comme une quête terminée. */
+    .jeu-carte.est-complete { opacity: .78; }
+
     .jeu-av {
       width: 30px; height: 30px; border-radius: 50%;
-      border: 3px solid #fffdf7; margin-left: -9px;
+      border: 3px solid #0a3a47; margin-left: -9px;
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 12px;
       background-size: cover; background-position: center; flex-shrink: 0;
     }
     .jeu-av:first-child { margin-left: 0; }
+
+    /* ✅ Quand on est dans les Défis, la barre du bas s'assombrit elle aussi : sans ça,
+       la « autre dimension » s'arrêtait net sur un rectangle blanc en bas d'écran. */
+    body.dans-les-defis .bottom-tab-bar {
+      background: rgba(6, 40, 50, .93);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .45);
+    }
+    body.dans-les-defis .tab-item { color: rgba(232, 246, 250, .55); }
+    body.dans-les-defis .tab-item.active { background: rgba(244, 185, 66, .18); color: #f4b942; }
+    body.dans-les-defis .tab-item.active .tab-icon { color: #f4b942; }
 
     .bottom-tab-bar {
       position: fixed;

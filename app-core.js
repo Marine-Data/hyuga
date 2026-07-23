@@ -1316,6 +1316,9 @@ function switchTab(tab) {
   
   // Render approprié selon l'onglet
   syncBottomTabBar(tab); // ✅ la barre du bas suit l'onglet affiché, d'où qu'on vienne
+  // ✅ Les Défis sont la seule section sombre : la barre du bas s'y accorde, sinon
+  // l'immersion s'arrêtait sur un rectangle blanc collé en bas de l'écran.
+  document.body.classList.toggle('dans-les-defis', tab === 'challenges');
   if (tab === 'home') renderHome();
   if (tab === 'planning') renderPlanning();
   if (tab === 'challenges') { renderChallenges(); renderTresor(); renderMysteryPhoto(); }
