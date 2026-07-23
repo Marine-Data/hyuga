@@ -27,6 +27,22 @@ function couleurParticipante(nom) {
   return palette[(p ? p.id : (nom || '').length) % palette.length];
 }
 
+// ✅ (23/07) Les vraies photos de profil sont réutilisées ici. Elles vivent dans
+// personalsData[id].avatar — mes pastilles à initiale les ignoraient, alors que chacune
+// a choisi son personnage. L'initiale colorée ne sert plus que de secours.
+function avatarDefi(personne, taille, bordure) {
+  const photo = (typeof personalsData !== 'undefined' && personalsData[personne.id] && personalsData[personne.id].avatar) || personne.avatar || null;
+  const contour = bordure ? `border: 3px solid ${bordure};` : '';
+  const base = `width: ${taille}px; height: ${taille}px; border-radius: 50%; flex-shrink: 0; box-sizing: border-box; ${contour}`;
+  if (photo && typeof photo === 'string' && (photo.startsWith('data:image') || photo.startsWith('http'))) {
+    return `<img src="${photo}" alt="${escapeHtml(personne.name)}" style="${base} object-fit: cover; display: block;">`;
+  }
+  // Certaines ont un emoji en guise d'avatar plutôt qu'une photo.
+  const contenu = (photo && typeof photo === 'string' && !photo.startsWith('data:') && photo.length <= 4)
+    ? photo : escapeHtml(personne.name.charAt(0));
+  return `<div style="${base} background: ${couleurParticipante(personne.name)}; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: ${Math.round(taille * 0.42)}px;">${contenu}</div>`;
+}
+
 // ✅ Bandeau de score — rendu à part car il vit AU-DESSUS des sous-onglets
 // (visible aussi bien depuis Quêtes que depuis Trésor).
 function renderChallengesScore() {
@@ -52,13 +68,13 @@ function renderChallengesScore() {
     <div onclick="toggleClassementDefis()" style="cursor: pointer; position: relative; border-radius: 26px; background: linear-gradient(160deg, #0e7a90, #1fb6c9); box-shadow: 0 6px 0 #06323d; padding: 20px; overflow: hidden; margin-bottom: ${classementDeplie ? '10px' : '18px'};">
       <div style="position: absolute; top: -36px; right: -36px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.08);"></div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
-        <span style="font-family: 'Press Start 2P', monospace; color: #fffdf7; font-size: 10px; letter-spacing: 1px;">TON SCORE</span>
+        <span class="jeu-arcade" style="color: rgba(255,253,247,.72); font-size: 10px;">Ton score</span>
         <div style="text-align: right;">
-          <div style="font-family: 'Press Start 2P', monospace; color: #c4ecf3; font-size: 8px;">RANG</div>
-          <div style="font-family: 'Press Start 2P', monospace; color: #f4b942; font-size: 20px; margin-top: 5px;">${monRang}<span style="font-size: 11px;">e</span></div>
+          <div class="jeu-arcade" style="color: rgba(196,236,243,.8); font-size: 9px;">Rang</div>
+          <div class="jeu-hero" style="color: #f4b942; font-size: 27px; margin-top: 3px; line-height: 1;">${monRang}<span style="font-size: 14px;">e</span></div>
         </div>
       </div>
-      <div style="font-family: 'Press Start 2P', monospace; color: #fffdf7; font-size: 36px; line-height: 1; text-shadow: 0 3px 0 #06323d; margin: 14px 0 12px; position: relative;">${monXp}<span style="font-size: 14px; color: #f4b942;"> XP</span></div>
+      <div class="jeu-hero" style="color: #fffdf7; font-size: 52px; line-height: 1; margin: 10px 0 14px; position: relative;">${monXp}<span class="jeu-arcade" style="font-size: 14px; color: #f4b942; letter-spacing: 1px; margin-left: 4px;">XP</span></div>
       <div style="height: 18px; border-radius: 9px; background: rgba(0,0,0,0.24); overflow: hidden; position: relative;">
         <div style="height: 100%; width: ${pct}%; border-radius: 9px; background: linear-gradient(90deg, #f4b942, #ffe08a);"></div>
       </div>
@@ -113,9 +129,9 @@ function renderChallenges() {
     const avatars = visibles.map((pid, i) => {
       const p = PARTICIPANTS.find(pp => pp.id === pid);
       if (!p) return '';
-      return `<div style="width: 28px; height: 28px; border-radius: 50%; background: ${couleurParticipante(p.name)}; border: 3px solid #fffdf7; margin-left: ${i === 0 ? '0' : '-9px'}; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 11px; box-sizing: border-box;">${escapeHtml(p.name.charAt(0))}</div>`;
+      return `<span style="display: inline-block; margin-left: ${i === 0 ? '0' : '-9px'};">${avatarDefi(p, 28, '#fffdf7')}</span>`;
     }).join('') + (surplus > 0
-      ? `<div style="width: 28px; height: 28px; border-radius: 50%; background: #0c2f3a; border: 3px solid #fffdf7; margin-left: -9px; display: flex; align-items: center; justify-content: center; color: #fffdf7; font-family: 'Press Start 2P', monospace; font-size: 8px; box-sizing: border-box;">+${surplus}</div>`
+      ? `<div style="width: 28px; height: 28px; border-radius: 50%; background: #0c2f3a; border: 3px solid #fffdf7; margin-left: -9px; display: flex; align-items: center; justify-content: center; color: #fffdf7; font-size: 11px; font-weight: 700; box-sizing: border-box;">+${surplus}</div>`
       : '');
 
     return `
@@ -124,11 +140,11 @@ function renderChallenges() {
       <div style="display: flex; align-items: flex-start; gap: 10px;">
         <div style="flex: 1; min-width: 0;">
           ${ch.isQuest
-            ? `<span style="display: inline-block; font-family: 'Press Start 2P', monospace; background: #f4b942; color: #4a2c00; font-size: 8px; letter-spacing: .4px; padding: 6px 9px; border-radius: 8px; box-shadow: 0 3px 0 #c99a3f; margin-bottom: 9px;">QUÊTE</span>`
-            : `<div style="font-family: 'Press Start 2P', monospace; color: #ef6a7c; font-size: 8px; letter-spacing: .5px; margin-bottom: 8px;">PROPOSÉ PAR ${escapeHtml((ch.creator || '?').toUpperCase())}</div>`}
+            ? `<span class="jeu-arcade" style="display: inline-block; background: #f4b942; color: #4a2c00; font-size: 9px; padding: 6px 10px; border-radius: 8px; box-shadow: 0 3px 0 #c99a3f; margin-bottom: 9px;">Quête</span>`
+            : `<div class="jeu-arcade" style="color: #ef6a7c; font-size: 9px; margin-bottom: 8px;">Proposé par ${escapeHtml(ch.creator || '?')}</div>`}
           <div style="font-family: 'Baloo 2', sans-serif; color: #0c2f3a; font-size: 21px; font-weight: 800; line-height: 1.15;">${escapeHtml(titre)}</div>
         </div>
-        <span style="font-family: 'Press Start 2P', monospace; background: #f4b942; color: #4a2c00; font-size: 10px; padding: 8px 9px; border-radius: 12px; box-shadow: 0 4px 0 #c99a3f; white-space: nowrap; flex-shrink: 0;">+${xp}XP</span>
+        <span class="jeu-score" style="background: #f4b942; color: #4a2c00; font-size: 13px; padding: 7px 11px; border-radius: 11px; box-shadow: 0 4px 0 #c99a3f; white-space: nowrap; flex-shrink: 0;">+${xp}</span>
       </div>
 
       ${detail ? `<div style="font-size: 13.5px; line-height: 1.5; color: rgba(12,47,58,0.72);">${escapeHtml(detailCourt).replace(/\n/g, '<br>')}${detail.length > 150 ? ` <span onclick="event.stopPropagation(); this.parentElement.innerHTML = this.dataset.full" data-full="${escapeHtml(detail).replace(/"/g, '&quot;').replace(/\n/g, '<br>')}" style="color: #0e7a90; font-weight: 700; cursor: pointer;">voir plus</span>` : ''}</div>` : ''}
@@ -180,17 +196,16 @@ function renderChallenges() {
         <div style="display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #fdf3dd, #f9e6bd); border-radius: 16px; padding: 12px 14px;">
           <span style="font-size: 16px;">🏅</span>
           <span style="flex: 1;">
-            <span style="display: block; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #8a6414; letter-spacing: .5px;">COMPLÉTÉ</span>
+            <span class="jeu-arcade" style="display: block; font-size: 10px; color: #8a6414;">Complété</span>
             <span style="display: block; font-size: 13px; font-weight: 700; color: #4a2c00; margin-top: 4px;">+${xp} XP dans la poche</span>
           </span>
           <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" style="border: none; background: none; color: rgba(74,44,0,0.5); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
         </div>`
       : `
-        <label class="jeu-btn btn-go" style="position: relative; display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 17px 0; border-radius: 14px; cursor: pointer; text-align: center; box-sizing: border-box; overflow: hidden; background: linear-gradient(180deg, #bff0fb 0%, #7fdcef 45%, #43c4dd 100%); --ombre-btn: #2a97ae;">
-          <span style="position: absolute; inset: 0; border-radius: 14px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.85), inset 0 -3px 0 rgba(19,110,130,.35);"></span>
-          <span style="position: absolute; inset: 3px 3px auto 3px; height: 40%; border-radius: 11px 11px 16px 16px; background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,0));"></span>
-          <span style="position: relative; font-size: 15px; color: #0b4b5a;">▶</span>
-          <span style="position: relative; font-family: 'Press Start 2P', monospace; font-size: 12px; letter-spacing: 1.5px; color: #0b4b5a; text-shadow: 0 1px 0 rgba(255,255,255,.7);">GO</span>
+        <label class="jeu-btn btn-go" style="position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 16px 0; border-radius: 13px; cursor: pointer; box-sizing: border-box; overflow: hidden; background: linear-gradient(180deg, #d6f4fd 0%, #9fe4f4 52%, #6dd2e8 100%); --ombre-btn: #3ba3bc;">
+          <span style="position: absolute; inset: 0; border-radius: 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -2px 0 rgba(20,105,124,.28);"></span>
+          <span style="position: relative; font-size: 13px; color: #0a4655;">▶</span>
+          <span class="jeu-arcade" style="position: relative; font-size: 13px; color: #0a4655; letter-spacing: 2.4px;">Go</span>
           <input type="file" accept="image/*,video/*" style="display: none;" onchange="event.stopPropagation(); submitChallengeProof(${ch.id}, this)">
         </label>`}
 
@@ -389,7 +404,7 @@ function renderHomeLeaderboard() {
     const moi = r.p.id === currentUser.id;
     return `
       <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;">
-        <div style="width: ${idx === 0 ? '52px' : '42px'}; height: ${idx === 0 ? '52px' : '42px'}; border-radius: 50%; background: ${couleurParticipante(r.p.name)}; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: ${idx === 0 ? '21px' : '17px'}; box-shadow: 0 0 0 3px ${orMedaille[idx]};">${escapeHtml(r.p.name.charAt(0))}</div>
+        <span style="display: inline-block; border-radius: 50%; box-shadow: 0 0 0 3px ${orMedaille[idx]};">${avatarDefi(r.p, idx === 0 ? 52 : 42, null)}</span>
         <div class="jeu-titre" style="font-size: 13px; color: #fffdf7; text-align: center; line-height: 1.1;">${escapeHtml(r.p.name)}${moi ? '<br><span class="jeu-arcade" style="font-size: 6.5px; color: #f4b942;">TOI</span>' : ''}</div>
         <div style="width: 100%; height: ${hauteurs[idx]}px; border-radius: 12px 12px 0 0; background: linear-gradient(180deg, ${orMedaille[idx]}, rgba(0,0,0,0.25)); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 8px; gap: 3px;">
           <span class="jeu-arcade" style="font-size: 15px; color: #2a1a00;">${idx + 1}</span>
@@ -415,7 +430,7 @@ function renderHomeLeaderboard() {
           <div style="position: absolute; inset: 0 auto 0 0; width: ${pct}%; background: rgba(31,182,201,0.22);"></div>
           <div style="position: relative; display: flex; align-items: center; gap: 11px; padding: 11px 13px;">
             <span class="jeu-arcade" style="font-size: 10px; color: rgba(255,253,247,0.5); width: 20px;">${i + 4}</span>
-            <div style="width: 30px; height: 30px; border-radius: 50%; background: ${couleurParticipante(r.p.name)}; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px; flex-shrink: 0;">${escapeHtml(r.p.name.charAt(0))}</div>
+            ${avatarDefi(r.p, 30, null)}
             <span class="jeu-titre" style="flex: 1; font-size: 15px; color: #fffdf7;">${escapeHtml(r.p.name)}${moi ? ' <span class="jeu-arcade" style="font-size: 7px; color: #f4b942;">TOI</span>' : ''}</span>
             <span class="jeu-arcade" style="font-size: 10px; color: #f4b942;">${r.xp}</span>
           </div>

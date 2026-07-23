@@ -263,10 +263,10 @@
        Inspiration des boutons d'action de jeux — biseau clair en haut, liseré blanc,
        assise plus foncée dessous, et une lueur qui attire l'œil sans clignoter. */
     @keyframes lueur-arcade {
-      0%, 100% { box-shadow: 0 7px 0 #2a97ae, 0 0 0 rgba(127,220,239,0); }
-      50%      { box-shadow: 0 7px 0 #2a97ae, 0 0 26px rgba(127,220,239,0.75); }
+      0%, 100% { box-shadow: 0 5px 0 #3ba3bc, 0 0 0 rgba(157,228,244,0); }
+      50%      { box-shadow: 0 5px 0 #3ba3bc, 0 0 20px rgba(157,228,244,0.6); }
     }
-    .btn-go { animation: lueur-arcade 2.8s ease-in-out infinite; }
+    .btn-go { animation: lueur-arcade 3.2s ease-in-out infinite; }
     .btn-go:active { transform: translateY(5px); }
     @media (prefers-reduced-motion: reduce) { .btn-go { animation: none; } }
 
@@ -1187,8 +1187,10 @@
     /* ============ SECTION DÉFIS — ambiance jeu ============
        ✅ Refonte du 23/07. Seul onglet de l'app à quitter le fond sable : un dégradé
        mer profonde qui descend vers la nuit, pour que les couleurs vives ressortent.
-       Les polices Baloo 2 et Press Start 2P étaient déjà chargées par index.html
-       depuis des mois sans jamais servir — elles servent enfin. */
+       🎨 (23/07) Press Start 2P (police 8 bits) a été abandonnée : GTA, WoW et LoL
+       n'utilisent pas de pixel art mais des grasses nettes. Le trio est désormais
+       Bricolage Grotesque pour les gros chiffres, Inter en capitales espacées pour les
+       micro-libellés, et Space Mono pour les scores. Baloo 2 garde les titres. */
     #challenges {
       background: linear-gradient(180deg, #1fb6c9 0%, #0e7a90 26%, #083f4d 62%, #062b35 100%);
       background-attachment: local;
@@ -1196,7 +1198,26 @@
     }
     #challenges .content { padding-bottom: 120px; }
 
-    .jeu-arcade { font-family: 'Press Start 2P', monospace; font-weight: 400; }
+    /* Micro-libellés : capitales fines et espacées, comme les surtitres de menus de jeu. */
+    .jeu-arcade {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.6px;
+    }
+    /* Chiffres : mono à chasse fixe, les scores ne dansent pas quand ils changent. */
+    .jeu-score {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    /* Très gros chiffres du bandeau. */
+    .jeu-hero {
+      font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      font-variant-numeric: tabular-nums;
+    }
     .jeu-titre  { font-family: 'Baloo 2', sans-serif; font-weight: 800; }
     .jeu-texte  { font-family: 'Josefin Sans', sans-serif; font-weight: 600; }
 
