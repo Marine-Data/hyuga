@@ -175,6 +175,14 @@ function confirmRemoveShop(id) {
 
 function removeShop(id) {
   shoppingList = shoppingList.filter(i => i.id !== id);
+  // 🐛 CORRECTIF (22/07) : même bug que les désinscriptions — l'article était retiré
+  // de l'écran mais jamais de Supabase. saveAllData() ne fait que pousser les articles
+  // présents, il ne supprime rien. L'article revenait donc à la prochaine synchro (25s)
+  // ou sur le téléphone de quelqu'un d'autre : on rachetait du lait déjà barré.
+  if (window.supabaseReady && window.supabase) {
+    window.supabase.from('shopping_list').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('Suppression article échouée:', error); });
+  }
   saveAllData();
   renderShopping();
 }
@@ -488,4 +496,3 @@ function confirmDeleteExpense(id) {
     }
   });
 }
-
