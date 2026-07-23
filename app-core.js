@@ -1624,6 +1624,12 @@ function computeReservations() {
   planningData.forEach((day, dayIdx) => {
     (day.activities || []).forEach((act, actIdx) => {
       if (!act.reservation) return;
+      // 🐛 CORRECTIF (22/07) : la clé était la POSITION dans le planning ("2-2").
+      // Insérer une activité en milieu de journée décalait donc toutes les cases cochées
+      // — exactement ce qui a fait pointer les inscriptions plongée sur les Surprises
+      // quand le planning a été refait. On utilise maintenant resaId, posé à la main dans
+      // saraillon-data.js et indépendant de l'ordre des activités.
+      if (!act.resaId) { console.warn('Réservation sans resaId, ignorée :', act.nom); return; }
       let combien = act.reservation;
       // Activité sur inscription : le nombre de couverts suit les inscrites en direct.
       if (act.inscription) {
@@ -1631,7 +1637,7 @@ function computeReservations() {
         combien = n > 0 ? `${n} inscrite${n > 1 ? 's' : ''}` : 'personne inscrite pour l\'instant';
       }
       list.push({
-        key: `${dayIdx}-${actIdx}`, dayIdx, actIdx,
+        key: act.resaId, dayIdx, actIdx,
         nom: act.nom, emoji: act.emoji || '\u{1F4CC}',
         jour: day.jour, date: day.date, lieu: act.lieu || '', combien
       });

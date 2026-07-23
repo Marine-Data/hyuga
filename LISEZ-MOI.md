@@ -12,10 +12,11 @@ Ouvrir chaque fichier sur `Marine-Data/saraillon` → crayon ✏️ → tout sé
 | `index.html` | Barre du bas à 5 destinations, onglet Réservations, uploads photos |
 | `styles.css` | Correctif du header fixe, barre du bas colorée |
 | `app-planning.js` | Photos de journée, corvées par jour, demi-journée |
+| `app-gallery.js` | Repli d'upload rendu visible, garde-fou vidéo, outil de migration |
 | `app-activities.js` | Correctifs désinscription et suppression d'articles de courses |
 | `app-challenges.js` | Likes et commentaires de défis silencieux |
 | `app-features.js` | Commentaire obsolète |
-| `sw.js` | **Version du cache → v3** (indispensable, sinon rien ne change sur les téléphones) |
+| `sw.js` | **Version du cache → v4** (indispensable, sinon rien ne change sur les téléphones) |
 
 Deux fichiers SQL à **ajouter** (*Add file → Create new file*), pour l'historique
 seulement — déjà appliqués sur Supabase : `supabase_migration_reservations.sql` et
@@ -38,6 +39,9 @@ l'app hors du sélecteur de tâches.
 
 **Deux images à créer et uploader** dans Réglages → photos de journée :
 Anse Magaud (J3) et Almanarre (J8).
+
+**Lancer une fois** Réglages → Données → « Alléger les photos historiques », avec du
+réseau. Ça déplace les 3 photos de juillet hors de la base (1,3 Mo).
 
 ## À retenir pour la suite
 

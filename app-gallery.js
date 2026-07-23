@@ -176,6 +176,17 @@ function uploadGallery() {
     }
   });
   
+  // ✅ Les vidéos ne passent par aucune compression : une vidéo iPhone de 30 s pèse
+  // déjà 50 à 100 Mo. En 4G dans le Var, l'envoi échoue ou dure une éternité — mieux
+  // vaut le dire avant de lancer que de laisser tourner une barre de progression.
+  const LIMITE_VIDEO_MO = 60;
+  if (!input.files[0].type.startsWith('image') && input.files[0].size > LIMITE_VIDEO_MO * 1024 * 1024) {
+    const poids = Math.round(input.files[0].size / 1024 / 1024);
+    showNotification(`🎬 Vidéo trop lourde (${poids} Mo, maximum ${LIMITE_VIDEO_MO} Mo). Raccourcis-la ou envoie une photo.`, 'error');
+    input.value = '';
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const isImage = input.files[0].type.startsWith('image');
@@ -194,7 +205,12 @@ function uploadGallery() {
           const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
           finalSrc = await uploadFileToStorage('gallery-photos', path, blob);
         } catch (err) {
+          // 🐛 CORRECTIF (22/07) : ce repli ne prévenait personne (console.warn seul).
+          // Si le Storage tombait ou si un droit manquait, l'app se remettait à stocker
+          // les photos entières en base — le problème d'avant — sans aucun signe visible.
+          // On le dit maintenant clairement : c'est un mode dégradé, pas la normale.
           console.warn('Upload Storage échoué, repli en base64 :', err);
+          showNotification('⚠️ Photo enregistrée en mode dégradé (envoi impossible). Préviens Marine si ça se répète.', 'error');
         }
       }
       const item = {
@@ -607,6 +623,51 @@ function openGalleryLightbox(itemId) {
   `;
 
   document.body.appendChild(overlay);
+}
+
+// ✅ OUTIL DE MAINTENANCE : déplace vers Supabase Storage les photos historiques encore
+// stockées en base64 dans la base (celles d'avant le 21/07). Chacune pèse ~450 Ko, qui
+// voyagent à chaque synchro et occupent le stockage local de chaque téléphone.
+// À lancer UNE fois depuis les Réglages, avec du réseau. Sans effet si tout est déjà migré.
+async function migrerPhotosBase64() {
+  const aMigrer = galleryItems.filter(i => typeof i.src === 'string' && i.src.startsWith('data:'));
+  if (aMigrer.length === 0) {
+    showNotification('✅ Rien à migrer, toutes les photos sont déjà dans le stockage.', 'success');
+    return;
+  }
+  if (!window.supabaseReady) {
+    showNotification('❌ Pas de connexion — réessaie avec du réseau.', 'error');
+    return;
+  }
+
+  showNotification(`⏳ Migration de ${aMigrer.length} média(s)...`, 'success');
+  let ok = 0, echecs = 0;
+
+  for (const item of aMigrer) {
+    try {
+      const blob = dataURLToBlob(item.src);
+      const ext = item.type === 'video' ? 'mp4' : 'jpg';
+      const path = `migre-${item.id}.${ext}`;
+      const url = await uploadFileToStorage('gallery-photos', path, blob);
+      item.src = url;
+      // On ne réécrit la ligne en base QUE si l'envoi a réussi : en cas d'échec la
+      // photo reste en base64 et reste donc visible, jamais perdue.
+      await window.syncToSupabase('gallery_items', { id: item.id, image_url: url });
+      ok++;
+    } catch (err) {
+      console.error('Migration échouée pour', item.id, err);
+      echecs++;
+    }
+  }
+
+  saveAllData();
+  renderGallery();
+  showNotification(
+    echecs === 0
+      ? `✅ ${ok} média(s) migré(s) vers le stockage.`
+      : `⚠️ ${ok} migré(s), ${echecs} échec(s) — les photos non migrées restent visibles.`,
+    echecs === 0 ? 'success' : 'error'
+  );
 }
 
 // ✅ Enregistrer une photo/vidéo dans l'appareil (fonctionne pour les deux formats :
