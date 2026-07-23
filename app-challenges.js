@@ -178,14 +178,18 @@ function renderChallenges() {
 
       ${parMoi ? `
         <div style="display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #fdf3dd, #f9e6bd); border-radius: 16px; padding: 12px 14px;">
-          <span style="font-family: 'Press Start 2P', monospace; font-size: 13px;">🏅</span>
-          <span style="font-size: 13.5px; font-weight: 700; color: #4a2c00; flex: 1;">Relevé — ${xp} XP dans la poche</span>
+          <span style="font-size: 16px;">🏅</span>
+          <span style="flex: 1;">
+            <span style="display: block; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #8a6414; letter-spacing: .5px;">COMPLÉTÉ</span>
+            <span style="display: block; font-size: 13px; font-weight: 700; color: #4a2c00; margin-top: 4px;">+${xp} XP dans la poche</span>
+          </span>
           <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" style="border: none; background: none; color: rgba(74,44,0,0.5); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
         </div>`
       : `
-        <label class="press-btn" style="display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; background: linear-gradient(160deg, #ff8095, #ef6a7c); color: #fffdf7; padding: 16px 0; border-radius: 18px; box-shadow: 0 6px 0 #c14b5e; cursor: pointer; text-align: center; box-sizing: border-box;">
-          <span style="font-size: 18px;">⚡</span>
-          <span style="font-family: 'Press Start 2P', monospace; font-size: 11px; letter-spacing: 0.5px; line-height: 1.4;">RELEVER</span>
+        <label class="jeu-btn btn-go" style="position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: linear-gradient(180deg, #ff9aab 0%, #ef6a7c 48%, #d9536a 100%); color: #fffdf7; padding: 18px 0; border-radius: 16px; cursor: pointer; text-align: center; box-sizing: border-box; overflow: hidden; --ombre-btn: #c14b5e;">
+          <span style="position: absolute; inset: 3px 3px auto 3px; height: 42%; border-radius: 13px 13px 20px 20px; background: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0));"></span>
+          <span style="position: relative; font-size: 17px;">▶</span>
+          <span style="position: relative; font-family: 'Press Start 2P', monospace; font-size: 13px; letter-spacing: 1px; text-shadow: 0 2px 0 rgba(0,0,0,0.22);">GO !</span>
           <input type="file" accept="image/*,video/*" style="display: none;" onchange="event.stopPropagation(); submitChallengeProof(${ch.id}, this)">
         </label>`}
 

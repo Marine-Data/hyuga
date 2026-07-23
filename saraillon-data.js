@@ -228,16 +228,17 @@ let personalsData = {
 // Structure "à apporter" par activité avec checkboxes
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de challenges (quêtes),
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-const CHALLENGES_VERSION = 5;
+const CHALLENGES_VERSION = 7;
 
 let challenges = [
   {
     id: 1,
     isQuest: true,
     questLabel: "LE MIROIR DU TEMPS",
+    titre: "Le miroir du temps",
     xp: 30,
     completedBy: [],
-    description: "📸 LE MIROIR DU TEMPS — Retrouvez une photo d'un séjour précédent et reproduisez-la à l'identique ici : même pose, même cadrage, même esprit !\n📜 Objectif : reproduire 1 photo d'un séjour précédent.\n🏆 Récompense : +30 XP Nostalgie, voyage dans le temps garanti.",
+    description: "📜 Objectif : reproduire 1 photo d'un séjour précédent.\n🏆 Récompense : +30 XP Nostalgie, voyage dans le temps garanti.",
     media: null,
     likes: [],
     comments: [],
@@ -247,9 +248,10 @@ let challenges = [
     id: 2,
     isQuest: true,
     questLabel: "MESSAGE POUR LE FUTUR",
+    titre: "Le messager du temps",
     xp: 50,
     completedBy: [],
-    description: "🗺️ LE MESSAGER DU TEMPS — Durant le séjour trouve une carte postale... avant jeudi ! Une fois trouvée, rédige-la à l'attention de l'Hôte du séjour et met là dans la boîte aux lettres. Ramassage des cartes et lecture commune jeudi soir !\n📜 Objectif : trouver + rédiger 1 carte postale pour l'Hôte.\n⏳ Délai : avant jeudi soir.\n🏆 Récompense : +50 XP Amitié.",
+    description: "📜 Objectif : trouver + rédiger 1 carte postale pour l'Hôte.\n⏳ Délai : avant jeudi soir.\n🏆 Récompense : +50 XP Amitié.",
     media: null,
     likes: [],
     comments: [],
@@ -257,7 +259,8 @@ let challenges = [
   },
   {
     id: 3,
-    creator: "CHALLENGE 1",
+    creator: "Marine",
+    titre: "Jojo pose",
     xp: 20,
     completedBy: [],
     description: "",
@@ -268,7 +271,8 @@ let challenges = [
   },
   {
     id: 4,
-    creator: "CHALLENGE 2",
+    creator: "Marine",
+    titre: "Facile",
     xp: 20,
     completedBy: [],
     description: "",
@@ -279,22 +283,12 @@ let challenges = [
   },
   {
     id: 5,
-    creator: "CHALLENGE 3",
+    creator: "Marine",
+    titre: "2.0",
     xp: 20,
     completedBy: [],
     description: "",
     media: { type: "video", src: "https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/challenge-videos/challenge3.mp4" },
-    likes: [],
-    comments: [],
-    timestamp: new Date()
-  },
-  {
-    id: 6,
-    creator: "CHALLENGE 4",
-    xp: 20,
-    completedBy: [],
-    description: "",
-    media: { type: "video", src: "https://osqyczwawbbwjwaubtvc.supabase.co/storage/v1/object/sign/saraillon/challenge-4.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81YTA3NDkyOC1lMjNkLTRjMjItYTI4YS1jOTQ2ODJlZjBkMGUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzYXJhaWxsb24vY2hhbGxlbmdlLTQubXA0Iiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4Mzc4NTA2NCwiZXhwIjoxODE1MzIxMDY0fQ.qze-R5Wsc239kejykq1fMWUGBPyxEvzTPKDF_-gJWBc" },
     likes: [],
     comments: [],
     timestamp: new Date()

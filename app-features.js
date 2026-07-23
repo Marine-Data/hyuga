@@ -363,50 +363,62 @@ function renderTresor() {
   if (!container) return;
 
   if (treasureHuntItems.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 30px; color: var(--primary-light); font-size: 13px;">Chargement de la chasse au trésor...</div>';
+    container.innerHTML = '<div style="text-align:center; padding: 34px; color: rgba(255,253,247,0.7); font-size: 13px;">Chargement de la chasse au trésor…</div>';
     return;
   }
 
-  const foundCount = treasureHuntItems.filter(i => i.found).length;
+  const trouves = treasureHuntItems.filter(i => i.found).length;
   const total = treasureHuntItems.length;
+  const pct = Math.round((trouves / total) * 100);
+  const xpTotal = treasureHuntItems.filter(i => i.found).reduce((sum, i) => sum + (i.xp || 0), 0);
 
+  // ✅ Refonte 23/07 : le Trésor était une liste de cases à cocher sur fond sable, qui
+  // jurait avec le reste de la section. Il devient un tableau de butin : chaque objet
+  // est une carte, verrouillée tant qu'on ne l'a pas trouvée, puis dorée avec sa preuve.
   let html = `
-    <div style="margin-bottom: 16px; text-align: center;">
-      <div style="font-size: 13px; font-weight: 700; color: var(--primary);">${foundCount} / ${total} trésors trouvés</div>
-      <div style="height: 8px; border-radius: 5px; background: var(--bg-sunken); overflow: hidden; margin-top: 6px;">
-        <div style="height: 100%; width: ${Math.round((foundCount / total) * 100)}%; background: linear-gradient(90deg, var(--accent-gold), var(--accent-cyan)); border-radius: 5px;"></div>
+    <div style="position: relative; border-radius: 24px; background: linear-gradient(160deg, #c99a3f, #8a6414); box-shadow: 0 6px 0 rgba(6,43,53,0.5); padding: 20px; overflow: hidden; margin-bottom: 18px;">
+      <div style="position: absolute; top: -40px; right: -30px; font-size: 120px; opacity: 0.13; line-height: 1;">🗺️</div>
+      <div style="position: relative;">
+        <span class="jeu-arcade" style="font-size: 10px; color: #ffe9b8; letter-spacing: 1px;">BUTIN</span>
+        <div class="jeu-arcade" style="font-size: 32px; color: #fffdf7; text-shadow: 0 3px 0 rgba(0,0,0,0.25); margin: 12px 0 4px;">${trouves}<span style="font-size: 15px; color: #ffe9b8;">/${total}</span></div>
+        <div class="jeu-texte" style="font-size: 13px; color: #ffe9b8;">objets trouvés · ${xpTotal} XP amassés</div>
+        <div style="height: 16px; border-radius: 8px; background: rgba(0,0,0,0.28); overflow: hidden; margin-top: 13px;">
+          <div style="height: 100%; width: ${pct}%; border-radius: 8px; background: linear-gradient(90deg, #f4b942, #fffdf7);"></div>
+        </div>
       </div>
     </div>
   `;
 
-  treasureHuntItems.forEach(item => {
-    html += `
-      <div class="card" id="tresor-item-${item.id}" style="padding: 12px; margin-bottom: 10px; background: ${item.found ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%)' : 'var(--bg-sunken)'}; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); opacity: ${item.found ? 0.9 : 1};">
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <input type="checkbox" ${item.found ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-cyan);">
-          <span style="font-size: 20px;">${item.emoji || '🗺️'}</span>
-          <div style="flex: 1;">
-            <div style="font-size: 13px; font-weight: 500; color: var(--primary); ${item.found ? 'text-decoration: line-through;' : ''}">${escapeHtml(item.item)}</div>
-            ${item.found_by ? `<div style="font-size: 11px; color: var(--primary-light);">Trouvé par ${escapeHtml(item.found_by)}</div>` : ''}
+  html += treasureHuntItems.map(item => {
+    const trouve = !!item.found;
+    return `
+      <div id="tresor-item-${item.id}" class="jeu-carte" style="${trouve ? 'background: linear-gradient(160deg, #fff6e2, #f9e6bd);' : 'background: rgba(255,253,247,0.09); box-shadow: none;'} gap: 11px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label style="cursor: pointer; flex-shrink: 0; width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 21px; background: ${trouve ? '#f4b942' : 'rgba(0,0,0,0.22)'}; ${trouve ? 'box-shadow: 0 3px 0 #c99a3f;' : ''}">
+            <span style="${trouve ? '' : 'opacity: .45; filter: grayscale(1);'}">${item.emoji || '🗺️'}</span>
+            <input type="checkbox" ${trouve ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="display: none;">
+          </label>
+          <div style="flex: 1; min-width: 0;">
+            <div class="jeu-titre" style="font-size: 16px; color: ${trouve ? '#4a2c00' : '#fffdf7'}; line-height: 1.2;">${escapeHtml(item.item)}</div>
+            ${item.found_by
+              ? `<div class="jeu-texte" style="font-size: 11.5px; color: #8a6414; margin-top: 3px;">déniché par ${escapeHtml(item.found_by)}</div>`
+              : `<div class="jeu-arcade" style="font-size: 7.5px; color: rgba(255,253,247,0.5); margin-top: 5px; letter-spacing: .5px;">PAS ENCORE TROUVÉ</div>`}
           </div>
-          <span style="font-size: 11px; font-weight: 700; color: var(--accent-gold);">+${item.xp}</span>
+          <span class="jeu-arcade" style="flex-shrink: 0; font-size: 9px; padding: 7px 8px; border-radius: 10px; background: ${trouve ? '#f4b942' : 'rgba(244,185,66,0.16)'}; color: ${trouve ? '#4a2c00' : '#f4b942'}; ${trouve ? 'box-shadow: 0 3px 0 #c99a3f;' : ''}">+${item.xp}</span>
         </div>
+
         ${item.photo_url ? `
-          <div style="margin-top: 10px; border-radius: 8px; overflow: hidden; max-height: 220px;">
+          <div style="border-radius: 14px; overflow: hidden; max-height: 240px;">
             <img src="${item.photo_url}" style="width: 100%; height: auto; display: block;">
-          </div>
-        ` : `
-          <div style="margin-top: 10px;">
-            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 6px 10px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
-              📷 Ajouter une photo-preuve
-              <input type="file" accept="image/*" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
-            </label>
-            <span id="tresor-progress-${item.id}" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
-          </div>
-        `}
-      </div>
-    `;
-  });
+          </div>` : `
+          <label class="jeu-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 14px; cursor: pointer; background: ${trouve ? 'rgba(201,154,63,0.18)' : 'rgba(255,253,247,0.1)'}; color: ${trouve ? '#8a6414' : 'rgba(255,253,247,0.85)'}; --ombre-btn: transparent;">
+            <span style="font-size: 15px;">📷</span>
+            <span class="jeu-arcade" style="font-size: 8.5px; letter-spacing: .4px;">AJOUTER LA PREUVE</span>
+            <input type="file" accept="image/*" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
+          </label>
+          <span id="tresor-progress-${item.id}" class="jeu-texte" style="font-size: 11px; color: rgba(255,253,247,0.7); text-align: center;"></span>`}
+      </div>`;
+  }).join('');
 
   container.innerHTML = html;
 }

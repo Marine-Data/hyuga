@@ -259,20 +259,15 @@
     }
 
     /* TABS */
-    /* ✅ SECTION DÉFIS — fond marin profond (23/07)
-       C'est la seule partie « jeu » de l'app : elle assume une identité à part.
-       Le sable ne permettait pas aux couleurs vives de ressortir. Le fond ne
-       s'applique qu'au panneau des quêtes ; le Trésor et le Classement gardent le
-       fond clair, car leurs textes sont en encre et deviendraient illisibles. */
-    #quest-panel-quetes {
-      background: linear-gradient(180deg, #1fb6c9 0%, #0e7a90 45%, #06323d 100%);
-      border-radius: 24px;
-      padding: 18px 14px 22px;
-      margin: 0 -6px;
+    /* Lueur discrète sur le bouton d'action principal des défis. */
+    @keyframes lueur-arcade {
+      0%, 100% { box-shadow: 0 7px 0 #c14b5e; }
+      50%      { box-shadow: 0 7px 0 #c14b5e, 0 0 22px rgba(255,128,149,0.55); }
     }
-    /* Effet d'enfoncement des boutons épais de la section */
-    .press-btn { transition: transform .06s ease, box-shadow .06s ease; }
-    .press-btn:active { transform: translateY(6px); box-shadow: none !important; }
+    .btn-go { animation: lueur-arcade 2.6s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .btn-go { animation: none; } }
+
+    #challenges .band-header { box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
 
     .tab-nav {
       display: flex;

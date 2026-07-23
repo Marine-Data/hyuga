@@ -1275,9 +1275,10 @@ function switchQuestPanel(panel) {
     const active = key === panel;
     if (panelEl) panelEl.style.display = active ? 'block' : 'none';
     if (btnEl) {
-      btnEl.style.background = active ? 'var(--bg-raised)' : 'transparent';
-      btnEl.style.color = active ? 'var(--primary)' : 'var(--primary-light)';
-      btnEl.style.boxShadow = active ? '0 2px 6px rgba(12, 47, 58, 0.08)' : 'none';
+      // ✅ Sous-onglets sombres (23/07) : l'onglet actif est une touche dorée en relief.
+      btnEl.style.background = active ? '#f4b942' : 'transparent';
+      btnEl.style.color = active ? '#4a2c00' : 'rgba(255,253,247,0.6)';
+      btnEl.style.boxShadow = active ? '0 3px 0 #c99a3f' : 'none';
     }
   });
 
