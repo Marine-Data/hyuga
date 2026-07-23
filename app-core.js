@@ -1964,8 +1964,10 @@ function renderHomeGroupSpirit() {
   else if (pct < 90) msg = 'Le groupe est très soudé, ça avance fort !';
   else msg = 'Esprit de groupe au top, bravo à tous !';
 
+  // ✅ Cliquable : la jauge mélange défis et corvées, on mène vers les défis qui en
+  // sont la plus grosse part. Avant, cette carte avait tout d'un bouton sans en être un.
   container.innerHTML = `
-    <div class="card-luxe">
+    <div class="card-luxe" onclick="switchTab('challenges')" style="cursor: pointer;">
       <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
         <span class="eyebrow" style="margin-bottom: 0;">Esprit de groupe</span>
         <span class="title-serif" style="font-size: 16px; color: var(--accent-sand);">${pct}%</span>

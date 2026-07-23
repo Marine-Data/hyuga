@@ -13,7 +13,7 @@
 // même mélanger ancien et nouveau (ex : le nouvel app-core.js avec l'ancien
 // saraillon-data.js, ce qui donne une carte Réservations vide).
 // v2 = planning du 22/07/2026 (plongée, réservations, correctifs de suppression).
-const CACHE_VERSION = 'saraillon-v5';
+const CACHE_VERSION = 'saraillon-v6';
 const APP_SHELL = [
   './',
   './index.html',
