@@ -259,6 +259,21 @@
     }
 
     /* TABS */
+    /* ✅ SECTION DÉFIS — fond marin profond (23/07)
+       C'est la seule partie « jeu » de l'app : elle assume une identité à part.
+       Le sable ne permettait pas aux couleurs vives de ressortir. Le fond ne
+       s'applique qu'au panneau des quêtes ; le Trésor et le Classement gardent le
+       fond clair, car leurs textes sont en encre et deviendraient illisibles. */
+    #quest-panel-quetes {
+      background: linear-gradient(180deg, #1fb6c9 0%, #0e7a90 45%, #06323d 100%);
+      border-radius: 24px;
+      padding: 18px 14px 22px;
+      margin: 0 -6px;
+    }
+    /* Effet d'enfoncement des boutons épais de la section */
+    .press-btn { transition: transform .06s ease, box-shadow .06s ease; }
+    .press-btn:active { transform: translateY(6px); box-shadow: none !important; }
+
     .tab-nav {
       display: flex;
       gap: 8px;
@@ -1153,6 +1168,45 @@
     }
 
     /* BOTTOM TAB BAR - NAVIGATION (floating pill style) */
+    /* ============ SECTION DÉFIS — ambiance jeu ============
+       ✅ Refonte du 23/07. Seul onglet de l'app à quitter le fond sable : un dégradé
+       mer profonde qui descend vers la nuit, pour que les couleurs vives ressortent.
+       Les polices Baloo 2 et Press Start 2P étaient déjà chargées par index.html
+       depuis des mois sans jamais servir — elles servent enfin. */
+    #challenges {
+      background: linear-gradient(180deg, #1fb6c9 0%, #0e7a90 26%, #083f4d 62%, #062b35 100%);
+      background-attachment: local;
+      min-height: 100%;
+    }
+    #challenges .content { padding-bottom: 120px; }
+
+    .jeu-arcade { font-family: 'Press Start 2P', monospace; font-weight: 400; }
+    .jeu-titre  { font-family: 'Baloo 2', sans-serif; font-weight: 800; }
+    .jeu-texte  { font-family: 'Josefin Sans', sans-serif; font-weight: 600; }
+
+    /* Effet touche épaisse : le bouton s'enfonce vraiment sous le doigt. */
+    .jeu-btn { transition: transform 0.06s ease, box-shadow 0.06s ease; }
+    .jeu-btn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--ombre-btn, #093f4a) !important; }
+
+    .jeu-carte {
+      background: #fffdf7;
+      border-radius: 22px;
+      box-shadow: 0 6px 0 rgba(6, 43, 53, 0.45);
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .jeu-av {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 3px solid #fffdf7; margin-left: -9px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 12px;
+      background-size: cover; background-position: center; flex-shrink: 0;
+    }
+    .jeu-av:first-child { margin-left: 0; }
+
     .bottom-tab-bar {
       position: fixed;
       bottom: 16px;
