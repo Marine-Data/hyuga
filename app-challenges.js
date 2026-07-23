@@ -6,13 +6,14 @@
 
 // Le classement se déplie en touchant le bandeau de score, pour ne pas occuper
 // l'écran en permanence.
-// L'onglet Défis a déjà un sous-panneau « Classement » : le bandeau de score y renvoie
-// au lieu de dupliquer la liste. Un classement à deux endroits, c'est un de trop.
+// Le classement se déplie sous le bandeau de score, là où on le cherche.
+let classementDeplie = false;
 function toggleClassementDefis() {
-  if (typeof switchQuestPanel === 'function') switchQuestPanel('classement');
+  classementDeplie = !classementDeplie;
+  renderChallenges();
 }
 
-// Menu "⋯" (modifier / dupliquer / supprimer), réservé à l'autrice du défi.
+// Menu « ⋯ » (modifier / dupliquer / supprimer), réservé à l'autrice du défi.
 // Avant, ces trois icônes étaient visibles par tout le monde en permanence.
 let menuDefiOuvert = null;
 function toggleMenuDefi(id) {
@@ -23,65 +24,89 @@ function toggleMenuDefi(id) {
 function couleurParticipante(nom) {
   const palette = ['#ef6a7c', '#f4b942', '#0e7a90', '#2fae6e', '#1fb6c9', '#c99a3f', '#8e6bb5', '#e08a3c'];
   const p = PARTICIPANTS.find(x => x.name === nom);
-  return palette[(p ? p.id : nom.length) % palette.length];
+  return palette[(p ? p.id : (nom || '').length) % palette.length];
 }
 
-function renderChallenges() {
+// ✅ Bandeau de score — rendu à part car il vit AU-DESSUS des sous-onglets
+// (visible aussi bien depuis Quêtes que depuis Trésor).
+function renderChallengesScore() {
+  const el = document.getElementById('challenges-score');
+  if (!el) return;
+
   const classement = computeXpLeaderboard();
   const moi = classement.find(r => r.p.id === currentUser.id);
   const monXp = moi ? moi.xp : 0;
   const monRang = moi ? (classement.indexOf(moi) + 1) : classement.length;
   const meilleur = classement.length ? classement[0].xp : 0;
-  const pctBarre = meilleur > 0 ? Math.round((monXp / meilleur) * 100) : 0;
-  const relevesParMoi = challenges.filter(ch => (ch.completedBy || []).includes(currentUser.id)).length;
+  const pct = meilleur > 0 ? Math.round((monXp / meilleur) * 100) : 0;
+  const releves = challenges.filter(ch => (ch.completedBy || []).includes(currentUser.id)).length;
 
-  // Message qui donne un cap : "plus que X XP pour doubler Y"
-  let phrase;
   const devant = classement[classement.indexOf(moi) - 1];
+  let phrase;
   if (challenges.length === 0) phrase = 'aucun défi pour l\'instant';
   else if (devant && devant.xp > monXp) phrase = `plus que ${devant.xp - monXp} XP pour doubler ${escapeHtml(devant.p.name)}`;
-  else if (monRang === 1 && classement.length > 1) phrase = 'tu es en tête \U0001f451';
+  else if (monRang === 1 && classement.length > 1) phrase = 'tu es en tête 👑';
   else phrase = 'lance-toi, tout est à gagner';
 
-  const medailles = ['#f4b942', '#c9c9c9', '#c99a3f'];
-
-  let html = `
-    <div onclick="toggleClassementDefis()" style="cursor: pointer; position: relative; border-radius: 26px; background: linear-gradient(160deg, #0e7a90, #1fb6c9); box-shadow: 0 6px 0 #062f38; padding: 20px; overflow: hidden; margin-bottom: 14px;">
+  el.innerHTML = `
+    <div onclick="toggleClassementDefis()" style="cursor: pointer; position: relative; border-radius: 26px; background: linear-gradient(160deg, #0e7a90, #1fb6c9); box-shadow: 0 6px 0 #06323d; padding: 20px; overflow: hidden; margin-bottom: ${classementDeplie ? '10px' : '18px'};">
       <div style="position: absolute; top: -36px; right: -36px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.08);"></div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
         <span style="font-family: 'Press Start 2P', monospace; color: #fffdf7; font-size: 10px; letter-spacing: 1px;">TON SCORE</span>
         <div style="text-align: right;">
-          <div style="font-family: 'Press Start 2P', monospace; color: #fffdf7; font-size: 9px;">RANG</div>
-          <div style="font-family: 'Press Start 2P', monospace; color: #f4b942; font-size: 20px; margin-top: 4px;">${monRang}<span style="font-size: 11px;">e</span></div>
+          <div style="font-family: 'Press Start 2P', monospace; color: #c4ecf3; font-size: 8px;">RANG</div>
+          <div style="font-family: 'Press Start 2P', monospace; color: #f4b942; font-size: 20px; margin-top: 5px;">${monRang}<span style="font-size: 11px;">e</span></div>
         </div>
       </div>
-      <div style="font-family: 'Press Start 2P', monospace; color: #fffdf7; font-size: 38px; line-height: 1; text-shadow: 0 3px 0 #062f38; margin: 14px 0 12px; position: relative;">${monXp}<span style="font-size: 15px; color: #f4b942;"> XP</span></div>
-      <div style="height: 18px; border-radius: 9px; background: rgba(0,0,0,0.22); overflow: hidden; position: relative;">
-        <div style="height: 100%; width: ${pctBarre}%; border-radius: 9px; background: linear-gradient(90deg, #f4b942, #c99a3f);"></div>
+      <div style="font-family: 'Press Start 2P', monospace; color: #fffdf7; font-size: 36px; line-height: 1; text-shadow: 0 3px 0 #06323d; margin: 14px 0 12px; position: relative;">${monXp}<span style="font-size: 14px; color: #f4b942;"> XP</span></div>
+      <div style="height: 18px; border-radius: 9px; background: rgba(0,0,0,0.24); overflow: hidden; position: relative;">
+        <div style="height: 100%; width: ${pct}%; border-radius: 9px; background: linear-gradient(90deg, #f4b942, #ffe08a);"></div>
       </div>
-      <div style="color: #fffdf7; font-size: 13px; font-weight: 600; margin-top: 10px; position: relative;">${relevesParMoi} défi${relevesParMoi > 1 ? 's' : ''} relevé${relevesParMoi > 1 ? 's' : ''} sur ${challenges.length} · ${phrase}</div>
-      <div style="text-align: center; color: rgba(255,253,247,0.6); font-size: 11px; margin-top: 8px; position: relative;">🏆 voir le classement complet →</div>
+      <div style="color: #fffdf7; font-size: 13px; font-weight: 600; margin-top: 10px; position: relative;">${releves} défi${releves > 1 ? 's' : ''} relevé${releves > 1 ? 's' : ''} sur ${challenges.length} · ${phrase}</div>
+      <div style="text-align: center; color: rgba(255,253,247,0.65); font-size: 17px; margin-top: 6px; position: relative; line-height: 1;">${classementDeplie ? '▴' : '▾'}</div>
     </div>
+    <div id="classement-content" style="display: ${classementDeplie ? 'block' : 'none'}; margin-bottom: 18px;"></div>
   `;
 
+  if (classementDeplie && typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+}
+
+function renderChallenges() {
+  renderChallengesScore();
+
+  const zone = document.getElementById('challenges-content');
+  if (!zone) return;
+
   if (challenges.length === 0) {
-    html += `<div style="text-align: center; padding: 40px 20px; color: rgba(255,253,247,0.7);">
-      <div style="font-size: 40px; margin-bottom: 12px;">\U0001f3af</div>
+    zone.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: rgba(255,253,247,0.75);">
+      <div style="font-size: 40px; margin-bottom: 12px;">🎯</div>
       <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 17px; color: #fffdf7;">Aucun défi pour l'instant</div>
       <div style="font-size: 13px; margin-top: 6px;">Lance le premier avec le bouton « Créer ».</div>
     </div>`;
-    document.getElementById('challenges-content').innerHTML = html;
     return;
   }
 
-  html += challenges.map(ch => {
+  zone.innerHTML = challenges.map(ch => {
     const completedBy = ch.completedBy || [];
     const parMoi = completedBy.includes(currentUser.id);
     const xp = ch.xp || 20;
     const pct = Math.round((completedBy.length / PARTICIPANTS.length) * 100);
     const jaime = (ch.likes || []).includes(currentUser.id);
     const estAutrice = ch.creator && currentUser.name && ch.creator.toUpperCase() === currentUser.name.toUpperCase();
-    const teinte = ch.isQuest ? '#2fae6e' : '#1fb6c9';
+
+    // ✅ Titre et description sont maintenant DEUX champs distincts (colonne `title`
+    // ajoutée le 23/07). Avant, le titre était la première ligne de la description,
+    // qui était ensuite réaffichée en entier — d'où la répétition et le pavé de texte.
+    // `titre` existait déjà dans saraillon-data.js mais n'était jamais affiché ;
+    // `title` est la colonne Supabase ajoutée le 23/07. On accepte les deux.
+    const titre = ch.title || ch.titre || (ch.description || '').split('\n')[0] || 'Sans titre';
+    const detail = (ch.description || '').trim();
+    const detailCourt = detail.length > 150 ? detail.slice(0, 150) + '…' : detail;
+
+    // 🎨 Plus de vert : les quêtes prennent l'or (elles valent 30 à 50 XP), les défis
+    // gardent le corail. Le vert jurait avec la palette Méditerranée.
+    const teinte = ch.isQuest ? '#f4b942' : '#1fb6c9';
+    const fondJauge = ch.isQuest ? 'rgba(244,185,66,0.18)' : 'rgba(31,182,201,0.15)';
 
     const visibles = completedBy.slice(0, 4);
     const surplus = completedBy.length - visibles.length;
@@ -94,17 +119,19 @@ function renderChallenges() {
       : '');
 
     return `
-    <div style="background: #fffdf7; border-radius: 24px; box-shadow: 0 6px 0 rgba(6,47,56,0.35); padding: 17px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="background: #fffdf7; border-radius: 24px; box-shadow: 0 6px 0 rgba(6,50,61,0.4); padding: 17px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 11px;">
 
       <div style="display: flex; align-items: flex-start; gap: 10px;">
         <div style="flex: 1; min-width: 0;">
           ${ch.isQuest
-            ? `<span style="display: inline-block; font-family: 'Press Start 2P', monospace; background: #2fae6e; color: #fffdf7; font-size: 8px; letter-spacing: .4px; padding: 6px 9px; border-radius: 8px; box-shadow: 0 3px 0 #1f7f4e; margin-bottom: 8px;">QUÊTE${ch.questLabel ? ' · ' + escapeHtml(ch.questLabel) : ''}</span>`
-            : `<div style="font-family: 'Press Start 2P', monospace; color: #ef6a7c; font-size: 8px; letter-spacing: .5px; margin-bottom: 7px;">PROPOSÉ PAR ${escapeHtml((ch.creator || '?').toUpperCase())}</div>`}
-          <div style="font-family: 'Baloo 2', sans-serif; color: #0c2f3a; font-size: 21px; font-weight: 800; line-height: 1.15;">${escapeHtml(ch.description || 'Sans titre').split('\n')[0]}</div>
+            ? `<span style="display: inline-block; font-family: 'Press Start 2P', monospace; background: #f4b942; color: #4a2c00; font-size: 8px; letter-spacing: .4px; padding: 6px 9px; border-radius: 8px; box-shadow: 0 3px 0 #c99a3f; margin-bottom: 9px;">QUÊTE</span>`
+            : `<div style="font-family: 'Press Start 2P', monospace; color: #ef6a7c; font-size: 8px; letter-spacing: .5px; margin-bottom: 8px;">PROPOSÉ PAR ${escapeHtml((ch.creator || '?').toUpperCase())}</div>`}
+          <div style="font-family: 'Baloo 2', sans-serif; color: #0c2f3a; font-size: 21px; font-weight: 800; line-height: 1.15;">${escapeHtml(titre)}</div>
         </div>
-        <span style="font-family: 'Press Start 2P', monospace; background: #f4b942; color: #0c2f3a; font-size: 10px; padding: 8px 9px; border-radius: 12px; box-shadow: 0 4px 0 #c99a3f; white-space: nowrap; flex-shrink: 0;">+${xp}XP</span>
+        <span style="font-family: 'Press Start 2P', monospace; background: #f4b942; color: #4a2c00; font-size: 10px; padding: 8px 9px; border-radius: 12px; box-shadow: 0 4px 0 #c99a3f; white-space: nowrap; flex-shrink: 0;">+${xp}XP</span>
       </div>
+
+      ${detail ? `<div style="font-size: 13.5px; line-height: 1.5; color: rgba(12,47,58,0.72);">${escapeHtml(detailCourt).replace(/\n/g, '<br>')}${detail.length > 150 ? ` <span onclick="event.stopPropagation(); this.parentElement.innerHTML = this.dataset.full" data-full="${escapeHtml(detail).replace(/"/g, '&quot;').replace(/\n/g, '<br>')}" style="color: #0e7a90; font-weight: 700; cursor: pointer;">voir plus</span>` : ''}</div>` : ''}
 
       ${ch.media ? `<div style="border-radius: 18px; overflow: hidden; ${ch.media.type === 'video' ? 'background: #000;' : ''}">${ch.media.type === 'video'
         ? `<video src="${ch.media.src}" style="width: 100%; max-height: 60vh; display: block;" controls playsinline preload="metadata"></video>`
@@ -115,21 +142,21 @@ function renderChallenges() {
         <span style="font-size: 12.5px; color: #0c2f3a; font-weight: 600;">${completedBy.length === 0 ? 'Personne ne l\'a encore relevé' : `${completedBy.length} sur ${PARTICIPANTS.length} l'ont relevé`}</span>
       </div>
 
-      <div style="height: 14px; border-radius: 7px; background: ${ch.isQuest ? 'rgba(47,174,110,0.15)' : 'rgba(31,182,201,0.15)'}; overflow: hidden;">
+      <div style="height: 14px; border-radius: 7px; background: ${fondJauge}; overflow: hidden;">
         <div style="height: 100%; width: ${pct}%; border-radius: 7px; background: ${teinte};"></div>
       </div>
 
       <div style="display: flex; align-items: center; gap: 16px;">
-        <button onclick="event.stopPropagation(); likeCh(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 6px; color: ${jaime ? '#ef6a7c' : 'rgba(12,47,58,0.5)'}; font-weight: 700; font-size: 14px;">
+        <button onclick="event.stopPropagation(); likeCh(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 6px; color: ${jaime ? '#ef6a7c' : 'rgba(12,47,58,0.45)'}; font-weight: 700; font-size: 14px;">
           <span style="font-size: 16px;">♥</span>${(ch.likes || []).length}
         </button>
-        <button onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; color: #0c2f3a; font-weight: 700; font-size: 14px;">\U0001f4ac ${(ch.comments || []).length}</button>
+        <button onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; color: rgba(12,47,58,0.6); font-weight: 700; font-size: 14px;">💬 ${(ch.comments || []).length}</button>
         <div style="flex: 1;"></div>
         ${estAutrice ? `
         <div style="position: relative;">
-          <button onclick="event.stopPropagation(); toggleMenuDefi(${ch.id})" aria-label="Options du défi" style="border: none; background: none; padding: 4px 6px; cursor: pointer; color: rgba(12,47,58,0.5); font-size: 18px; line-height: 1;">⋯</button>
+          <button onclick="event.stopPropagation(); toggleMenuDefi(${ch.id})" aria-label="Options du défi" style="border: none; background: none; padding: 4px 6px; cursor: pointer; color: rgba(12,47,58,0.45); font-size: 18px; line-height: 1;">⋯</button>
           ${menuDefiOuvert === ch.id ? `
-          <div style="position: absolute; right: 0; top: 28px; background: #fffdf7; border-radius: 14px; box-shadow: 0 6px 18px rgba(6,47,56,0.28); padding: 8px; display: flex; flex-direction: column; z-index: 6; min-width: 132px;">
+          <div style="position: absolute; right: 0; top: 28px; background: #fffdf7; border-radius: 14px; box-shadow: 0 6px 18px rgba(6,50,61,0.3); padding: 8px; display: flex; flex-direction: column; z-index: 6; min-width: 132px;">
             <button onclick="event.stopPropagation(); menuDefiOuvert = null; editChallenge(${ch.id})" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #0c2f3a; font-weight: 600;">Modifier</button>
             <button onclick="event.stopPropagation(); menuDefiOuvert = null; duplicateChallenge(${ch.id})" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #0c2f3a; font-weight: 600;">Dupliquer</button>
             <button onclick="event.stopPropagation(); menuDefiOuvert = null; confirmDeleteChallenge(${ch.id})" style="border: none; background: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #ef6a7c; font-weight: 700;">Supprimer</button>
@@ -145,26 +172,25 @@ function renderChallenges() {
           </div>`).join('')}
         <div style="display: flex; gap: 8px;">
           <input id="ch-comment-${ch.id}" placeholder="Écrire un commentaire…" style="flex: 1; border: none; background: rgba(12,47,58,0.06); border-radius: 12px; padding: 10px 12px; font-size: 13px; color: #0c2f3a; margin-bottom: 0;">
-          <button onclick="addChallengeComment(${ch.id})" style="border: none; background: #0e7a90; color: #fffdf7; font-weight: 700; padding: 0 15px; border-radius: 12px; box-shadow: 0 3px 0 #062f38; cursor: pointer;">OK</button>
+          <button onclick="addChallengeComment(${ch.id})" style="border: none; background: #0e7a90; color: #fffdf7; font-weight: 700; padding: 0 15px; border-radius: 12px; box-shadow: 0 3px 0 #06323d; cursor: pointer;">OK</button>
         </div>
       </div>
 
       ${parMoi ? `
-        <div style="display: flex; align-items: center; gap: 9px; background: rgba(47,174,110,0.12); border-radius: 16px; padding: 12px 14px;">
-          <span style="width: 22px; height: 22px; border-radius: 50%; background: #2fae6e; color: #fffdf7; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0;">✓</span>
-          <span style="font-size: 13.5px; font-weight: 700; color: #0c2f3a; flex: 1;">Tu l'as relevé — ${xp} XP gagnés</span>
-          <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" style="border: none; background: none; color: rgba(12,47,58,0.45); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
+        <div style="display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #fdf3dd, #f9e6bd); border-radius: 16px; padding: 12px 14px;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 13px;">🏅</span>
+          <span style="font-size: 13.5px; font-weight: 700; color: #4a2c00; flex: 1;">Relevé — ${xp} XP dans la poche</span>
+          <button onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})" style="border: none; background: none; color: rgba(74,44,0,0.5); font-size: 11.5px; cursor: pointer; text-decoration: underline;">annuler</button>
         </div>`
       : `
-        <label class="press-btn" style="display: block; width: 100%; background: #ef6a7c; color: #fffdf7; font-family: 'Baloo 2', sans-serif; font-size: 16px; font-weight: 800; padding: 14px 0; border-radius: 16px; box-shadow: 0 6px 0 #c14b5e; cursor: pointer; text-align: center;">
-          Relever le défi
+        <label class="press-btn" style="display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; background: linear-gradient(160deg, #ff8095, #ef6a7c); color: #fffdf7; padding: 16px 0; border-radius: 18px; box-shadow: 0 6px 0 #c14b5e; cursor: pointer; text-align: center; box-sizing: border-box;">
+          <span style="font-size: 18px;">⚡</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 11px; letter-spacing: 0.5px; line-height: 1.4;">RELEVER</span>
           <input type="file" accept="image/*,video/*" style="display: none;" onchange="event.stopPropagation(); submitChallengeProof(${ch.id}, this)">
         </label>`}
 
     </div>`;
   }).join('');
-
-  document.getElementById('challenges-content').innerHTML = html;
 }
 
 function toggleChallengeDetail(id) {

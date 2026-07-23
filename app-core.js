@@ -643,6 +643,7 @@ async function loadFromSupabaseCloud() {
             isQuest: row.is_quest || false,
             questLabel: row.quest_label || null,
             xp: row.xp || 20,
+            title: row.title || null,
             description: row.description || '',
             media: row.media || null,
             completedBy: row.completed_by || [],
@@ -946,6 +947,7 @@ function saveAllData() {
         is_quest: ch.isQuest || false,
         quest_label: ch.questLabel || null,
         xp: ch.xp || 20,
+        title: ch.title || ch.titre || null, // ✅ champ ajouté le 23/07, distinct de la description
         description: ch.description || '',
         media: ch.media || null,
         completed_by: ch.completedBy || [],
@@ -1262,7 +1264,7 @@ async function uploadChallengeVideo(challengeId, inputEl) {
 const QUEST_PANELS = {
   quetes:     { band: 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg', eyebrow: 'Aventure', title: 'Quêtes', emoji: '🎮 Quêtes' },
   tresor:     { band: 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-tresor.jpg', eyebrow: 'Exploration', title: 'Chasse au trésor', emoji: '🗺️ Trésor' },
-  classement: { band: 'https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg', eyebrow: 'Le groupe', title: 'Classement', emoji: '🏆 Classement' },
+  // ✅ 'classement' retiré le 23/07 : le classement se déplie sous le bandeau de score.
 };
 
 function switchQuestPanel(panel) {

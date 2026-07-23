@@ -475,19 +475,17 @@
           <button class="tab-btn btn-cta" onclick="showCreateChallenge()">➕ Créer</button>
         </div>
         <div class="content" id="challenges-content-wrap">
-          <div class="band-header">
-            <img id="quest-band-photo" src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/band-quete.jpg" alt="">
-            <div class="band-overlay">
-              <span class="eyebrow" id="quest-band-eyebrow" style="color: #ffe9b8;">Aventure</span>
-              <div class="title-serif" id="quest-band-title" style="color: #fff;">Quêtes</div>
-            </div>
-          </div>
+          <!-- ✅ 23/07 : le bandeau de score passe TOUT EN HAUT, avant les sous-onglets.
+               Il porte l'identité de la section, ce qui rend le bandeau photo « Aventure /
+               Quêtes » redondant — il est retiré (c'était lui, le bandeau à moitié vide).
+               L'onglet « Classement » disparaît aussi : le classement se déplie
+               directement sous le score, où on le cherche naturellement. -->
+          <div id="challenges-score"></div>
           <div id="mystery-photo-content" style="margin-bottom: 18px;"></div>
 
           <div style="display: flex; gap: 4px; background: var(--bg-sunken); border-radius: 10px; padding: 3px; margin-bottom: 16px;">
             <button id="quest-panel-tab-quetes" onclick="switchQuestPanel('quetes')" style="flex: 1; border: none; border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--bg-raised); color: var(--primary); box-shadow: 0 2px 6px rgba(12, 47, 58, 0.08); transition: all 0.2s ease;">🎮 Quêtes</button>
             <button id="quest-panel-tab-tresor" onclick="switchQuestPanel('tresor')" style="flex: 1; border: none; border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: transparent; color: var(--primary-light); transition: all 0.2s ease;">🗺️ Trésor</button>
-            <button id="quest-panel-tab-classement" onclick="switchQuestPanel('classement')" style="flex: 1; border: none; border-radius: 8px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: transparent; color: var(--primary-light); transition: all 0.2s ease;">🏆 Classement</button>
           </div>
 
           <div id="quest-panel-quetes">
@@ -495,9 +493,6 @@
           </div>
           <div id="quest-panel-tresor" style="display: none;">
             <div id="tresor-content"></div>
-          </div>
-          <div id="quest-panel-classement" style="display: none;">
-            <div id="classement-content"></div>
           </div>
         </div>
       </div>
