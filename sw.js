@@ -8,7 +8,12 @@
 // jour en arrière-plan à chaque visite ("stale-while-revalidate"). Les appels Supabase
 // ne sont JAMAIS mis en cache (données vivantes). Pour déployer une grosse mise à jour
 // immédiatement, incrémenter CACHE_VERSION ci-dessous.
-const CACHE_VERSION = 'saraillon-v1';
+// ⚠️ À INCRÉMENTER À CHAQUE DÉPLOIEMENT de fichiers .js/.html/.css, sinon les
+// téléphones continuent de servir l'ancienne version depuis le cache — et peuvent
+// même mélanger ancien et nouveau (ex : le nouvel app-core.js avec l'ancien
+// saraillon-data.js, ce qui donne une carte Réservations vide).
+// v2 = planning du 22/07/2026 (plongée, réservations, correctifs de suppression).
+const CACHE_VERSION = 'saraillon-v2';
 const APP_SHELL = [
   './',
   './index.html',
