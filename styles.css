@@ -259,15 +259,36 @@
     }
 
     /* TABS */
-    /* Lueur discrète sur le bouton d'action principal des défis. */
+    /* Bouton d'action principal des défis : bleu glace, halo cyan qui respire.
+       Inspiration des boutons d'action de jeux — biseau clair en haut, liseré blanc,
+       assise plus foncée dessous, et une lueur qui attire l'œil sans clignoter. */
     @keyframes lueur-arcade {
-      0%, 100% { box-shadow: 0 7px 0 #c14b5e; }
-      50%      { box-shadow: 0 7px 0 #c14b5e, 0 0 22px rgba(255,128,149,0.55); }
+      0%, 100% { box-shadow: 0 7px 0 #2a97ae, 0 0 0 rgba(127,220,239,0); }
+      50%      { box-shadow: 0 7px 0 #2a97ae, 0 0 26px rgba(127,220,239,0.75); }
     }
-    .btn-go { animation: lueur-arcade 2.6s ease-in-out infinite; }
+    .btn-go { animation: lueur-arcade 2.8s ease-in-out infinite; }
+    .btn-go:active { transform: translateY(5px); }
     @media (prefers-reduced-motion: reduce) { .btn-go { animation: none; } }
 
     #challenges .band-header { box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+
+    /* Barre de sous-onglets des Défis : collée sous l'en-tête pendant le défilement,
+       comme l'était l'ancienne barre d'actions. Le fond est opaque et flouté pour que
+       les cartes qui passent dessous ne la traversent pas. */
+    .quest-subtabs {
+      position: sticky;
+      top: 56px;
+      z-index: 39;
+      display: flex;
+      gap: 5px;
+      padding: 7px;
+      margin-bottom: 16px;
+      border-radius: 16px;
+      background: rgba(4, 34, 43, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
 
     .tab-nav {
       display: flex;

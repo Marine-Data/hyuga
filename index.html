@@ -481,7 +481,6 @@
               <span class="eyebrow" id="quest-band-eyebrow" style="color: #ffe9b8;">Aventure</span>
               <div class="title-serif" id="quest-band-title" style="color: #fff;">Quêtes</div>
             </div>
-            <button onclick="showCreateChallenge()" style="position: absolute; right: 12px; bottom: 12px; border: none; border-radius: 14px; padding: 10px 15px; cursor: pointer; background: linear-gradient(160deg, #ff8095, #ef6a7c); color: #fffdf7; font-family: 'Press Start 2P', monospace; font-size: 9px; box-shadow: 0 4px 0 #c14b5e; z-index: 2;">+ CRÉER</button>
           </div>
           <!-- ✅ Bandeau de score, au-dessus des sous-onglets : visible depuis Quêtes
                comme depuis Trésor. Le classement se déplie dessous, là où on le cherche,
@@ -489,10 +488,13 @@
           <div id="challenges-score"></div>
           <div id="mystery-photo-content" style="margin-bottom: 18px;"></div>
 
-          <!-- Sous-onglets en version sombre, accordés au fond de la section. -->
-          <div style="display: flex; gap: 5px; background: rgba(0,0,0,0.28); border-radius: 14px; padding: 5px; margin-bottom: 16px;">
-            <button id="quest-panel-tab-quetes" onclick="switchQuestPanel('quetes')" class="quest-subtab" style="flex: 1; border: none; border-radius: 10px; padding: 11px 6px; font-family: 'Press Start 2P', monospace; font-size: 9px; cursor: pointer; background: #f4b942; color: #4a2c00; box-shadow: 0 3px 0 #c99a3f;">QUÊTES</button>
-            <button id="quest-panel-tab-tresor" onclick="switchQuestPanel('tresor')" class="quest-subtab" style="flex: 1; border: none; border-radius: 10px; padding: 11px 6px; font-family: 'Press Start 2P', monospace; font-size: 9px; cursor: pointer; background: transparent; color: rgba(255,253,247,0.6); box-shadow: none;">TRÉSOR</button>
+          <!-- ✅ Barre COLLANTE (23/07) : c'est elle qui remplace l'ancienne bande sable,
+               elle reste donc figée sous l'en-tête quand on défile. Elle porte la
+               navigation ET le bouton « Créer », qui reste ainsi toujours à portée. -->
+          <div class="quest-subtabs">
+            <button id="quest-panel-tab-quetes" onclick="switchQuestPanel('quetes')" style="flex: 1; border: none; border-radius: 10px; padding: 11px 6px; font-family: 'Press Start 2P', monospace; font-size: 9px; cursor: pointer; background: #f4b942; color: #4a2c00; box-shadow: 0 3px 0 #c99a3f;">QUÊTES</button>
+            <button id="quest-panel-tab-tresor" onclick="switchQuestPanel('tresor')" style="flex: 1; border: none; border-radius: 10px; padding: 11px 6px; font-family: 'Press Start 2P', monospace; font-size: 9px; cursor: pointer; background: transparent; color: rgba(255,253,247,0.6); box-shadow: none;">TRÉSOR</button>
+            <button onclick="showCreateChallenge()" aria-label="Créer un défi" style="flex-shrink: 0; border: none; border-radius: 10px; padding: 11px 13px; cursor: pointer; background: linear-gradient(180deg, #bff0fb, #43c4dd); color: #0b4b5a; font-family: 'Press Start 2P', monospace; font-size: 11px; box-shadow: 0 3px 0 #2a97ae;">+</button>
           </div>
 
           <div id="quest-panel-quetes">
