@@ -874,7 +874,7 @@ function updatePushActivationBanner() {
 
   banner = document.createElement('div');
   banner.id = 'push-activation-banner';
-  banner.style.cssText = 'position: fixed; left: 12px; right: 12px; bottom: 84px; z-index: 9997; background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: #fff; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-size: 12.5px;';
+  banner.style.cssText = 'position: fixed; left: 12px; right: 12px; bottom: 84px; z-index: 9997; background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-sand) 100%); color: #fff; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-size: 12.5px;';
   banner.innerHTML = denied
     ? `
       <div style="flex: 1;">🔕 Les notifications sont bloquées pour cette app. Va dans les réglages de ton téléphone (Notifications → Saraillon) pour les réactiver.</div>

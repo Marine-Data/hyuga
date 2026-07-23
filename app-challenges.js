@@ -10,7 +10,7 @@ function renderChallenges() {
     const progressPct = Math.round((completedBy.length / totalParticipants) * 100);
     const title = ch.isQuest ? (ch.questLabel || 'QUÊTE') : ch.creator;
     const rowIcon = ch.isQuest
-      ? `<div style="width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-gold), #ffb700); display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; flex-shrink: 0;">🎮</div>`
+      ? `<div style="width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-gold), var(--accent-sand)); display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; flex-shrink: 0;">🎮</div>`
       : `<div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; flex-shrink: 0;">${ch.creator.charAt(0)}</div>`;
 
     return `
@@ -21,7 +21,7 @@ function renderChallenges() {
           <div class="title-serif" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(title)}</div>
           <div style="font-size: 10.5px; color: var(--primary-light); margin-bottom: 4px;">${completedBy.length}/${totalParticipants} relevé${completedBy.length > 1 ? 's' : ''} · ${xp} XP</div>
           <div style="height: 4px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden;">
-            <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%);"></div>
+            <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, var(--accent-sand) 100%);"></div>
           </div>
         </div>
         ${userCompleted ? '<span style="font-size: 16px;">✅</span>' : ''}
@@ -46,7 +46,7 @@ function renderChallenges() {
         <div style="margin-bottom: 12px; font-size: 13px; line-height: 1.5; white-space: pre-line; color: var(--primary);">${escapeHtml(ch.description)}</div>
         <div style="margin-bottom: 10px;">
           <div style="height: 5px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden;">
-            <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+            <div style="height: 100%; width: ${progressPct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, var(--accent-sand) 100%); transition: width 0.4s ease;"></div>
           </div>
         </div>
         ${completedBy.length > 0 ? `
@@ -68,7 +68,7 @@ function renderChallenges() {
         </div>` : ''}
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
           ${userCompleted ? `
-            <button class="btn btn-small" style="background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: white; flex: 1.4; font-weight: 700; border: none;" onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})">✅ Relevé ! (annuler)</button>
+            <button class="btn btn-small" style="background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-sand) 100%); color: white; flex: 1.4; font-weight: 700; border: none;" onclick="event.stopPropagation(); toggleChallengeCompletion(${ch.id})">✅ Relevé ! (annuler)</button>
           ` : `
             <label class="btn btn-small" style="background: var(--bg-sunken); color: var(--primary); flex: 1.4; font-weight: 700; border: none; text-align: center; cursor: pointer;" onclick="event.stopPropagation();">
               📸 Relever le défi (preuve à l'appui)
@@ -350,20 +350,28 @@ function duplicateChallenge(id) {
   showNotification('📋 Challenge dupliqué !', 'success');
 }
 
+// ✅ Plus de "Êtes-vous sûr ?" : créer un défi n'a rien de destructeur, et quand on
+// vient de remplir tous les champs et d'attendre l'envoi d'une vidéo, on est sûr.
+// La fonction reste pour ne pas casser le onclick du bouton dans index.html.
 function confirmCreateChallenge() {
-  const isEditing = !!currentEditChallenge;
-  const message = isEditing ? 
-    'Êtes-vous sûr de vouloir modifier ce challenge?' :
-    'Êtes-vous sûr de vouloir créer ce challenge?';
-  showConfirmation(message, createChallenge);
+  createChallenge();
 }
 
-function createChallenge() {
+async function createChallenge() {
   const creator = document.getElementById('challenge-creator').value;
   const desc = document.getElementById('challenge-desc').value;
   const mediaInput = document.getElementById('challenge-media');
-  
-  if (!creator || !desc) { showNotification('Remplis les champs!', 'error'); return; }
+  const submitBtn = document.getElementById('challengeSubmitBtn');
+
+  if (!creator || !desc) { showNotification('Remplis les champs !', 'error'); return; }
+
+  // 🐛 CORRECTIF (23/07) : rien n'empêchait de relancer la publication pendant
+  // l'envoi, ce qui créait deux défis identiques.
+  if (submitBtn && submitBtn.disabled) return;
+  const libelleBouton = submitBtn ? submitBtn.textContent : '';
+  const rendreLeBouton = () => {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = libelleBouton; }
+  };
 
   const handleMedia = (media) => {
     if (currentEditChallenge) {
@@ -399,21 +407,47 @@ function createChallenge() {
     document.getElementById('challenge-creator').value = '';
     document.getElementById('challenge-desc').value = '';
     mediaInput.value = '';
+    rendreLeBouton();
     renderChallenges();
-    showNotification('✅ Challenge sauvegardé!', 'success');
+    showNotification('✅ Challenge publié !', 'success');
   };
 
-  if (mediaInput.files[0]) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      handleMedia({
-        src: e.target.result,
-        type: mediaInput.files[0].type.startsWith('image') ? 'image' : 'video'
-      });
-    };
-    reader.readAsDataURL(mediaInput.files[0]);
-  } else {
-    handleMedia(null);
+  const fichier = mediaInput.files[0];
+  if (!fichier) { handleMedia(null); return; }
+
+  // 🐛 CORRECTIF (23/07) — c'est ce bloc qui faisait perdre les défis. Avant, la
+  // vidéo était convertie en texte base64 et stockée TELLE QUELLE dans le défi :
+  //   • le blob localStorage explosait le quota (des dizaines de Mo pour une vidéo) ;
+  //   • l'envoi du même pavé vers Supabase échouait, et l'erreur était avalée par un
+  //     .catch(console.error) — donc le défi n'existait plus qu'en mémoire et
+  //     disparaissait au rechargement, sans que personne soit prévenu ;
+  //   • pendant la lecture du fichier, aucun signe à l'écran : on cliquait "publier"
+  //     et il ne se passait rien.
+  // On envoie désormais le fichier dans le bucket Storage (comme la galerie depuis le
+  // 21/07) et on ne garde que son adresse. Avec, cette fois, une vraie gestion d'erreur.
+  const LIMITE_MO = 60;
+  if (fichier.size > LIMITE_MO * 1024 * 1024) {
+    showNotification(`🎬 Fichier trop lourd (${Math.round(fichier.size / 1048576)} Mo, maximum ${LIMITE_MO} Mo).`, 'error');
+    return;
+  }
+
+  const estImage = fichier.type.startsWith('image');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Envoi en cours…'; }
+
+  try {
+    if (!window.supabaseReady) throw new Error('hors ligne');
+    const ext = estImage ? 'jpg' : (fichier.name.split('.').pop() || 'mp4');
+    const chemin = `challenge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const url = await uploadFileToStorage('challenge-videos', chemin, fichier);
+    handleMedia({ src: url, type: estImage ? 'image' : 'video' });
+  } catch (err) {
+    console.error('Envoi du média échoué :', err);
+    rendreLeBouton();
+    // On ne publie PAS à moitié : mieux vaut redemander que perdre le défi en silence.
+    showConfirmation(
+      "L'envoi du média a échoué (réseau ?). Publier le défi sans le média ? Ton texte est conservé.",
+      () => handleMedia(null)
+    );
   }
 }
 

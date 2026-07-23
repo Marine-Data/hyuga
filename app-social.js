@@ -82,7 +82,7 @@ function renderMyProfile() {
       <div id="my-profile-tab-content"></div>
       
       <div style="margin-top: 16px;">
-        <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderMyProfile, 300);" style="width: 100%; background: ${localStorage.getItem('pushActivated') ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)'}; color: ${localStorage.getItem('pushActivated') ? 'var(--primary)' : 'white'}; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <button class="btn" onclick="localStorage.getItem('pushActivated') ? desactiverNotificationsPush() : activerNotificationsPush(); setTimeout(renderMyProfile, 300);" style="width: 100%; background: ${localStorage.getItem('pushActivated') ? 'var(--bg-sunken)' : 'linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-sand) 100%)'}; color: ${localStorage.getItem('pushActivated') ? 'var(--primary)' : 'white'}; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           ${localStorage.getItem('pushActivated') ? '🔕 Désactiver les notifs push' : '🔔 Activer les notifs push'}
         </button>
       </div>
@@ -319,7 +319,7 @@ function renderChecklistValise() {
     <div class="card" style="background: linear-gradient(135deg, rgba(227, 185, 79, 0.14) 0%, rgba(227, 185, 79, 0.03) 100%); padding: 18px; margin-bottom: 16px; text-align: center;">
       <div style="font-weight: 800; font-size: 17px; margin-bottom: 6px;">🎒 ${packedCount} / ${items.length} dans la valise</div>
       <div style="height: 8px; border-radius: 4px; background: var(--bg-sunken); overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
-        <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, #ffb700 100%); transition: width 0.4s ease;"></div>
+        <div style="height: 100%; width: ${pct}%; background: linear-gradient(90deg, var(--accent-gold) 0%, var(--accent-sand) 100%); transition: width 0.4s ease;"></div>
       </div>
     </div>
   `;

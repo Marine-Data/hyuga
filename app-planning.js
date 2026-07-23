@@ -1,7 +1,26 @@
 // ============== PLANNING ==============
 let selectedPlanningDay = null;
 
+// ✅ Barre d'actions du Planning, remplie selon le contexte. Avant, cette barre
+// affichait un faux bouton "📅 Planning" non cliquable (le titre est déjà sur le
+// bandeau photo juste en dessous, et l'onglet actif se voit dans la barre du bas),
+// tandis que "Tous les jours" et "Voir les inscriptions" étaient noyés dans le
+// contenu et disparaissaient au défilement.
+function renderPlanningActions() {
+  const barre = document.getElementById('planning-actions');
+  if (!barre) return;
+  const surUneJournee = selectedPlanningDay !== null && planningData[selectedPlanningDay];
+  barre.innerHTML = surUneJournee
+    ? `
+      <button class="tab-btn" onclick="closePlanningDay()">← Tous les jours</button>
+      <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
+      <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
+    `
+    : `<button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>`;
+}
+
 function renderPlanning() {
+  renderPlanningActions();
   if (selectedPlanningDay !== null && planningData[selectedPlanningDay]) {
     renderPlanningDayDetail(selectedPlanningDay);
   } else {
@@ -10,6 +29,7 @@ function renderPlanning() {
 }
 
 function renderPlanningOverview() {
+  renderPlanningActions();
   const html = `
     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
       ${planningData.map((day, dayIdx) => {
@@ -46,6 +66,7 @@ function closePlanningDay() {
 const DAY_PHOTO_MAP = ['gare', 'avion', 'magaud', 'surprise', 'bateau', 'paddle', 'concert', 'almanarre', 'piscine'];
 
 function renderPlanningDayDetail(dayIdx) {
+  renderPlanningActions();
   const day = planningData[dayIdx];
   // ✅ Le dernier jour du séjour (jour de départ) est une succession de tâches ménage/rangement
   // à faire dans l'ordre avant de partir : on affiche une checklist unique sur une seule feuille,
@@ -55,11 +76,9 @@ function renderPlanningDayDetail(dayIdx) {
     return;
   }
   const photoKey = DAY_PHOTO_MAP[dayIdx];
+  // ✅ "Tous les jours" et "Inscriptions" vivent désormais dans la barre collante
+  // (renderPlanningActions), ils ne défilent donc plus avec le contenu.
   let html = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <button class="btn btn-small" onclick="closePlanningDay()" style="background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1); margin-bottom: 0;">← Tous les jours</button>
-      <span onclick="switchTab('inscriptions')" style="cursor: pointer; font-size: 11px; font-weight: 700; color: var(--accent-sand);">✍️ Voir toutes les inscriptions →</span>
-    </div>
     ${photoKey ? `
     <div style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 18px; height: 130px;">
       <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/day-${photoKey}.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
@@ -113,9 +132,9 @@ function renderDepartureDayChecklist(dayIdx) {
   const pct = Math.round((doneCount / tasks.length) * 100);
   const xpPerTask = 10;
 
+  // ✅ Le retour est dans la barre collante, plus besoin du bouton ici.
   let html = `
-    <button class="btn btn-small" onclick="closePlanningDay()" style="margin-bottom: 16px; background: var(--bg-sunken); border: none; box-shadow: 0 2px 6px rgba(12, 47, 58, 0.1);">← Tous les jours</button>
-    <div class="card" style="background: linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%); color: white; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(227, 185, 79, 0.3);">
+    <div class="card" style="background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-sand) 100%); color: white; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(227, 185, 79, 0.3);">
       <div style="font-size: 30px; margin-bottom: 4px;">🧳</div>
       <div style="font-weight: 800; font-size: 18px;">${escapeHtml(day.jour)} · Jour du départ</div>
       <div style="font-size: 12.5px; opacity: 0.9; margin-bottom: 12px;">${escapeHtml(day.date || '')} — coche chaque tâche dans l'ordre pour gagner de l'XP</div>
@@ -676,7 +695,7 @@ function openChoreCard(i) {
           <div class="task">${escapeHtml(a.chore.name)}</div>
           ${def.notes ? `<div class="explain">💡 ${escapeHtml(def.notes)}</div>` : ''}
           ${def.thanks ? `<div class="thanks">${escapeHtml(def.thanks)}</div>` : ''}
-          <button class="chore-cta" style="width: 100%; padding: 12px; border: none; border-radius: 14px; font-weight: 700; font-size: 13px; cursor: pointer; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, #ffb700 100%)' : 'linear-gradient(135deg, var(--primary) 0%, #1690A3 100%)'}; color: #fff;" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ Fait ! (+${a.xp} XP)` : `C'est fait ! (+${a.xp} XP)`}</button>
+          <button class="chore-cta" style="width: 100%; padding: 12px; border: none; border-radius: 14px; font-weight: 700; font-size: 13px; cursor: pointer; background: ${a.done ? 'linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-sand) 100%)' : 'linear-gradient(135deg, var(--primary) 0%, #1690A3 100%)'}; color: #fff;" onclick="completeChore(${i})" ${a.done ? 'disabled' : ''}>${a.done ? `✅ Fait ! (+${a.xp} XP)` : `C'est fait ! (+${a.xp} XP)`}</button>
         </div>
       </div>
     `;
