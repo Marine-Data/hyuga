@@ -1312,6 +1312,7 @@ function switchTab(tab) {
   }
   
   // Render approprié selon l'onglet
+  syncBottomTabBar(tab); // ✅ la barre du bas suit l'onglet affiché, d'où qu'on vienne
   if (tab === 'home') renderHome();
   if (tab === 'planning') renderPlanning();
   if (tab === 'challenges') { renderChallenges(); renderTresor(); renderMysteryPhoto(); }
@@ -1524,7 +1525,6 @@ function renderHome() {
   renderHomePackingProgress();
   renderHomeHud();
   renderHomeFeaturedRow();
-  renderHomeMenuTiles();
 
   // Render feed
   const feedContainer = document.getElementById('home-feed');
@@ -1592,47 +1592,6 @@ function renderHomeMemoryOfDay() {
       <div style="padding: 12px 14px; font-size: 12px; color: var(--primary-light);">
         Par ${photo.creator || 'quelqu\'un du groupe'} — <span style="color: var(--accent-cyan); font-weight: 600;">voir la galerie →</span>
       </div>
-    </div>
-  `;
-}
-
-// ✅ ICÔNES 3D "maison" (SVG vectoriel, palette Méditerranée) pour la grille Explorer
-const EXPLORE_ICONS_3D = {
-  planning: `<svg viewBox="0 0 100 100"><defs><linearGradient id="pl-b" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#7fe0ea"/><stop offset="1" stop-color="#1fb6c9"/></linearGradient><radialGradient id="pl-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect x="18" y="26" width="64" height="58" rx="12" fill="url(#pl-b)"/><rect x="18" y="26" width="64" height="18" rx="12" fill="#0e7a90"/><rect x="18" y="38" width="64" height="8" fill="#0e7a90"/><rect x="30" y="16" width="9" height="20" rx="4.5" fill="#a9741f"/><rect x="61" y="16" width="9" height="20" rx="4.5" fill="#a9741f"/><circle cx="34.5" cy="18" r="5.5" fill="#f4b942"/><circle cx="65.5" cy="18" r="5.5" fill="#f4b942"/><g fill="#fff"><rect x="28" y="54" width="10" height="9" rx="2.5"/><rect x="45" y="54" width="10" height="9" rx="2.5"/><rect x="62" y="54" width="10" height="9" rx="2.5"/><rect x="28" y="68" width="10" height="9" rx="2.5" opacity="0.7"/><rect x="45" y="68" width="10" height="9" rx="2.5" fill="#f4b942"/></g><ellipse cx="40" cy="46" rx="26" ry="12" fill="url(#pl-gl)"/></svg>`,
-  quetes: `<svg viewBox="0 0 100 100"><defs><linearGradient id="q-c" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ffd873"/><stop offset="1" stop-color="#c9821f"/></linearGradient><radialGradient id="q-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><path d="M30 24 h40 v14 a20 20 0 0 1 -40 0 z" fill="url(#q-c)"/><path d="M30 28 h-8 a8 8 0 0 0 8 12 z" fill="#f4b942"/><path d="M70 28 h8 a8 8 0 0 1 -8 12 z" fill="#f4b942"/><rect x="45" y="56" width="10" height="12" fill="#c9821f"/><rect x="34" y="66" width="32" height="9" rx="4" fill="#d9a44c"/><rect x="30" y="74" width="40" height="9" rx="4" fill="#a9741f"/><ellipse cx="44" cy="34" rx="12" ry="9" fill="url(#q-gl)"/><path d="M44 32 l3 6 6 .6 -4.5 4.2 1.3 6.2 -5.8-3.2 -5.8 3.2 1.3-6.2 -4.5-4.2 6-.6z" fill="#fff" opacity="0.85"/></svg>`,
-  courses: `<svg viewBox="0 0 100 100"><defs><linearGradient id="co-b" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#7fe0ea"/><stop offset="1" stop-color="#0e7a90"/></linearGradient><radialGradient id="co-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><path d="M26 40 h48 l-5 42 a6 6 0 0 1 -6 5 H37 a6 6 0 0 1 -6 -5 z" fill="url(#co-b)"/><path d="M38 40 v-6 a12 12 0 0 1 24 0 v6" fill="none" stroke="#a9741f" stroke-width="6" stroke-linecap="round"/><rect x="26" y="52" width="48" height="9" fill="#f4b942"/><rect x="26" y="52" width="48" height="9" fill="#fff" opacity="0.25"/><ellipse cx="44" cy="48" rx="18" ry="7" fill="url(#co-gl)"/></svg>`,
-  corvees: `<svg viewBox="0 0 100 100"><defs><linearGradient id="cv-b" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ffd873"/><stop offset="1" stop-color="#c9821f"/></linearGradient></defs><path d="M56 12 L28 54 h16 l-8 34 32 -46 H50 z" fill="url(#cv-b)" stroke="#a9741f" stroke-width="2.5" stroke-linejoin="round"/><path d="M52 20 L36 46 h10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.7"/></svg>`,
-  surprises: `<svg viewBox="0 0 100 100"><defs><linearGradient id="s-box" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ff9bab"/><stop offset="1" stop-color="#c23d52"/></linearGradient><linearGradient id="s-lid" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ef6a7c"/><stop offset="1" stop-color="#c23d52"/></linearGradient><radialGradient id="s-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect x="24" y="46" width="52" height="38" rx="6" fill="url(#s-box)"/><rect x="20" y="36" width="60" height="16" rx="6" fill="url(#s-lid)"/><rect x="44" y="36" width="12" height="48" fill="#f4b942"/><rect x="20" y="42" width="60" height="4" fill="#fff" opacity="0.3"/><path d="M50 36 C40 20 24 30 50 36 C60 20 76 30 50 36" fill="#f4b942"/><circle cx="50" cy="34" r="4" fill="#c9821f"/><ellipse cx="40" cy="42" rx="16" ry="5" fill="url(#s-gl)"/></svg>`,
-  galerie: `<svg viewBox="0 0 100 100"><defs><linearGradient id="g-c" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#6fe0a0"/><stop offset="1" stop-color="#1c7d4c"/></linearGradient><radialGradient id="g-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect x="16" y="34" width="68" height="48" rx="12" fill="url(#g-c)"/><path d="M38 34 l4 -8 h16 l4 8 z" fill="#1c7d4c"/><circle cx="50" cy="58" r="17" fill="#0e7a90"/><circle cx="50" cy="58" r="11" fill="#1fb6c9"/><circle cx="50" cy="58" r="5" fill="#7fe0ea"/><circle cx="45" cy="53" r="3.5" fill="#fff" opacity="0.8"/><rect x="68" y="40" width="9" height="6" rx="2" fill="#f4b942"/><ellipse cx="36" cy="44" rx="16" ry="6" fill="url(#g-gl)"/></svg>`,
-  sondages: `<svg viewBox="0 0 100 100"><defs><linearGradient id="so-1" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#7fe0ea"/><stop offset="1" stop-color="#0e7a90"/></linearGradient><linearGradient id="so-2" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ffd873"/><stop offset="1" stop-color="#c9821f"/></linearGradient><linearGradient id="so-3" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ff9bab"/><stop offset="1" stop-color="#c23d52"/></linearGradient></defs><rect x="20" y="78" width="60" height="8" rx="4" fill="#a9741f"/><rect x="26" y="52" width="14" height="28" rx="5" fill="url(#so-1)"/><rect x="43" y="38" width="14" height="42" rx="5" fill="url(#so-2)"/><rect x="60" y="60" width="14" height="20" rx="5" fill="url(#so-3)"/><rect x="28" y="54" width="4" height="18" rx="2" fill="#fff" opacity="0.5"/><rect x="45" y="40" width="4" height="26" rx="2" fill="#fff" opacity="0.5"/></svg>`,
-  depenses: `<svg viewBox="0 0 100 100"><defs><linearGradient id="d-w" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#f2d79a"/><stop offset="1" stop-color="#a9741f"/></linearGradient><linearGradient id="d-f" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#f4b942"/><stop offset="1" stop-color="#c9821f"/></linearGradient><radialGradient id="d-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect x="18" y="34" width="64" height="50" rx="12" fill="url(#d-w)"/><path d="M18 46 h64 v26 a6 6 0 0 1 -6 6 H24 a6 6 0 0 1 -6 -6 z" fill="url(#d-f)"/><rect x="60" y="52" width="26" height="16" rx="5" fill="#0e7a90"/><circle cx="68" cy="60" r="4.5" fill="#ffd873"/><circle cx="68" cy="60" r="2" fill="#c9821f"/><ellipse cx="40" cy="42" rx="20" ry="6" fill="url(#d-gl)"/></svg>`,
-  meteo: `<svg viewBox="0 0 100 100"><defs><linearGradient id="mt-sun" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ffd873"/><stop offset="1" stop-color="#e8891f"/></linearGradient><linearGradient id="mt-cloud" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c7d2d8"/></linearGradient><radialGradient id="mt-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><circle cx="62" cy="38" r="20" fill="url(#mt-sun)"/><path d="M28 74 c-12 0 -20 -9 -20 -19 c0 -9 6.5 -16.5 15 -18.5 c2 -12 12.5 -21 25 -21 c12 0 22 8 24.5 19.5 c9 1 16 8.5 16 17.5 c0 11 -9 21.5 -20.5 21.5 z" fill="url(#mt-cloud)"/><ellipse cx="40" cy="46" rx="22" ry="9" fill="url(#mt-gl)"/></svg>`,
-  parametres: `<svg viewBox="0 0 100 100"><defs><linearGradient id="pa-g1" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#c98bf0"/><stop offset="1" stop-color="#7b2fd6"/></linearGradient><linearGradient id="pa-g2" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#7fe0ea"/><stop offset="1" stop-color="#0e7a90"/></linearGradient><radialGradient id="pa-gl" cx="0.35" cy="0.25" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><g transform="translate(42,52)"><g fill="url(#pa-g1)"><circle cx="0" cy="0" r="19"/><rect x="-4" y="-27" width="8" height="14" rx="3"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(45)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(90)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(135)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(180)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(225)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(270)"/><rect x="-4" y="-27" width="8" height="14" rx="3" transform="rotate(315)"/></g><circle cx="0" cy="0" r="9" fill="#fff"/></g><g transform="translate(68,68)"><g fill="url(#pa-g2)"><circle cx="0" cy="0" r="13"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(60)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(120)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(180)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(240)"/><rect x="-3.5" y="-20" width="7" height="10" rx="2.5" transform="rotate(300)"/></g><circle cx="0" cy="0" r="6" fill="#fff"/></g><ellipse cx="34" cy="38" rx="14" ry="6" fill="url(#pa-gl)"/></svg>`
-};
-
-// ✅ Explorer : 4 destinations seulement (Planning / Défis / Galerie / Vie pratique),
-// au lieu de l'ancienne liste + accordéon "Vie pratique" replié par défaut.
-// "Vie pratique" ouvre désormais un vrai onglet dédié (voir renderViePratique) qui
-// regroupe Dépenses, Valise, Grand Tirage, Courses et Sondages avec un aperçu chiffré.
-function renderHomeMenuTiles() {
-  const container = document.getElementById('home-menu-tiles');
-  if (!container) return;
-
-  const tiles = [
-    { tab: 'planning', label: 'Planning', icon: EXPLORE_ICONS_3D.planning },
-    { tab: 'challenges', label: 'Défis', icon: EXPLORE_ICONS_3D.quetes },
-    { tab: 'gallery', label: 'Galerie', icon: EXPLORE_ICONS_3D.galerie },
-    { tab: 'vie-pratique', label: 'Vie pratique', icon: EXPLORE_ICONS_3D.courses },
-  ];
-
-  container.innerHTML = `
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-      ${tiles.map(t => `
-        <div onclick="switchTab('${t.tab}')" style="cursor: pointer; background: var(--bg-raised); border-radius: 14px; padding: 12px 4px; text-align: center; box-shadow: 0 2px 10px rgba(12, 47, 58, 0.07);">
-          <div style="width: 34px; height: 34px; margin: 0 auto;">${t.icon}</div>
-          <div style="font-size: 10px; font-weight: 700; color: var(--primary); margin-top: 6px;">${t.label}</div>
-        </div>
-      `).join('')}
     </div>
   `;
 }
@@ -2052,44 +2011,21 @@ function goBackToPreviousTab() {
   }
 }
 
+// ✅ Les 5 destinations de la barre du bas pointent désormais directement sur de vrais
+// onglets — plus besoin de la table de correspondance d'avant (qui renvoyait 'explore'
+// vers la galerie et 'menu' vers les réglages, vestiges d'une navigation abandonnée).
 function switchToTab(tabName, evt) {
-  // Map bottom tab bar tabs to actual tabs
-  let actualTab = tabName;
-  
-  switch(tabName) {
-    case 'home':
-      actualTab = 'home';
-      break;
-    case 'explore':
-      // For now, show gallery - later will be custom explore view
-      actualTab = 'gallery';
-      break;
-    case 'gallery':
-      actualTab = 'gallery';
-      break;
-    case 'moments':
-      // For now, show surprises - later will be custom moments view
-      actualTab = 'surprises';
-      break;
-    case 'profile':
-      actualTab = 'profile';
-      break;
-    case 'menu':
-      // For now, show settings - later will be hamburger menu
-      actualTab = 'settings';
-      break;
-    default:
-      actualTab = 'home';
-  }
-  
-  // Update bottom tab bar active state
+  switchTab(tabName);
+}
+
+// 🐛 CORRECTIF (22/07) : l'onglet actif était déduit de evt.target, donc la barre du
+// bas ne se mettait à jour QUE si on cliquait dessus. Naviguer par une carte, par le
+// logo ou par le bouton retour laissait la surbrillance sur le mauvais onglet. Elle
+// suit maintenant l'onglet réellement affiché, quelle que soit la porte d'entrée.
+function syncBottomTabBar(tab) {
   document.querySelectorAll('.tab-item').forEach(item => {
-    item.classList.remove('active');
+    item.classList.toggle('active', item.dataset.tab === tab);
   });
-  if (evt && evt.target) evt.target.closest('.tab-item').classList.add('active');
-  
-  // Switch the actual tab
-  switchTab(actualTab);
 }
 
 function showConfirmation(message, onConfirm) {

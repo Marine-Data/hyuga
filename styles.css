@@ -118,7 +118,12 @@
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent; /* ✅ Supprime le flash gris au tap sur Android */
     }
-    html { scroll-behavior: smooth; overflow-x: hidden; }
+    /* 🐛 CORRECTIF (22/07) : "overflow-x: hidden" transformait html ET body en
+       conteneurs de défilement, ce qui empêchait le header "position: sticky" de tenir
+       en haut — il remontait avec la page. "clip" bloque le défilement latéral de la
+       même façon mais ne crée PAS de conteneur de défilement : le sticky redémarre.
+       Supporté par tous les iPhone depuis iOS 16. */
+    html { scroll-behavior: smooth; overflow-x: clip; }
     body {
       font-family: 'Inter', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
       font-weight: 400;
@@ -127,7 +132,7 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       transition: background-color 0.3s ease;
-      overflow-x: hidden; /* ✅ Empêche le scroll latéral involontaire */
+      overflow-x: clip; /* ✅ Empêche le scroll latéral — "clip" et non "hidden", voir html ci-dessus */
       overflow-wrap: break-word; /* ✅ Casse les mots/URLs trop longs */
       word-break: break-word;
     }
@@ -1161,12 +1166,15 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
-      gap: 6px;
-      padding: 6px;
+      gap: 2px;
+      padding: 6px 5px;
       z-index: 100;
       box-shadow: 0 8px 30px rgba(34, 60, 90, 0.16);
     }
     
+    /* ✅ Chaque destination garde SA couleur Méditerranée (--tab-color, posée en ligne
+       sur chaque bouton). L'onglet actif se signale par une pastille de fond dans sa
+       propre teinte : la couleur reste donc lisible au lieu de virer au blanc sur noir. */
     .tab-item {
       display: flex;
       flex-direction: column;
@@ -1182,19 +1190,22 @@
       font-weight: 700;
       gap: 3px;
       border: none;
-      border-radius: 16px;
+      border-radius: 14px;
       transition: color 0.2s ease, background 0.2s ease;
       position: relative;
+      padding: 0 2px;
+      min-width: 0;
     }
-    
+
+    .tab-item .tab-icon { color: var(--tab-color, var(--primary-soft)); }
+
     .tab-item:hover {
-      color: var(--primary-soft);
-      background: rgba(12, 47, 58, 0.06);
+      background: rgba(12, 47, 58, 0.05);
     }
-    
+
     .tab-item.active {
-      color: white;
-      background: var(--accent-dark);
+      color: var(--tab-color, var(--accent-dark));
+      background: var(--tab-bg, var(--bg-sunken));
     }
     
     .tab-item.active .tab-icon {
@@ -1211,8 +1222,12 @@
     }
     
     .tab-label {
-      font-size: 10px;
-      letter-spacing: 0.2px;
+      font-size: 9.5px;
+      letter-spacing: 0.1px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* Adjust main content for bottom tab bar */

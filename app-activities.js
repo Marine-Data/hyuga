@@ -496,3 +496,4 @@ function confirmDeleteExpense(id) {
     }
   });
 }
+

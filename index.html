@@ -411,15 +411,9 @@
           <!-- ESPRIT D'ÉQUIPE : jauge collective compacte (quêtes + corvées faites par tout le monde) -->
           <div id="home-group-spirit" style="margin-bottom: 22px;"></div>
 
-          <!-- EXPLORER (4 destinations : Planning / Défis / Galerie / Vie pratique) -->
-          <div class="band-header" style="margin-bottom: 12px;">
-            <img src="https://iupghubmnibbdipingnj.supabase.co/storage/v1/object/public/app-assets/detail-water.jpg" alt="">
-            <div class="band-overlay">
-              <span class="eyebrow" style="color: #ffe9b8;">Naviguer</span>
-              <div class="title-serif" style="color: #fff;">Explorer</div>
-            </div>
-          </div>
-          <div id="home-menu-tiles" style="margin-bottom: 22px;"></div>
+          <!-- ✅ La grille "Explorer" a été retirée le 22/07 : ses 4 destinations vivent
+               désormais dans la barre du bas, accessible depuis n'importe quel écran.
+               L'accueil redevient un tableau de bord du séjour. -->
 
           <!-- FIL D'ACTIVITÉ -->
           <div class="card">
@@ -964,18 +958,29 @@
 
   <!-- BOTTOM TAB BAR - NEW NAVIGATION -->
 
+  <!-- ✅ 5 destinations, une couleur Méditerranée chacune. Le profil n'y figure plus :
+       il a déjà son avatar en haut à droite (avant, il était accessible aux deux
+       endroits, tout comme la galerie). -->
   <div class="bottom-tab-bar" id="bottomTabBar">
-    <button class="tab-item active" onclick="switchToTab('home', event)">
-      <div class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11.3 3.3a1 1 0 0 1 1.4 0l7.8 7.4a1 1 0 0 1-.7 1.7H19v6.6a2 2 0 0 1-2 2h-2.5v-5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v5H7a2 2 0 0 1-2-2v-6.6H3.2a1 1 0 0 1-.7-1.7z"/></svg></div>
-      <div class="tab-label">Home</div>
+    <button class="tab-item active" data-tab="home" onclick="switchToTab('home', event)" style="--tab-color: #0e7a90; --tab-bg: #e6f7f9;" aria-label="Accueil">
+      <div class="tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M11.3 3.3a1 1 0 0 1 1.4 0l7.8 7.4a1 1 0 0 1-.7 1.7H19v6.6a2 2 0 0 1-2 2h-2.5v-5a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v5H7a2 2 0 0 1-2-2v-6.6H3.2a1 1 0 0 1-.7-1.7z"/></svg></div>
+      <div class="tab-label">Accueil</div>
     </button>
-    <button class="tab-item" onclick="switchToTab('gallery', event)">
-      <div class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M9.2 3.5a1.5 1.5 0 0 0-1.3.8L7.2 5.5H5.5A2.5 2.5 0 0 0 3 8v9.5A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5V8a2.5 2.5 0 0 0-2.5-2.5h-1.7l-.7-1.2a1.5 1.5 0 0 0-1.3-.8zM12 9a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg></div>
-      <div class="tab-label">Photos</div>
+    <button class="tab-item" data-tab="planning" onclick="switchToTab('planning', event)" style="--tab-color: #1fb6c9; --tab-bg: #e4f8fb;" aria-label="Planning">
+      <div class="tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M8 2a1 1 0 0 1 1 1v1h6V3a1 1 0 1 1 2 0v1h1.5A2.5 2.5 0 0 1 21 6.5v12A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5v-12A2.5 2.5 0 0 1 5.5 4H7V3a1 1 0 0 1 1-1zM5 9.5v9c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5v-9zm2.5 2h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5z"/></svg></div>
+      <div class="tab-label">Planning</div>
     </button>
-    <button class="tab-item" onclick="switchToTab('profile', event)">
-      <div class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M12 13.5c-4.4 0-8 2.9-8 6.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1c0-3.6-3.6-6.5-8-6.5z"/></svg></div>
-      <div class="tab-label">Profil</div>
+    <button class="tab-item" data-tab="challenges" onclick="switchToTab('challenges', event)" style="--tab-color: #c99a3f; --tab-bg: #fdf3dd;" aria-label="Défis">
+      <div class="tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10a1 1 0 0 1 1 1v1h2.2a.8.8 0 0 1 .8.8c0 2.5-1.6 4.6-3.9 5.3a6 6 0 0 1-3.1 2.8V17h2.5a1 1 0 0 1 0 2h-7a1 1 0 0 1 0-2H12v-3.1a6 6 0 0 1-3.1-2.8C6.6 10.4 5 8.3 5 5.8A.8.8 0 0 1 5.8 5H8V4a1 1 0 0 1 1-1zm-.3 3.8c.2 1.2.9 2.2 1.9 2.8A8 8 0 0 1 8 6.8zm10.6 0h-.6a8 8 0 0 1-.6 2.8 3.9 3.9 0 0 0 1.2-2.8z"/></svg></div>
+      <div class="tab-label">Défis</div>
+    </button>
+    <button class="tab-item" data-tab="gallery" onclick="switchToTab('gallery', event)" style="--tab-color: #ef6a7c; --tab-bg: #fdeef0;" aria-label="Galerie">
+      <div class="tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M9.2 3.5a1.5 1.5 0 0 0-1.3.8L7.2 5.5H5.5A2.5 2.5 0 0 0 3 8v9.5A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5V8a2.5 2.5 0 0 0-2.5-2.5h-1.7l-.7-1.2a1.5 1.5 0 0 0-1.3-.8zM12 9a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg></div>
+      <div class="tab-label">Galerie</div>
+    </button>
+    <button class="tab-item" data-tab="vie-pratique" onclick="switchToTab('vie-pratique', event)" style="--tab-color: #2fae6e; --tab-bg: #e6f6ed;" aria-label="Vie pratique">
+      <div class="tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M9 2.5a1 1 0 0 1 .9.6L11.1 6h1.8l1.2-2.9a1 1 0 1 1 1.8.8L15.1 6h3.4a1.5 1.5 0 0 1 1.45 1.9l-2.1 7.6A2.5 2.5 0 0 1 15.4 17H8.6a2.5 2.5 0 0 1-2.41-1.5L4.05 7.9A1.5 1.5 0 0 1 5.5 6h3.4L8.1 3.9a1 1 0 0 1 .9-1.4zM9 18.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg></div>
+      <div class="tab-label">Pratique</div>
     </button>
   </div>
 
