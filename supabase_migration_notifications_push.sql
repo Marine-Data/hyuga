@@ -1,6 +1,13 @@
 -- ============================================================
 -- SARAILLON — Migration : colonne "push" sur notifications
 -- Déjà appliquée sur le projet Supabase "saraillon" (iupghubmnibbdipingnj).
+--
+-- ⚠️ Le secret x-internal-secret ci-dessous est un PLACEHOLDER. La vraie
+-- valeur ne doit jamais être committée dans ce repo (elle l'a été par le
+-- passé et a été rotée le 2026-07-24 suite à un audit — voir historique
+-- git). Elle vit uniquement dans le trigger côté Supabase et dans le code
+-- de la edge function send-push ; va la consulter/modifier directement
+-- via le dashboard ou le SQL Editor si besoin.
 -- ============================================================
 
 -- Le trigger décidait seul, à partir du seul "type", s'il fallait réveiller tous les
@@ -25,7 +32,7 @@ BEGIN
       url := 'https://iupghubmnibbdipingnj.supabase.co/functions/v1/send-push',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'x-internal-secret', 'saraillon-push-8f3a1c2e9b'
+        'x-internal-secret', '<<VOIR NOTE CI-DESSUS — NE PAS COMMITTER LA VRAIE VALEUR>>'
       ),
       body := jsonb_build_object('record', to_jsonb(NEW))
     );
