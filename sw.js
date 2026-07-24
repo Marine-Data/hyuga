@@ -13,7 +13,10 @@
 // même mélanger ancien et nouveau (ex : le nouvel app-core.js avec l'ancien
 // saraillon-data.js, ce qui donne une carte Réservations vide).
 // v2 = planning du 22/07/2026 (plongée, réservations, correctifs de suppression).
-const CACHE_VERSION = 'saraillon-v13';
+// v14 = audit sécurité 24/07/2026 : vraie identité par profil (code secret + RLS Supabase
+// restreinte). Incrément indispensable ici, sinon des téléphones continueraient de tourner
+// sans jamais demander le code, avec l'ancien app-core.js resté en cache.
+const CACHE_VERSION = 'saraillon-v14';
 const APP_SHELL = [
   './',
   './index.html',
