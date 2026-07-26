@@ -16,7 +16,9 @@
 // v14 = audit sécurité 24/07/2026 : vraie identité par profil (code secret + RLS Supabase
 // restreinte). Incrément indispensable ici, sinon des téléphones continueraient de tourner
 // sans jamais demander le code, avec l'ancien app-core.js resté en cache.
-const CACHE_VERSION = 'saraillon-v14';
+// v15 = correctif météo 25/07/2026 : widget cassé depuis le 23/07 (EXPLORE_ICONS_3D
+// manquant, disparaissait en silence) — corrigé dans app-features.js.
+const CACHE_VERSION = 'saraillon-v15';
 const APP_SHELL = [
   './',
   './index.html',
