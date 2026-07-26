@@ -170,19 +170,11 @@ function toggleDepartureTask(dayIdx, actIdx) {
   const key = `${dayIdx}-${actIdx}`;
   const activity = planningData[dayIdx].activities[actIdx];
   const wasDone = !!departureTasksDone[key];
-  departureTasksDone[key] = !wasDone;
+  const nowDone = !wasDone;
+  departureTasksDone[key] = nowDone;
   const xpPerTask = 10;
 
-  if (!wasDone) {
-    choreLog.push({
-      id: Date.now(),
-      personId: currentUser.id,
-      personName: currentUser.name,
-      choreName: `Départ : ${activity.nom}`,
-      emoji: activity.emoji || '🧳',
-      xp: xpPerTask,
-      timestamp: new Date()
-    });
+  if (nowDone) {
     showNotification(`✅ +${xpPerTask} XP`, 'success');
     // ✅ Private joke : réaction spéciale quand Inès coche un truc de sa valise
     if (currentUser.name === 'Inès') {
@@ -190,11 +182,28 @@ function toggleDepartureTask(dayIdx, actIdx) {
     }
   }
 
+  // 🐛 CORRECTIF (audit 26/07) : synchronisé sur Supabase (departure_tasks) au lieu de
+  // rester local-only dans choreLog — sinon ces quelques XP ne suivaient pas la personne
+  // en cas de changement de téléphone, et ne comptaient même pas dans le classement d'un
+  // autre appareil. La ligne cloud correspondante fait foi pour l'XP (voir
+  // computeXpLeaderboard, app-challenges.js) ; on ne pousse plus rien dans choreLog ici
+  // pour éviter de compter deux fois.
+  const row = {
+    day_idx: dayIdx, act_idx: actIdx, done: nowDone,
+    done_by: nowDone ? currentUser.name : null,
+    updated_at: new Date().toISOString()
+  };
+  const idx = cloudDepartureTasks.findIndex(r => r.day_idx === dayIdx && r.act_idx === actIdx);
+  if (idx > -1) cloudDepartureTasks[idx] = row; else cloudDepartureTasks.push(row);
+  if (window.supabaseReady && window.syncToSupabase) {
+    window.syncToSupabase('departure_tasks', row).catch(err => console.error('Sync tâche de départ échouée:', err));
+  }
+
   saveAllData();
   renderDepartureDayChecklist(dayIdx);
-  // 🐛 CORRECTIF : cocher une tâche du jour de départ ajoutait bien l'XP à choreLog,
-  // mais rien ne redessinait le classement ni le compteur XP de l'accueil — il fallait
-  // attendre le prochain cycle de polling (25s) ou changer d'onglet pour voir le total.
+  // 🐛 CORRECTIF : cocher une tâche du jour de départ ne redessinait ni le classement ni
+  // le compteur XP de l'accueil — il fallait attendre le prochain cycle de polling (25s)
+  // ou changer d'onglet pour voir le total.
   if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
   if (typeof renderHomeHud === 'function') renderHomeHud();
 }
@@ -620,6 +629,25 @@ let currentChoreAssignments = [];
 // complétions), rafraîchi au démarrage et toutes les 25s pour que la roue des
 // corvées soit visible et à jour sur tous les téléphones du groupe.
 let cloudChoreAssignments = [];
+
+// 🐛 CORRECTIF (audit 26/07) : les tâches du jour de départ n'étaient JAMAIS envoyées à
+// Supabase (uniquement choreLog, local à l'appareil) — un changement de téléphone avant le
+// dernier jour faisait perdre ces quelques XP pour de bon. Même mécanisme que
+// cloudChoreAssignments, sur la table departure_tasks (existait déjà, jamais branchée).
+let cloudDepartureTasks = [];
+
+async function loadDepartureTasksCloud() {
+  if (!window.supabaseReady) return;
+  const rows = await window.loadFromSupabase('departure_tasks');
+  if (!rows) return;
+  cloudDepartureTasks = rows;
+  rows.forEach(r => { departureTasksDone[`${r.day_idx}-${r.act_idx}`] = !!r.done; });
+  const activeTab = document.querySelector('.tab-content.active');
+  if (activeTab && activeTab.id === 'planning' && typeof renderDepartureDayChecklist === 'function') {
+    renderDepartureDayChecklist(selectedDay);
+  }
+  if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
+}
 
 // ✅ Ordre chronologique complet (corvées tirées + corvée fixe), utilisé pour trier
 // l'affichage — l'arrosage du soir (fixe, Marine) doit apparaître entre l'aspirateur

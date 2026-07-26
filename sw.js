@@ -23,7 +23,9 @@
 // v18 = partage étendu au récap arrivées/départs, aux défis/quêtes, aux courses, aux dépenses.
 // v19 = XP des tâches du jour de départ synchronisé sur Supabase (suit la personne d'un
 // appareil à l'autre, ne compte plus que sur le téléphone où c'était coché).
-const CACHE_VERSION = 'saraillon-v19';
+// v20 = la création d'un défi prévient maintenant si la sauvegarde en ligne échoue,
+// au lieu de disparaître en silence (cause du défi "champagne à la plage" disparu).
+const CACHE_VERSION = 'saraillon-v20';
 const APP_SHELL = [
   './',
   './index.html',

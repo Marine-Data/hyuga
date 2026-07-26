@@ -247,9 +247,90 @@ async function desactiverNotificationsPush() {
   }
 }
 
-// ✅ Point d'entrée unique dans l'app : attend Supabase AVANT d'afficher les données,
-// puis démarre l'auto-save. Utilisé par selectProfile() ET finishProfileSetup().
+// ============== IDENTITÉ RÉELLE (audit sécurité) ==============
+// ⚠️ Avant ce correctif, "se connecter" = choisir un nom dans une liste, sans rien
+// vérifier côté serveur : n'importe qui avec la clé publique Supabase pouvait lire/écrire
+// les données de n'importe quel profil. Ici, chaque profil est maintenant lié à une vraie
+// session Supabase (auth anonyme + fonction claim_person qui vérifie un code secret côté
+// base) — voir person_auth/person_pins/claim_person/current_person_id sur Supabase. Cette
+// vérification ne bloque JAMAIS l'app en cas de souci réseau (l'app reste utilisable
+// hors-ligne comme avant) : elle échoue "ouverte" si Supabase Auth est injoignable, la RLS
+// refusera simplement les lectures/écritures cloud tant que le code n'est pas validé.
+async function ensurePersonClaimed(person) {
+  if (!person || !window.supabase) return true;
+  try {
+    const { data: { session } } = await window.supabase.auth.getSession();
+    if (!session) {
+      const { error } = await window.supabase.auth.signInAnonymously();
+      if (error) { console.error('Auth anonyme impossible:', error); return true; }
+    }
+    const { data: linkedId, error: rpcError } = await window.supabase.rpc('current_person_id');
+    if (rpcError) { console.error('Vérification identité impossible:', rpcError); return true; }
+    if (linkedId === person.id) return true; // déjà lié à ce profil sur cet appareil
+
+    return await new Promise((resolve) => { showPersonCodeModal(person, resolve); });
+  } catch (e) {
+    console.error('Erreur vérification identité:', e);
+    return true; // ne bloque jamais l'app hors-ligne
+  }
+}
+
+function showPersonCodeModal(person, onDone) {
+  window.__personCodeResolve = onDone;
+  window.__personCodeTarget = person;
+  document.getElementById('personCodeInput').value = '';
+  document.getElementById('personCodeError').style.display = 'none';
+  document.getElementById('personCodeTitle').textContent = `Code secret de ${person.name}...`;
+  document.getElementById('modalPersonCode').style.display = 'flex';
+  window.supabase.rpc('person_has_pin', { p_person_id: person.id }).then(({ data }) => {
+    document.getElementById('personCodeTitle').textContent = data
+      ? `Entre ton code secret pour continuer en tant que ${person.name}`
+      : `Choisis un code secret (4 caractères min.) pour protéger le profil de ${person.name}`;
+  });
+}
+
+async function submitPersonCode() {
+  const code = document.getElementById('personCodeInput').value.trim();
+  const person = window.__personCodeTarget;
+  const errEl = document.getElementById('personCodeError');
+  errEl.style.display = 'none';
+  if (!code || code.length < 4) {
+    errEl.textContent = 'Le code doit faire au moins 4 caractères.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const { error } = await window.supabase.rpc('claim_person', { p_person_id: person.id, p_pin: code });
+  if (error) {
+    errEl.textContent = 'Code incorrect.';
+    errEl.style.display = 'block';
+    return;
+  }
+  document.getElementById('modalPersonCode').style.display = 'none';
+  const resolve = window.__personCodeResolve;
+  window.__personCodeResolve = null;
+  if (resolve) resolve(true);
+}
+
+function cancelPersonCode() {
+  document.getElementById('modalPersonCode').style.display = 'none';
+  const resolve = window.__personCodeResolve;
+  window.__personCodeResolve = null;
+  document.getElementById('appContainer').style.display = 'none';
+  document.getElementById('modalProfileSelect').style.display = 'flex';
+  renderProfileSelectCarousel();
+  if (resolve) resolve(false);
+}
+
+// ✅ Point d'entrée unique dans l'app : vérifie l'identité réelle, attend Supabase AVANT
+// d'afficher les données, puis démarre l'auto-save. Utilisé par selectProfile() ET
+// finishProfileSetup().
 async function enterMainApp() {
+  const ok = await ensurePersonClaimed(currentUser);
+  if (!ok) return; // resté sur la modale de code / retour à la sélection de profil
+  await enterMainAppInner();
+}
+
+async function enterMainAppInner() {
   document.getElementById('appContent').style.display = 'block';
   document.getElementById('appContainer').style.display = 'block'; // ✅ Affiche le vrai conteneur de l'app (header, onglets...)
   loadAllData();
@@ -281,6 +362,7 @@ async function enterMainApp() {
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadReservationsCloud(); // ✅ Réservations : qui a déjà appelé quel restaurant
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
+  await loadDepartureTasksCloud(); // ✅ Tâches du jour de départ : suit la personne d'un appareil à l'autre
   ensureTodaySecretMission(); // ✅ Mission secrète privée du jour
   refreshSecretMissionXpCache();
   renderChallenges();
@@ -317,6 +399,7 @@ async function enterMainApp() {
       await loadChoreAssignmentsCloud();
       await loadReservationsCloud();
       await loadTresorFromCloud();
+      await loadDepartureTasksCloud();
       await loadFromSupabaseCloud();
       await checkPrivateMessages(); // ✅ Message privé (profil de Marine) arrivé entre-temps
       // ✅ Chaque appel est isolé : si l'onglet correspondant n'est pas monté dans
@@ -2130,6 +2213,44 @@ function showLikersPanel(likeIds) {
 
   document.body.appendChild(backdrop);
   document.body.appendChild(container);
+}
+
+// ============== PARTAGE ==============
+// ✅ Partage natif (feuille système : WhatsApp, Messages, copie...) avec repli direct vers
+// WhatsApp Web si l'appareil ne supporte pas l'API Web Share (essentiellement desktop —
+// tous les téléphones de la famille la supportent).
+async function shareContent(title, text, url) {
+  if (navigator.share) {
+    try { await navigator.share(url ? { title, text, url } : { title, text }); return; }
+    catch (e) { if (e.name === 'AbortError') return; /* annulé par la personne, pas une erreur */ }
+  }
+  const waText = encodeURIComponent(url ? `${text} ${url}` : text);
+  window.open(`https://wa.me/?text=${waText}`, '_blank');
+}
+
+// ✅ "Envoyer dans le chat du groupe" : poste directement dans le chat de l'app (voir
+// sendChatMessage dans app-social.js pour l'équivalent manuel via le champ de saisie).
+async function shareToGroupChat(text) {
+  if (!currentUser || !window.supabaseReady || !window.supabase) {
+    showNotification('⚠️ Hors ligne — le chat nécessite une connexion', 'error');
+    return;
+  }
+  try {
+    const { data, error } = await window.supabase
+      .from('chat_messages')
+      .insert({ person_id: currentUser.id, text })
+      .select()
+      .single();
+    if (error) throw error;
+    if (data && typeof chatMessages !== 'undefined' && !chatMessages.some(m => m.id === data.id)) {
+      chatMessages.push(data);
+      if (typeof renderChat === 'function') renderChat();
+    }
+    showNotification('💬 Partagé dans le chat du groupe !', 'success');
+  } catch (e) {
+    console.error('Erreur partage chat:', e);
+    showNotification('⚠️ Impossible de partager dans le chat', 'error');
+  }
 }
 
 function showNotification(msg, type = 'success') {

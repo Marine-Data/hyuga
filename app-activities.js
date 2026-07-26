@@ -96,8 +96,13 @@ function toggleInscriptionTab(personId, dayIdx, actIdx) {
 // ============== SHOPPING ==============
 function renderShopping() {
   const categories = ['🍎', '🥕', '🥩', '🥤', '📌'];
-  let html = '';
-  
+  let html = `
+    <div style="display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 10px;">
+      <button onclick="shareShoppingList()" title="Partager (WhatsApp...)" style="border: none; cursor: pointer; background: var(--bg-sunken); border-radius: 8px; width: 32px; height: 32px; font-size: 14px;">📤</button>
+      <button onclick="shareShoppingListToChat()" title="Envoyer dans le chat du groupe" style="border: none; cursor: pointer; background: var(--bg-sunken); border-radius: 8px; width: 32px; height: 32px; font-size: 14px;">🔁</button>
+    </div>
+  `;
+
   const items = shoppingList.filter(i => !i.done);
   if (items.length > 0) {
     html += '<div style="margin-bottom: 20px;"><div style="font-size: 14px; color: var(--primary); font-weight: 700; margin-bottom: 12px;">À faire</div>';
@@ -135,8 +140,25 @@ function renderShopping() {
     });
     html += '</div>';
   }
-  
-  document.getElementById('shopping-list').innerHTML = html || '<p style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📝 Liste vide - Ajoute tes courses!</p>';
+
+  if (items.length === 0 && done.length === 0) {
+    html += '<p style="text-align: center; color: var(--primary-light); padding: 40px 20px;">📝 Liste vide - Ajoute tes courses!</p>';
+  }
+
+  document.getElementById('shopping-list').innerHTML = html;
+}
+
+// ✅ Partage de la liste de courses (à faire uniquement) : feuille de partage système
+// (WhatsApp...) ou envoi direct dans le chat du groupe — voir shareContent/shareToGroupChat
+// (app-core.js).
+function shareShoppingList() {
+  const todo = shoppingList.filter(i => !i.done).map(i => `- ${i.item}`).join('\n');
+  shareContent('Saraillon', todo ? `🛒 Liste de courses Saraillon :\n${todo}` : '🛒 Liste de courses Saraillon : rien à acheter pour le moment !', null);
+}
+
+function shareShoppingListToChat() {
+  const todo = shoppingList.filter(i => !i.done).map(i => `- ${i.item}`).join('\n');
+  shareToGroupChat(todo ? `🔁 🛒 Liste de courses :\n${todo}` : '🔁 🛒 Liste de courses : rien à acheter pour le moment !');
 }
 
 function addShoppingItem() {
@@ -410,9 +432,24 @@ function renderExpenses() {
     </div>
   ` : '<div style="margin-top: 10px; font-size: 12px; color: var(--primary-light); text-align: center;">✅ Tout le monde est à égalité !</div>';
 
+  // ✅ Résumé texte pour le partage (WhatsApp/chat du groupe) — voir shareExpensesBalance ci-dessous.
+  window.__expensesShareText = `💰 Soldes des dépenses Saraillon\n\n${settlements.length > 0
+    ? settlements.map(s => {
+        const from = PARTICIPANTS.find(p => p.id === s.from);
+        const to = PARTICIPANTS.find(p => p.id === s.to);
+        return `${from ? from.name : '?'} doit ${s.amount.toFixed(2)} € à ${to ? to.name : '?'}`;
+      }).join('\n')
+    : 'Tout le monde est à égalité !'}`;
+
   balanceContainer.innerHTML = `
     <div class="card" style="background: linear-gradient(135deg, rgba(111, 184, 176, 0.12) 0%, rgba(111, 184, 176, 0.03) 100%); padding: 18px; margin-bottom: 16px;">
-      <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px;">💰 SOLDES</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="font-weight: 800; font-size: 14px;">💰 SOLDES</div>
+        <div style="display: flex; gap: 6px;">
+          <button onclick="shareExpensesBalance()" title="Partager (WhatsApp...)" style="border: none; cursor: pointer; background: var(--bg-sunken); border-radius: 8px; width: 30px; height: 30px; font-size: 13px;">📤</button>
+          <button onclick="shareExpensesBalanceToChat()" title="Envoyer dans le chat du groupe" style="border: none; cursor: pointer; background: var(--bg-sunken); border-radius: 8px; width: 30px; height: 30px; font-size: 13px;">🔁</button>
+        </div>
+      </div>
       ${balanceRows}
       ${settlementsHtml}
     </div>
@@ -439,6 +476,14 @@ function renderExpenses() {
       </div>
     `;
   }).join('');
+}
+
+function shareExpensesBalance() {
+  shareContent('Saraillon', window.__expensesShareText || 'Soldes des dépenses Saraillon', null);
+}
+
+function shareExpensesBalanceToChat() {
+  shareToGroupChat(window.__expensesShareText || 'Soldes des dépenses Saraillon');
 }
 
 function showAddExpense() {

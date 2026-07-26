@@ -112,6 +112,8 @@ function renderGallery() {
       <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px;">
         <button class="ig-action-btn ${userLiked ? 'liked' : ''}" onclick="likeGalleryItem(${item.id})">${userLiked ? '❤️' : '🤍'}</button>
         <button class="ig-action-btn" onclick="toggleGalleryComments(${item.id})">💬</button>
+        <button class="ig-action-btn" onclick="shareGalleryItem(${item.id})" title="Partager (WhatsApp...)">📤</button>
+        <button class="ig-action-btn" onclick="shareGalleryItemToChat(${item.id})" title="Envoyer dans le chat du groupe">🔁</button>
       </div>
 
       <!-- Likes, légende, commentaires -->
@@ -136,6 +138,22 @@ function renderGallery() {
       <p style="color: var(--primary-light); font-size: 13px;">${isFiltered ? 'Aucune photo ne correspond à ce filtre' : 'Galerie vide — ajoute la première photo !'}</p>
     </div>
   `;
+}
+
+// ✅ Partage d'une photo/vidéo de la Galerie : feuille de partage système (WhatsApp...)
+// ou envoi direct dans le chat du groupe — voir shareContent/shareToGroupChat (app-core.js).
+function shareGalleryItem(id) {
+  const item = galleryItems.find(g => g.id === id);
+  if (!item) return;
+  const text = `📸 ${item.creator} a partagé ${item.type === 'video' ? 'une vidéo' : 'une photo'} sur Saraillon${item.description ? ' : ' + item.description : ''}`;
+  shareContent('Saraillon', text, item.src);
+}
+
+function shareGalleryItemToChat(id) {
+  const item = galleryItems.find(g => g.id === id);
+  if (!item) return;
+  const text = `🔁 A partagé ${item.type === 'video' ? 'une vidéo' : 'une photo'} de la Galerie${item.description ? ' : ' + item.description : ''} → ${item.src}`;
+  shareToGroupChat(text);
 }
 
 function showUploadForm() {

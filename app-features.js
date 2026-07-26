@@ -34,7 +34,14 @@ async function renderWeatherBanner() {
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LOCATION.lat}&longitude=${WEATHER_LOCATION.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,wind_speed_10m_max&timezone=Europe%2FParis&forecast_days=1`;
-    const res = await fetch(url);
+    // ✅ (audit) Timeout explicite : sans lui, un service momentanément lent laissait le
+    // widget vide indéfiniment (rien n'indiquait qu'un chargement était en cours ni qu'il
+    // avait échoué), le tout sans jamais utiliser l'ancien cache pourtant disponible.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const payload = {
       code: data.daily.weather_code[0],
@@ -47,7 +54,14 @@ async function renderWeatherBanner() {
     paintWeatherBanner(container, payload);
   } catch (e) {
     console.error('Météo indisponible', e);
-    container.innerHTML = '';
+    // 🐛 CORRECTIF (audit 25/07) : le widget disparaissait silencieusement au moindre
+    // souci réseau, sans jamais retomber sur un cache pourtant potentiellement disponible
+    // (juste un peu ancien) ni prévenir que la météo n'a pas pu être chargée.
+    try {
+      const stale = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (stale && stale.data) { paintWeatherBanner(container, stale.data); return; }
+    } catch (e2) { /* pas de cache exploitable */ }
+    container.innerHTML = `<div class="card-luxe" style="padding: 12px 16px; font-size: 12px; color: var(--primary-light);">🌡️ Météo indisponible pour le moment</div>`;
   }
 }
 
@@ -68,9 +82,13 @@ function paintWeatherBanner(container, { code, tmax, tmin, uv, wind }) {
   // ✅ Blague Mistral, validée avec Marine — s'affiche au-delà de 40 km/h de vent
   const mistralNote = (wind && wind >= 40) ? ' · 💨 Bulletin météo : Mistral annoncé, tenue discriminante recommandée' : '';
 
+  // 🐛 CORRECTIF (audit 25/07) : dépendait de EXPLORE_ICONS_3D.meteo, un bloc d'icônes
+  // supprimé par erreur lors d'un collage GitHub du 23/07 (jamais remarqué car l'erreur
+  // JS était juste avalée par le catch englobant, qui effaçait le widget en silence).
+  // On utilise maintenant directement l'emoji météo du jour — plus simple, rien à charger.
   container.innerHTML = `
     <div class="card-luxe" style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
-      <div style="width: 36px; height: 36px; flex-shrink: 0;">${EXPLORE_ICONS_3D.meteo}</div>
+      <div style="width: 36px; height: 36px; flex-shrink: 0; font-size: 30px; line-height: 36px; text-align: center;">${info.emoji}</div>
       <div style="flex: 1;">
         <div class="title-serif" style="font-size: 14px;">${info.label} à ${WEATHER_LOCATION.label} · ${tmin}°–${tmax}°C</div>
         <div style="font-size: 11.5px; color: var(--primary-light); margin-top: 2px;">UV ${uv}${uvNote}${isRainy ? ' · pense aux activités indoor aujourd\'hui' : ''}${mistralNote}</div>

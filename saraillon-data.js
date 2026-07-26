@@ -104,7 +104,7 @@ const FIXED_CHORES = [
 // ---- Planning du séjour ----
 // ⚠️ Incrémenter à chaque changement du contenu par défaut de planningData,
 // pour que les téléphones ayant déjà un vieux cache local reçoivent la mise à jour.
-const PLANNING_VERSION = 5;
+const PLANNING_VERSION = 6;
 
 const planningData = [
   { jour: "Vendredi", date: "21 août 2026", activities: [
@@ -123,7 +123,7 @@ const planningData = [
     { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine de Saraillon", inscription: false, repas: "Petit-déj + Déjeuner", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil"], comments: [], notes: "" },
     { nom: "Après-midi plage à l'Anse Magaud", emoji: "🏄", horaires: "Après-midi", lieu: "Anse Magaud", inscription: false, repas: "", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau", "Masque et tuba"], comments: [], notes: "On reste proche de la gare pour récupérer Sonia et Mathilde le soir." },
     { nom: "Dîner au restaurant", emoji: "🍽️", horaires: "19h30", lieu: "Anse Magaud ou Anse Méjean", inscription: false, reservation: "6 personnes", resaId: "resto-magaud", repas: "Dîner", apporter: [], comments: [], notes: "📞 À réserver pour 6 personnes." },
-    { nom: "Arrivées de Sonia et Mathilde", emoji: "🚉", horaires: "22h10", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Sonia : aéroport de Marseille à 20h35 puis gare de Toulon (heure à préciser dès qu'elle a réservé). Mathilde : 22h10 à Toulon. Si les deux arrivent en même temps, on les récupère et on va prendre un verre au Mourillon toutes ensemble (les 2 voitures)." }
+    { nom: "Arrivées de Sonia et Mathilde", emoji: "🚉", horaires: "22h10", lieu: "Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Sonia a réservé son train : elle arrive à 22h10 en gare de Toulon, comme Mathilde. On les récupère ensemble et on va prendre un verre au Mourillon toutes ensemble (les 2 voitures)." }
   ]},
   { jour: "Lundi", date: "24 août 2026", activities: [
     { nom: "Surprises", emoji: "💎", horaires: "10h30 – 17h30", lieu: "Saraillon", inscription: false, repas: "", apporter: ["Son âme d'enfant 🧒"], comments: [], notes: "Premier jour avec tout le monde ! Réparties en 2 équipes. Vous n'êtes pas prêtes !" },

@@ -661,6 +661,8 @@ function renderFeed() {
             <div style="display: flex; gap: 12px;">
               <button onclick="likeFeedEntry(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">❤️</button><span onclick="showLikersPanel(${JSON.stringify(entry.likes)})" style="font-size: 13px; color: ${userLiked ? 'var(--accent-pink)' : 'var(--primary-light)'}; font-weight: ${userLiked ? '700' : '500'}; cursor: pointer; padding: 4px 2px;">${entry.likes.length}</span>
               <button onclick="toggleFeedComments(${entry.id})" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); font-weight: 500; transition: all 0.3s ease; padding: 4px 0;" onmouseover="this.style.transform='scale(1.1)'; this.style.color='var(--primary)';" onmouseout="this.style.transform='scale(1)'; this.style.color='var(--primary-light)';">💬 ${entry.comments.length}</button>
+              <button onclick="shareFeedEntry(${entry.id})" title="Partager (WhatsApp...)" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); padding: 4px 0;">📤</button>
+              <button onclick="shareFeedEntryToChat(${entry.id})" title="Envoyer dans le chat du groupe" style="background: none; border: none; cursor: pointer; font-size: 13px; color: var(--primary-light); padding: 4px 0;">🔁</button>
             </div>
           </div>
         </div>
@@ -670,6 +672,20 @@ function renderFeed() {
   } catch (err) {
     console.error('Erreur renderFeed:', err);
   }
+}
+
+// ✅ Partage d'une publication du fil : feuille de partage système (WhatsApp...) ou envoi
+// direct dans le chat du groupe — voir shareContent/shareToGroupChat (app-core.js).
+function shareFeedEntry(entryId) {
+  const entry = feed.find(e => e.id === entryId);
+  if (!entry) return;
+  shareContent('Saraillon', `${entry.emoji || ''} ${entry.user} : ${entry.message}`.trim(), null);
+}
+
+function shareFeedEntryToChat(entryId) {
+  const entry = feed.find(e => e.id === entryId);
+  if (!entry) return;
+  shareToGroupChat(`🔁 A partagé une publication de ${entry.user} : "${entry.message}"`);
 }
 
 async function likeFeedEntry(entryId) {
@@ -1382,11 +1398,23 @@ async function loadShuttleRecap() {
   const filledIds = new Set(rows.filter(r => r.arrival_date || r.arrival_place || r.departure_date || r.departure_place || r.arrival_note || r.departure_note).map(r => r.person_id));
   const missing = PARTICIPANTS.filter(p => !filledIds.has(p.id));
 
+  // ✅ Résumé texte pour le partage (WhatsApp/chat du groupe) — voir shareShuttleRecap ci-dessous.
+  const legText = (label, entries) => `${label}\n` + (entries.length === 0
+    ? '  Rien de renseigné pour le moment'
+    : entries.map(e => `  ${e.date !== '9999-12-31' ? fmtDay(e.date) : '?'} ${e.time !== '99:99' ? e.time : ''} — ${e.names.join(', ')}${e.place ? ` (${e.place})` : ''}`).join('\n'));
+  window.__shuttleRecapShareText = `🗺️ Récap arrivées/départs Saraillon\n\n${legText('🛬 Arrivées :', buildLeg('arrival'))}\n\n${legText('🛫 Départs :', buildLeg('departure'))}`;
+
   box.innerHTML = `
     <div style="border-radius: 18px; overflow: hidden; background: var(--bg-raised); box-shadow: 0 6px 20px rgba(12, 47, 58, 0.12);">
-      <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 12px 14px;">
-        <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🗺️ Récap des arrivées et départs</div>
-        <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour que tout le monde soit au courant 🐚</div>
+      <div style="background: linear-gradient(150deg, #0e5f74 0%, var(--sea-deep) 45%, var(--accent-cyan) 100%); padding: 12px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+        <div>
+          <div style="font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #ffffff;">🗺️ Récap des arrivées et départs</div>
+          <div style="font-size: 10.5px; color: #d7f4ef;">Qui arrive / part quand et où — pour que tout le monde soit au courant 🐚</div>
+        </div>
+        <div style="display: flex; gap: 4px; flex-shrink: 0;">
+          <button onclick="shareShuttleRecap()" title="Partager (WhatsApp...)" style="background: rgba(255,255,255,0.18); border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 14px; cursor: pointer;">📤</button>
+          <button onclick="shareShuttleRecapToChat()" title="Envoyer dans le chat du groupe" style="background: rgba(255,255,255,0.18); border: none; border-radius: 8px; width: 30px; height: 30px; font-size: 14px; cursor: pointer;">🔁</button>
+        </div>
       </div>
       <div style="padding: 12px 14px 0;">
         <div style="background: #f2fbfa; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;">
@@ -1416,4 +1444,12 @@ async function loadShuttleRecap() {
       </div>
     </div>
   `;
+}
+
+function shareShuttleRecap() {
+  shareContent('Saraillon', window.__shuttleRecapShareText || 'Récap arrivées/départs Saraillon', null);
+}
+
+function shareShuttleRecapToChat() {
+  shareToGroupChat(window.__shuttleRecapShareText || 'Récap arrivées/départs Saraillon');
 }

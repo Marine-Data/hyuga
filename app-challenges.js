@@ -164,6 +164,8 @@ function renderChallenges() {
           <span style="font-size: 16px;">♥</span>${(ch.likes || []).length}
         </button>
         <button onclick="event.stopPropagation(); toggleChallengeComments(${ch.id})" style="border: none; background: none; padding: 0; cursor: pointer; color: rgba(232,246,250,0.6); font-weight: 700; font-size: 14px;">💬 ${(ch.comments || []).length}</button>
+        <button onclick="event.stopPropagation(); shareChallenge(${ch.id})" title="Partager (WhatsApp...)" style="border: none; background: none; padding: 0; cursor: pointer; color: rgba(232,246,250,0.6); font-size: 14px;">📤</button>
+        <button onclick="event.stopPropagation(); shareChallengeToChat(${ch.id})" title="Envoyer dans le chat du groupe" style="border: none; background: none; padding: 0; cursor: pointer; color: rgba(232,246,250,0.6); font-size: 14px;">🔁</button>
         <div style="flex: 1;"></div>
         ${estAutrice ? `
         <div style="position: relative;">
@@ -204,6 +206,22 @@ function renderChallenges() {
 
     </div>`;
   }).join('');
+}
+
+// ✅ Partage d'un défi/quête : feuille de partage système (WhatsApp...) ou envoi direct
+// dans le chat du groupe — voir shareContent/shareToGroupChat (app-core.js).
+function shareChallenge(id) {
+  const ch = challenges.find(c => c.id === id);
+  if (!ch) return;
+  const titre = ch.title || ch.titre || (ch.description || '').split('\n')[0] || 'Défi Saraillon';
+  shareContent('Saraillon', `🎯 ${ch.isQuest ? 'Quête' : 'Défi'} : ${titre}${ch.description ? ' — ' + ch.description : ''}`, null);
+}
+
+function shareChallengeToChat(id) {
+  const ch = challenges.find(c => c.id === id);
+  if (!ch) return;
+  const titre = ch.title || ch.titre || (ch.description || '').split('\n')[0] || 'Défi Saraillon';
+  shareToGroupChat(`🔁 ${ch.isQuest ? 'Quête' : 'Défi'} partagé : ${titre}`);
 }
 
 function toggleChallengeDetail(id) {
@@ -355,6 +373,18 @@ function computeXpLeaderboard() {
       if (person && totals[person.id] !== undefined) totals[person.id] += (i.xp || 10);
     });
   }
+  // 🐛 CORRECTIF (audit 26/07) : les tâches du jour de départ comptent maintenant via
+  // cloudDepartureTasks (table Supabase departure_tasks), plus via choreLog local
+  // uniquement — voir toggleDepartureTask (app-planning.js). done_by stocke un NOM (comme
+  // treasureHuntItems.found_by), même comparaison tolérante à l'accent/casse.
+  if (typeof cloudDepartureTasks !== 'undefined' && Array.isArray(cloudDepartureTasks)) {
+    const cle = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    cloudDepartureTasks.filter(r => r.done && r.done_by).forEach(r => {
+      const person = PARTICIPANTS.find(p => cle(p.name) === cle(r.done_by));
+      if (person && totals[person.id] !== undefined) totals[person.id] += 10;
+    });
+  }
+
   return PARTICIPANTS
     .map(p => ({ p, xp: totals[p.id] || 0 }))
     .sort((a, b) => b.xp - a.xp);
@@ -514,10 +544,11 @@ async function createChallenge() {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = libelleBouton; }
   };
 
-  const handleMedia = (media) => {
+  const handleMedia = async (media) => {
+    let ch;
     if (currentEditChallenge) {
       // Mode édition
-      const ch = challenges.find(c => c.id === currentEditChallenge);
+      ch = challenges.find(c => c.id === currentEditChallenge);
       if (ch) {
         ch.creator = creator.toUpperCase();
         ch.description = desc;
@@ -528,7 +559,7 @@ async function createChallenge() {
     } else {
       // Mode création
       const newId = Date.now();
-      challenges.unshift({
+      ch = {
         id: newId,
         creator: creator.toUpperCase(),
         description: desc,
@@ -538,7 +569,8 @@ async function createChallenge() {
         xp: 20,
         completedBy: [],
         timestamp: new Date()
-      });
+      };
+      challenges.unshift(ch);
       addNotification(`🎯 ${creator.toUpperCase()} a créé un nouveau challenge !`, '🎯', 'challenge');
       addFeedEntry(`a créé un nouveau challenge: "${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}"`, '🎯', 'challenge', newId);
     }
@@ -550,7 +582,36 @@ async function createChallenge() {
     mediaInput.value = '';
     rendreLeBouton();
     renderChallenges();
-    showNotification('✅ Challenge publié !', 'success');
+
+    // 🐛 CORRECTIF (audit 26/07) : "champagne à la plage" créé puis disparu — la sauvegarde
+    // vers Supabase passait par saveAllData(), en arrière-plan (fire-and-forget) et sans
+    // aucun retour visible : un échec (réseau, app mise en arrière-plan juste après la
+    // création...) était juste avalé par un .catch(console.error), et le défi ne survivait
+    // que localement, sans que personne le sache — jusqu'à sa disparition au rechargement
+    // sur cet appareil (localStorage écrasé) ou son absence sur les autres. On attend
+    // maintenant explicitement CETTE synchro précise et on prévient si elle échoue — elle
+    // reste dans la file de réessai automatique (queueFailedSync/flushSyncQueue), mais la
+    // personne sait qu'il faut vérifier sa connexion plutôt que de croire que c'est publié.
+    if (ch && window.supabaseReady && window.syncToSupabase) {
+      const ok = await window.syncToSupabase('challenges', {
+        id: ch.id,
+        creator: ch.creator || null,
+        is_quest: ch.isQuest || false,
+        quest_label: ch.questLabel || null,
+        xp: ch.xp || 20,
+        title: ch.title || ch.titre || null,
+        description: ch.description || '',
+        media: ch.media || null,
+        completed_by: ch.completedBy || [],
+        proofs: ch.proofs || {},
+        likes: ch.likes || [],
+        comments: ch.comments || [],
+        timestamp: ch.timestamp instanceof Date ? ch.timestamp.toISOString() : ch.timestamp
+      });
+      showNotification(ok ? '✅ Challenge publié !' : '⚠️ Publié sur cet appareil, mais pas encore en ligne (réseau ?) — nouvel essai automatique dès que possible', ok ? 'success' : 'error');
+    } else {
+      showNotification('✅ Challenge publié !', 'success');
+    }
   };
 
   const fichier = mediaInput.files[0];
