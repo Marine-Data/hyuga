@@ -18,7 +18,10 @@
 // sans jamais demander le code, avec l'ancien app-core.js resté en cache.
 // v15 = correctif météo 25/07/2026 : widget cassé depuis le 23/07 (EXPLORE_ICONS_3D
 // manquant, disparaissait en silence) — corrigé dans app-features.js.
-const CACHE_VERSION = 'saraillon-v15';
+// v16 = arrivée de Sonia confirmée en train à 22h10 gare de Toulon, comme Mathilde.
+// v17 = boutons de partage (WhatsApp/natif + chat du groupe) sur la Galerie et le Fil.
+// v18 = partage étendu au récap arrivées/départs, aux défis/quêtes, aux courses, aux dépenses.
+const CACHE_VERSION = 'saraillon-v18';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1,0 +1,732 @@
+// ============== GALLERY ==============
+// ✅ Bascule grille (miniatures, pour retrouver vite un souvenir) / fil (vue détaillée
+// avec likes et commentaires, conservée telle quelle) — par défaut sur "fil" pour ne
+// pas changer le comportement existant tant qu'on ne choisit pas explicitement.
+let galleryViewMode = 'feed';
+
+function setGalleryViewMode(mode) {
+  galleryViewMode = mode;
+  const gridBtn = document.getElementById('gallery-view-grid-btn');
+  const feedBtn = document.getElementById('gallery-view-feed-btn');
+  if (gridBtn) gridBtn.classList.toggle('active', mode === 'grid');
+  if (feedBtn) feedBtn.classList.toggle('active', mode === 'feed');
+  renderGallery();
+}
+
+function populateGalleryFilters() {
+  const daySelect = document.getElementById('gallery-filter-day');
+  const personSelect = document.getElementById('gallery-filter-person');
+  if (!daySelect || !personSelect) return;
+
+  if (daySelect.options.length <= 1) {
+    planningData.forEach((day, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = `${day.jour}`;
+      daySelect.appendChild(opt);
+    });
+  }
+  if (personSelect.options.length <= 1) {
+    PARTICIPANTS.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name;
+      personSelect.appendChild(opt);
+    });
+  }
+  daySelect.value = galleryFilterDay;
+  personSelect.value = galleryFilterCreatorId;
+}
+
+function applyGalleryFilters() {
+  const daySelect = document.getElementById('gallery-filter-day');
+  const personSelect = document.getElementById('gallery-filter-person');
+  galleryFilterDay = daySelect ? daySelect.value : "";
+  galleryFilterCreatorId = personSelect ? personSelect.value : "";
+  renderGallery();
+}
+
+function renderGallery() {
+  populateGalleryFilters();
+
+  let items = galleryItems.slice().reverse();
+
+  if (galleryFilterCreatorId !== "") {
+    items = items.filter(item => String(item.creatorId) === String(galleryFilterCreatorId));
+  }
+  if (galleryFilterDay !== "") {
+    items = items.filter(item => getTripDayIndex(item.timestamp) === parseInt(galleryFilterDay, 10));
+  }
+
+  // ✅ Mode grille : miniatures compactes (3 colonnes), avec un repère ▶ sur les vidéos
+  // pour ne pas les confondre avec une photo cassée dans une si petite vignette.
+  if (galleryViewMode === 'grid') {
+    const gridHtml = items.map(item => `
+      <div onclick="openGalleryLightbox(${item.id})" style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); cursor: pointer; overflow: hidden;">
+        ${item.type === 'image'
+          ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
+          : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover; display: block;" playsinline muted preload="metadata"></video>
+             <span style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; font-size: 9px; display: flex; align-items: center; justify-content: center;">▶</span>`}
+      </div>
+    `).join('');
+    document.getElementById('gallery-grid').innerHTML = items.length
+      ? `<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">${gridHtml}</div>`
+      : `<div style="text-align: center; padding: 60px 20px;"><div style="font-size: 40px; margin-bottom: 12px;">📷</div><p style="color: var(--primary-light); font-size: 13px;">Aucune photo à afficher</p></div>`;
+    return;
+  }
+
+  const html = items.map((item) => {
+    const userLiked = (item.likes || []).includes(currentUser.id);
+    const likesCount = (item.likes || []).length;
+    const commentsCount = (item.comments || []).length;
+    const taggedUsers = item.tags ? item.tags.map(tid => PARTICIPANTS.find(p => p.id === tid)?.name).filter(Boolean) : [];
+    const creatorAvatarRaw = (personalsData[item.creatorId] && personalsData[item.creatorId].avatar) || null;
+    const creatorAvatar = (creatorAvatarRaw && creatorAvatarRaw.startsWith('data:image')) ? creatorAvatarRaw : null;
+    const timeago = getTimeAgo(item.timestamp);
+
+    return `
+    <div class="ig-post" id="gal-item-${item.id}">
+      <!-- En-tête du post -->
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer;" onclick="showPublicProfileFromGallery('${item.creator}')">
+        <div class="ig-avatar-ring">
+          <div class="ig-avatar-inner">
+            ${creatorAvatar ? `<img src="${creatorAvatar}" style="width: 100%; height: 100%; object-fit: cover;">` : item.creator[0]}
+          </div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 13.5px; color: var(--primary); letter-spacing: 0.1px;">${item.creator}</div>
+          <div style="font-size: 11px; color: var(--primary-light);">${timeago}</div>
+        </div>
+        <button onclick="event.stopPropagation(); editGalleryItem(${item.id})" style="background: var(--bg-sunken); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; color: var(--primary-light); cursor: pointer;">✏️</button>
+      </div>
+
+      <!-- Photo/vidéo pleine largeur (tap = plein écran) -->
+      <div style="width: 100%; aspect-ratio: 4/5; background: var(--bg-sunken); position: relative;">
+        ${item.type === 'image'
+          ? `<img src="${item.src}" alt="" onclick="openGalleryLightbox(${item.id})" style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in;">`
+          : `<video src="${item.src}" controls playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>`}
+        ${item.location ? `<div class="ig-location-badge">📍 ${escapeHtml(item.location)}</div>` : ''}
+      </div>
+
+      <!-- Barre d'actions SOUS la photo -->
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px;">
+        <button class="ig-action-btn ${userLiked ? 'liked' : ''}" onclick="likeGalleryItem(${item.id})">${userLiked ? '❤️' : '🤍'}</button>
+        <button class="ig-action-btn" onclick="toggleGalleryComments(${item.id})">💬</button>
+        <button class="ig-action-btn" onclick="shareGalleryItem(${item.id})" title="Partager (WhatsApp...)">📤</button>
+        <button class="ig-action-btn" onclick="shareGalleryItemToChat(${item.id})" title="Envoyer dans le chat du groupe">🔁</button>
+      </div>
+
+      <!-- Likes, légende, commentaires -->
+      <div style="padding: 0 16px 16px;">
+        ${likesCount > 0 ? `<div onclick="showGalleryLikers(${item.id})" style="font-weight: 700; font-size: 12.5px; color: var(--primary); margin-bottom: 6px; cursor: pointer;">${likesCount} mention${likesCount > 1 ? 's' : ''} J'aime</div>` : ''}
+        ${item.description ? `<div style="font-size: 12.5px; color: var(--primary); margin-bottom: 8px; line-height: 1.5;"><strong>${escapeHtml(item.creator)}</strong> ${escapeHtml(item.description)}</div>` : ''}
+        ${taggedUsers.length > 0 ? `
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+            ${taggedUsers.map(name => `<button class="ig-tag-chip" onclick="filterGalleryByTag('${name}')">🏷️ ${name}</button>`).join('')}
+          </div>
+        ` : ''}
+        ${commentsCount > 0 ? `<div onclick="toggleGalleryComments(${item.id})" style="font-size: 12px; color: var(--primary-light); cursor: pointer;">Voir ${commentsCount > 1 ? `les ${commentsCount} commentaires` : 'le commentaire'}</div>` : ''}
+      </div>
+    </div>
+    `;
+  }).join('');
+  
+  const isFiltered = galleryFilterCreatorId !== "" || galleryFilterDay !== "";
+  document.getElementById('gallery-grid').innerHTML = html || `
+    <div style="text-align: center; padding: 60px 20px;">
+      <div style="font-size: 40px; margin-bottom: 12px;">📷</div>
+      <p style="color: var(--primary-light); font-size: 13px;">${isFiltered ? 'Aucune photo ne correspond à ce filtre' : 'Galerie vide — ajoute la première photo !'}</p>
+    </div>
+  `;
+}
+
+// ✅ Partage d'une photo/vidéo de la Galerie : feuille de partage système (WhatsApp...)
+// ou envoi direct dans le chat du groupe — voir shareContent/shareToGroupChat (app-core.js).
+function shareGalleryItem(id) {
+  const item = galleryItems.find(g => g.id === id);
+  if (!item) return;
+  const text = `📸 ${item.creator} a partagé ${item.type === 'video' ? 'une vidéo' : 'une photo'} sur Saraillon${item.description ? ' : ' + item.description : ''}`;
+  shareContent('Saraillon', text, item.src);
+}
+
+function shareGalleryItemToChat(id) {
+  const item = galleryItems.find(g => g.id === id);
+  if (!item) return;
+  const text = `🔁 A partagé ${item.type === 'video' ? 'une vidéo' : 'une photo'} de la Galerie${item.description ? ' : ' + item.description : ''} → ${item.src}`;
+  shareToGroupChat(text);
+}
+
+function showUploadForm() {
+  const form = document.getElementById('upload-form');
+  const isVisible = form.style.display !== 'none';
+  
+  if (!isVisible) {
+    // Initialiser checkboxes quand on ouvre le formulaire
+    let html = '';
+    PARTICIPANTS.forEach(p => {
+      html += `
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px; border-radius: 4px; transition: background 0.2s;">
+          <input type="checkbox" id="tag-${p.id}" style="cursor: pointer; width: 16px; height: 16px;">
+          <span style="font-size: 12px;">${p.name}</span>
+        </label>
+      `;
+    });
+    document.getElementById('gallery-tags-checkboxes').innerHTML = html;
+  }
+  
+  form.style.display = isVisible ? 'none' : 'block';
+}
+
+function uploadGallery() {
+  const input = document.getElementById('gallery-input');
+  const location = document.getElementById('gallery-location').value;
+  const desc = document.getElementById('gallery-desc').value;
+  
+  // ✅ Seule la photo/vidéo est obligatoire — le lieu, la description et les tags
+  // restent possibles mais ne doivent jamais bloquer un envoi rapide et simple.
+  if (!input.files[0]) { showNotification('Choisis une photo ou vidéo !', 'error'); return; }
+  
+  // Récupérer les tags cochés
+  const tags = [];
+  PARTICIPANTS.forEach(p => {
+    if (document.getElementById(`tag-${p.id}`)?.checked) {
+      tags.push(p.id);
+    }
+  });
+  
+  // ✅ Les vidéos ne passent par aucune compression : une vidéo iPhone de 30 s pèse
+  // déjà 50 à 100 Mo. En 4G dans le Var, l'envoi échoue ou dure une éternité — mieux
+  // vaut le dire avant de lancer que de laisser tourner une barre de progression.
+  const LIMITE_VIDEO_MO = 60;
+  if (!input.files[0].type.startsWith('image') && input.files[0].size > LIMITE_VIDEO_MO * 1024 * 1024) {
+    const poids = Math.round(input.files[0].size / 1024 / 1024);
+    showNotification(`🎬 Vidéo trop lourde (${poids} Mo, maximum ${LIMITE_VIDEO_MO} Mo). Raccourcis-la ou envoie une photo.`, 'error');
+    input.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const isImage = input.files[0].type.startsWith('image');
+
+    const finishUpload = async (src) => {
+      // ✅ POINT CLÉ (audit) : on envoie désormais le fichier vers Supabase Storage et on
+      // ne garde que son URL — avant, l'image entière (200-350 Ko de base64) partait dans
+      // la table gallery_items ET dans le localStorage de chaque téléphone, dont le quota
+      // a déjà été atteint une fois. Repli : si l'upload Storage échoue (hors-ligne...),
+      // on garde le base64 comme avant, l'app continue de fonctionner à l'identique.
+      let finalSrc = src;
+      if (window.supabaseReady && src.startsWith('data:')) {
+        try {
+          const blob = dataURLToBlob(src);
+          const ext = isImage ? 'jpg' : (input.files[0].name.split('.').pop() || 'mp4');
+          const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          finalSrc = await uploadFileToStorage('gallery-photos', path, blob);
+        } catch (err) {
+          // 🐛 CORRECTIF (22/07) : ce repli ne prévenait personne (console.warn seul).
+          // Si le Storage tombait ou si un droit manquait, l'app se remettait à stocker
+          // les photos entières en base — le problème d'avant — sans aucun signe visible.
+          // On le dit maintenant clairement : c'est un mode dégradé, pas la normale.
+          console.warn('Upload Storage échoué, repli en base64 :', err);
+          showNotification('⚠️ Photo enregistrée en mode dégradé (envoi impossible). Préviens Marine si ça se répète.', 'error');
+        }
+      }
+      const item = {
+        id: Date.now(),
+        src: finalSrc,
+        type: isImage ? 'image' : 'video',
+        location: location,
+        description: desc,
+        creator: currentUser.name,
+        creatorId: currentUser.id,
+        timestamp: new Date(),
+        likes: [],
+        comments: [],
+        tags: tags
+      };
+      galleryItems.push(item);
+      saveAllData();
+      renderGallery();
+      renderFeed();  // ✅ Mettre à jour le feed aussi!
+      showUploadForm();
+      
+      // Réinitialiser le formulaire
+      document.getElementById('gallery-location').value = '';
+      document.getElementById('gallery-desc').value = '';
+      input.value = '';
+      document.getElementById('gallery-tags-checkboxes').innerHTML = '';
+      
+      addNotification('📸 Nouvelle preuve versée au dossier.', '📸', 'gallery', true, item.id);
+      addFeedEntry(`a partagé une photo: "${location}"`, '📸', 'gallery', item.id);
+    };
+
+    if (isImage) {
+      // ✅ 1080px / qualité 82% : net sur téléphone (contre 600px/70% avant, très flou en plein écran),
+      // tout en restant raisonnable en taille de base64 pour Supabase (~200-350 Ko au lieu de ~60 Ko).
+      compressImage(e.target.result, finishUpload, 1080, 0.82);
+    } else {
+      finishUpload(e.target.result); // Vidéos : pas de compression canvas possible
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function likeGalleryItem(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  if (!item.likes) item.likes = [];
+  // ✅ Base la bascule sur la version cloud la plus fraîche (voir refreshLikesFromCloud
+  // dans app-core.js) pour ne plus écraser le like posé par quelqu'un d'autre entre-temps.
+  const cloudLikes = await refreshLikesFromCloud('gallery_items', itemId);
+  if (cloudLikes !== null) item.likes = cloudLikes;
+  const idx = item.likes.indexOf(currentUser.id);
+  
+  if (idx > -1) {
+    item.likes.splice(idx, 1);
+    addNotification(`vous a retiré un ❤️`, '❌', 'gallery', true, item.id);
+  } else {
+    item.likes.push(currentUser.id);
+    addNotification(`❤️ ${currentUser.name} a aimé votre photo`, '❤️', 'gallery', true, item.id);
+    addFeedEntry(`a aimé la photo de ${item.creator} (${item.location})`, '❤️', 'gallery', item.id);
+  }
+  
+  saveAllData();
+  renderGallery();
+}
+
+function toggleGalleryComments(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  if (!item.comments) item.comments = [];
+  
+  let commentsDiv = document.getElementById(`gal-comments-${itemId}`);
+  if (commentsDiv) {
+    const showing = commentsDiv.style.display !== 'none';
+    commentsDiv.style.display = showing ? 'none' : 'block';
+    const backdrop = document.getElementById(`gal-comments-backdrop-${itemId}`);
+    if (backdrop) backdrop.style.display = showing ? 'none' : 'block';
+    return;
+  }
+  
+  // ✅ Voile sombre derrière (style Instagram) pour isoler le modal du reste de la page
+  const backdrop = document.createElement('div');
+  backdrop.id = `gal-comments-backdrop-${itemId}`;
+  backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998;';
+  backdrop.onclick = () => closeGalleryCommentsModal(itemId);
+
+  // ✅ Bottom sheet opaque (fond plein, pas de transparence) ancré en bas de l'écran
+  const container = document.createElement('div');
+  container.id = `gal-comments-${itemId}`;
+  container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); padding: 12px 20px 20px; border-radius: 16px 16px 0 0; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); z-index: 9999;';
+  
+  let html = `
+    <div style="width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px;"></div>
+    <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+      💬 Commentaires
+      <button onclick="closeGalleryCommentsModal(${itemId})" style="background: none; border: none; font-size: 18px; color: var(--primary-light); cursor: pointer;">✕</button>
+    </div>
+    <div style="overflow-y: auto; flex: 1; margin-bottom: 12px;">
+  `;
+  
+  if (item.comments.length === 0) {
+    html += `<div style="font-size: 12px; color: var(--primary-light); text-align: center; padding: 20px 0;">Aucun commentaire pour le moment</div>`;
+  }
+  item.comments.forEach(c => {
+    html += `
+      <div style="font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; box-shadow: 0 1px 0 var(--border);">
+        <strong>${escapeHtml(c.user)}:</strong> ${highlightMentions(c.text)}
+        <div style="font-size: 10px; color: var(--primary-light);">${new Date(c.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  
+  html += `
+    <div style="display: flex; gap: 8px; padding-top: 8px; box-shadow: 0 -1px 0 var(--border);">
+      <input type="text" placeholder="Commenter... @pseudo pour mentionner" id="gal-comment-${itemId}" style="flex: 1; margin-bottom: 0; font-size: 13px;">
+      <button class="btn btn-small btn-primary" onclick="addGalleryComment(${itemId})">📤</button>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
+  document.getElementById(`gal-comment-${itemId}`).focus();
+}
+
+// ✅ Fermeture sécurisée du modal de commentaires (évite les blocages)
+function closeGalleryCommentsModal(itemId) {
+  try {
+    const el = document.getElementById(`gal-comments-${itemId}`);
+    if (el) el.remove();
+    const backdrop = document.getElementById(`gal-comments-backdrop-${itemId}`);
+    if (backdrop) backdrop.remove();
+  } catch (err) {
+    console.error('Erreur fermeture modal commentaires:', err);
+  }
+}
+
+function addGalleryComment(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  const input = document.getElementById(`gal-comment-${itemId}`);
+  if (!input || !input.value.trim()) return;
+  
+  if (!item.comments) item.comments = [];
+  const mentions = parseMentions(input.value); // ✅ Détecte les @pseudo dans le commentaire
+  item.comments.push({
+    id: Date.now(),
+    user: currentUser.name,
+    userId: currentUser.id,
+    text: input.value,
+    timestamp: new Date(),
+    mentions: mentions
+  });
+  
+  saveAllData();
+  addNotification(`💬 ${currentUser.name} a commenté la photo`, '💬', 'gallery', true, item.id);
+  addFeedEntry(`a commenté la photo de ${item.creator}: "${input.value.substring(0, 40)}"`, '💬', 'gallery-comment', item.id);
+  
+  // Fermer et réouvrir pour voir le nouveau commentaire
+  closeGalleryCommentsModal(itemId);
+  toggleGalleryComments(itemId);
+  renderGallery();
+}
+
+// ✅ Détecte les @pseudo mentionnés dans un texte et retourne les IDs des participants correspondants
+function parseMentions(text) {
+  const matches = text.match(/@([a-zA-Z0-9_À-ÿ]+)/g) || [];
+  const mentioned = [];
+  matches.forEach(m => {
+    const handle = m.slice(1).toLowerCase();
+    const p = PARTICIPANTS.find(pp => (pp.pseudo || '').toLowerCase() === handle || pp.name.toLowerCase() === handle);
+    if (p && !mentioned.includes(p.id)) mentioned.push(p.id);
+  });
+  return mentioned;
+}
+
+// ✅ Met en surbrillance les @pseudo dans le texte affiché (façon Instagram)
+function highlightMentions(text) {
+  // ✅ On échappe d'abord tout le texte (faille XSS), puis on surligne les @mentions
+  // sur le texte déjà nettoyé — le HTML injecté ici est le seul HTML volontaire.
+  return escapeHtml(text).replace(/@([a-zA-Z0-9_À-ÿ]+)/g, '<span style="color: var(--accent-cyan); font-weight: 600;">@$1</span>');
+}
+
+// ✅ Vérifie si l'utilisateur courant a été mentionné dans un nouveau commentaire, et notifie localement
+function checkGalleryMentions() {
+  if (!currentUser) return;
+  const notifiedKey = 'notifiedMentionIds';
+  let notifiedIds = [];
+  try { notifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]'); } catch (e) { notifiedIds = []; }
+  const newlyNotified = [];
+  
+  galleryItems.forEach(item => {
+    (item.comments || []).forEach(c => {
+      if (c.mentions && c.mentions.includes(currentUser.id) && c.userId !== currentUser.id) {
+        const cId = String(c.id || `${item.id}-${c.timestamp}`);
+        if (!notifiedIds.includes(cId)) {
+          addNotification(`${c.user} vous a mentionné(e) dans un commentaire: "${c.text.substring(0, 40)}"`, '🔔', 'gallery', false, item.id, false);
+          newlyNotified.push(cId);
+        }
+      }
+    });
+  });
+  
+  if (newlyNotified.length > 0) {
+    localStorage.setItem(notifiedKey, JSON.stringify([...notifiedIds, ...newlyNotified]));
+  }
+}
+
+function editGalleryItem(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  // Afficher modal édition
+  const modal = document.createElement('div');
+  modal.id = 'gallery-edit-modal'; // ✅ ID unique — évite de cibler par erreur un autre écran "position: fixed"
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;';
+  
+  let tagsHTML = '';
+  PARTICIPANTS.forEach(p => {
+    const isTagged = (item.tags || []).includes(p.id);
+    tagsHTML += `
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px; border-radius: 4px;">
+        <input type="checkbox" id="edit-tag-${p.id}" ${isTagged ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;">
+        <span style="font-size: 12px; color: white;">${p.name}</span>
+      </label>
+    `;
+  });
+  
+  modal.innerHTML = `
+    <div style="background: var(--bg-raised); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 0 2px var(--border), 0 20px 50px rgba(0,0,0,0.35);">
+      <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--primary);">✏️ Éditer la photo</div>
+      
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 11px; color: var(--primary-light); display: block; margin-bottom: 6px;">📍 Lieu:</label>
+        <input type="text" id="edit-location" value="${escapeHtml(item.location)}" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--bg-sunken); color: var(--primary); box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.1);">
+      </div>
+      
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 11px; color: var(--primary-light); display: block; margin-bottom: 6px;">📝 Description:</label>
+        <textarea id="edit-desc" style="width: 100%; padding: 8px; min-height: 80px; border-radius: 6px; background: var(--bg-sunken); color: var(--primary); font-size: 12px; box-shadow: inset 0 2px 6px rgba(12, 47, 58, 0.1);">${escapeHtml(item.description)}</textarea>
+      </div>
+      
+      <div style="margin-bottom: 12px; padding: 12px; background: var(--bg-sunken); border-radius: 6px;">
+        <label style="font-size: 11px; color: var(--primary-light); display: block; margin-bottom: 8px;">🏷️ Personnes:</label>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">${tagsHTML}</div>
+      </div>
+      
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" style="flex: 1;" onclick="saveGalleryEdit(${itemId})">💾 Enregistrer</button>
+        <button class="btn" style="flex: 1; background: var(--bg-sunken); color: var(--primary);" onclick="document.getElementById('gallery-edit-modal')?.remove()">❌ Annuler</button>
+      </div>
+      <button class="btn btn-danger" style="width: 100%; margin-top: 8px; border: none; background: rgba(239, 68, 68, 0.1); color: var(--danger);" onclick="confirmDeleteGalleryItem(${itemId})">🗑️ Supprimer la photo</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function saveGalleryEdit(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  item.location = document.getElementById('edit-location').value;
+  item.description = document.getElementById('edit-desc').value;
+  
+  item.tags = [];
+  PARTICIPANTS.forEach(p => {
+    if (document.getElementById(`edit-tag-${p.id}`)?.checked) {
+      item.tags.push(p.id);
+    }
+  });
+  
+  saveAllData();
+  document.getElementById('gallery-edit-modal')?.remove();
+  renderGallery();
+  addNotification('📸 Photo modifiée!', '📸', 'gallery');
+}
+
+function confirmDeleteGalleryItem(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  showConfirmation('Supprimer définitivement cette photo ?', () => {
+    galleryItems = galleryItems.filter(i => i.id !== itemId);
+    saveAllData();
+    document.getElementById('gallery-edit-modal')?.remove();
+    renderGallery();
+    window.deleteFromSupabase('gallery_items', itemId);
+    // 🪦 Pierre tombale : empêche définitivement tout appareil (même hors-ligne
+    // longtemps avec une vieille copie) de faire ressusciter cette photo en la
+    // re-synchronisant — voir isTombstoned/refreshDeletedItems dans app-core.js.
+    if (window.supabase) {
+      window.supabase.from('deleted_items').upsert({ table_name: 'gallery_items', item_id: itemId })
+        .then(() => { if (deletedItemIds.gallery_items) deletedItemIds.gallery_items.add(Number(itemId)); })
+        .catch(err => console.error('Pose de pierre tombale échouée:', err));
+    }
+    showNotification('🗑️ Photo supprimée', 'success');
+  });
+}
+
+// ✅ Affiche la liste des personnes qui ont aimé une photo (panneau glissant, même
+// style que celui des commentaires) — le compteur "X mentions J'aime" est cliquable.
+function showGalleryLikers(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item || !item.likes || item.likes.length === 0) return;
+
+  const existing = document.getElementById('gallery-likers-modal');
+  if (existing) { existing.remove(); document.getElementById('gallery-likers-backdrop')?.remove(); }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'gallery-likers-backdrop';
+  backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998;';
+  backdrop.onclick = () => { document.getElementById('gallery-likers-modal')?.remove(); backdrop.remove(); };
+
+  const container = document.createElement('div');
+  container.id = 'gallery-likers-modal';
+  container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); padding: 12px 20px 24px; border-radius: 16px 16px 0 0; max-height: 60vh; overflow-y: auto; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); z-index: 9999;';
+
+  const names = item.likes
+    .map(id => PARTICIPANTS.find(p => p.id === id))
+    .filter(Boolean);
+
+  container.innerHTML = `
+    <div style="width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px;"></div>
+    <div style="font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center;">
+      ❤️ Aimé par
+      <button onclick="document.getElementById('gallery-likers-modal').remove(); document.getElementById('gallery-likers-backdrop').remove();" style="background: none; border: none; font-size: 18px; color: var(--primary-light); cursor: pointer;">✕</button>
+    </div>
+    ${names.map(p => `
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13.5px; color: var(--primary); cursor: pointer;" onclick="document.getElementById('gallery-likers-modal').remove(); document.getElementById('gallery-likers-backdrop').remove(); showPublicProfileFromFeed(${p.id});">
+        <span style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-sunken); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-pink);">${escapeHtml(p.name.charAt(0))}</span>
+        <strong>${escapeHtml(p.name)}</strong>
+      </div>
+    `).join('')}
+  `;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
+}
+
+function filterGalleryByTag(tagName) {
+  const person = PARTICIPANTS.find(p => p.name === tagName);
+  if (!person) return;
+  
+  const filtered = galleryItems.filter(item => (item.tags || []).includes(person.id));
+  
+  if (filtered.length === 0) {
+    document.getElementById('gallery-grid').innerHTML = `<p style="text-align: center; color: var(--primary-light); padding: 20px;">Aucune photo avec ${tagName}</p>`;
+    return;
+  }
+  
+  // Afficher galerie filtrée avec bouton retour
+  let html = `<div style="width: 100%; padding: 12px; background: var(--bg-sunken); border-radius: 6px; margin-bottom: 16px; text-align: center;">
+    <strong>📷 Photos de ${tagName}</strong>
+    <button class="btn btn-small" style="margin-left: 12px;" onclick="renderGallery()">← Retour</button>
+  </div>`;
+  
+  html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">`;
+  filtered.forEach(item => {
+    html += `
+      <div style="position: relative; aspect-ratio: 1; background: var(--bg-sunken); border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1.5px var(--border), 0 2px 6px rgba(0,0,0,0.1);">
+        ${item.type === 'image' ? `<img src="${item.src}" alt="" style="width: 100%; height: 100%; object-fit: cover;">` : `<video src="${item.src}" style="width: 100%; height: 100%; object-fit: cover;" playsinline muted preload="metadata"></video>`}
+        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">${escapeHtml(item.location)}</div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  
+  document.getElementById('gallery-grid').innerHTML = html;
+}
+
+// ✅ Depuis une miniature en mode grille : bascule vers le fil détaillé (photo, likes,
+// commentaires) et défile jusqu'au bon souvenir — remplace l'ancien viewGallery() qui
+// se contentait d'une alerte texte sans afficher la photo.
+// ✅ Plein écran (lightbox) : tap sur une photo → image entière sur fond noir, non
+// recadrée (object-fit: contain, contrairement aux vignettes qui rognent en "cover").
+// Zoom pincé natif du navigateur, flèches ‹ › pour passer d'une photo à l'autre,
+// tap sur le fond ou ✕ pour fermer.
+function openGalleryLightbox(itemId) {
+  const idx = galleryItems.findIndex(i => i.id === itemId);
+  if (idx === -1) return;
+  const item = galleryItems[idx];
+
+  document.getElementById('gallery-lightbox')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'gallery-lightbox';
+  overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 99999; display: flex; align-items: center; justify-content: center; touch-action: pinch-zoom;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const media = item.type === 'image'
+    ? `<img src="${item.src}" style="max-width: 100vw; max-height: 100vh; object-fit: contain; display: block;">`
+    : `<video src="${item.src}" controls autoplay playsinline style="max-width: 100vw; max-height: 100vh; display: block;"></video>`;
+
+  const prevId = idx > 0 ? galleryItems[idx - 1].id : null;
+  const nextId = idx < galleryItems.length - 1 ? galleryItems[idx + 1].id : null;
+  const navBtnStyle = 'position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 22px; width: 42px; height: 42px; border-radius: 50%; cursor: pointer;';
+
+  overlay.innerHTML = `
+    ${media}
+    <button onclick="document.getElementById('gallery-lightbox').remove()" style="position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 20px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">✕</button>
+    <button onclick="event.stopPropagation(); downloadGalleryItem(${item.id})" title="Enregistrer" style="position: absolute; top: max(14px, env(safe-area-inset-top)); right: 64px; background: rgba(255,255,255,0.12); border: none; color: #fff; font-size: 17px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">⬇️</button>
+    ${prevId !== null ? `<button onclick="event.stopPropagation(); openGalleryLightbox(${prevId})" style="${navBtnStyle} left: 10px;">‹</button>` : ''}
+    ${nextId !== null ? `<button onclick="event.stopPropagation(); openGalleryLightbox(${nextId})" style="${navBtnStyle} right: 10px;">›</button>` : ''}
+    <div style="position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.85); font-size: 12.5px; padding: 0 20px;">
+      ${escapeHtml(item.creator)}${item.location ? ` · 📍 ${escapeHtml(item.location)}` : ''}
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
+// ✅ OUTIL DE MAINTENANCE : déplace vers Supabase Storage les photos historiques encore
+// stockées en base64 dans la base (celles d'avant le 21/07). Chacune pèse ~450 Ko, qui
+// voyagent à chaque synchro et occupent le stockage local de chaque téléphone.
+// À lancer UNE fois depuis les Réglages, avec du réseau. Sans effet si tout est déjà migré.
+async function migrerPhotosBase64() {
+  const aMigrer = galleryItems.filter(i => typeof i.src === 'string' && i.src.startsWith('data:'));
+  if (aMigrer.length === 0) {
+    showNotification('✅ Rien à migrer, toutes les photos sont déjà dans le stockage.', 'success');
+    return;
+  }
+  if (!window.supabaseReady) {
+    showNotification('❌ Pas de connexion — réessaie avec du réseau.', 'error');
+    return;
+  }
+
+  showNotification(`⏳ Migration de ${aMigrer.length} média(s)...`, 'success');
+  let ok = 0, echecs = 0;
+
+  for (const item of aMigrer) {
+    try {
+      const blob = dataURLToBlob(item.src);
+      const ext = item.type === 'video' ? 'mp4' : 'jpg';
+      const path = `migre-${item.id}.${ext}`;
+      const url = await uploadFileToStorage('gallery-photos', path, blob);
+      item.src = url;
+      // On ne réécrit la ligne en base QUE si l'envoi a réussi : en cas d'échec la
+      // photo reste en base64 et reste donc visible, jamais perdue.
+      await window.syncToSupabase('gallery_items', { id: item.id, image_url: url });
+      ok++;
+    } catch (err) {
+      console.error('Migration échouée pour', item.id, err);
+      echecs++;
+    }
+  }
+
+  saveAllData();
+  renderGallery();
+  showNotification(
+    echecs === 0
+      ? `✅ ${ok} média(s) migré(s) vers le stockage.`
+      : `⚠️ ${ok} migré(s), ${echecs} échec(s) — les photos non migrées restent visibles.`,
+    echecs === 0 ? 'success' : 'error'
+  );
+}
+
+// ✅ Enregistrer une photo/vidéo dans l'appareil (fonctionne pour les deux formats :
+// URL Storage récente ou base64 historique). Nom de fichier lisible : lieu + date.
+async function downloadGalleryItem(itemId) {
+  const item = galleryItems.find(i => i.id === itemId);
+  if (!item) return;
+  try {
+    let blob;
+    if (item.src.startsWith('data:')) {
+      blob = dataURLToBlob(item.src);
+    } else {
+      const res = await fetch(item.src);
+      blob = await res.blob();
+    }
+    const ext = item.type === 'video' ? 'mp4' : 'jpg';
+    const cleanLoc = (item.location || 'photo').replace(/[^a-zA-Z0-9àâéèêëîïôùûüç' -]/g, '').trim().replace(/\s+/g, '-') || 'photo';
+    const d = new Date(item.timestamp);
+    const name = `saraillon-${cleanLoc}-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.${ext}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showNotification('⬇️ Enregistrement lancé !', 'success');
+  } catch (err) {
+    console.error('Téléchargement échoué:', err);
+    showNotification('❌ Impossible d\'enregistrer ce fichier', 'error');
+  }
+}
+
+function viewGallery(idx) {
+  const item = galleryItems[idx];
+  if (!item) return;
+  setGalleryViewMode('feed');
+  setTimeout(() => {
+    const el = document.getElementById(`gal-item-${item.id}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+}
+
