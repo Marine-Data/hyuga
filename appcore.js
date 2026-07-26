@@ -362,6 +362,7 @@ async function enterMainAppInner() {
   await loadChoreAssignmentsCloud(); // ✅ Corvées partagées : affiche ce que d'autres ont déjà assigné/fait
   await loadReservationsCloud(); // ✅ Réservations : qui a déjà appelé quel restaurant
   await loadTresorFromCloud(); // ✅ Chasse au trésor partagée
+  await loadDepartureTasksCloud(); // ✅ Tâches du jour de départ : suit la personne d'un appareil à l'autre
   ensureTodaySecretMission(); // ✅ Mission secrète privée du jour
   refreshSecretMissionXpCache();
   renderChallenges();
@@ -398,6 +399,7 @@ async function enterMainAppInner() {
       await loadChoreAssignmentsCloud();
       await loadReservationsCloud();
       await loadTresorFromCloud();
+      await loadDepartureTasksCloud();
       await loadFromSupabaseCloud();
       await checkPrivateMessages(); // ✅ Message privé (profil de Marine) arrivé entre-temps
       // ✅ Chaque appel est isolé : si l'onglet correspondant n'est pas monté dans

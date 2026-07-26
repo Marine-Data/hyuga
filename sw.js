@@ -21,7 +21,9 @@
 // v16 = arrivée de Sonia confirmée en train à 22h10 gare de Toulon, comme Mathilde.
 // v17 = boutons de partage (WhatsApp/natif + chat du groupe) sur la Galerie et le Fil.
 // v18 = partage étendu au récap arrivées/départs, aux défis/quêtes, aux courses, aux dépenses.
-const CACHE_VERSION = 'saraillon-v18';
+// v19 = XP des tâches du jour de départ synchronisé sur Supabase (suit la personne d'un
+// appareil à l'autre, ne compte plus que sur le téléphone où c'était coché).
+const CACHE_VERSION = 'saraillon-v19';
 const APP_SHELL = [
   './',
   './index.html',

@@ -373,6 +373,18 @@ function computeXpLeaderboard() {
       if (person && totals[person.id] !== undefined) totals[person.id] += (i.xp || 10);
     });
   }
+  // 🐛 CORRECTIF (audit 26/07) : les tâches du jour de départ comptent maintenant via
+  // cloudDepartureTasks (table Supabase departure_tasks), plus via choreLog local
+  // uniquement — voir toggleDepartureTask (app-planning.js). done_by stocke un NOM (comme
+  // treasureHuntItems.found_by), même comparaison tolérante à l'accent/casse.
+  if (typeof cloudDepartureTasks !== 'undefined' && Array.isArray(cloudDepartureTasks)) {
+    const cle = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    cloudDepartureTasks.filter(r => r.done && r.done_by).forEach(r => {
+      const person = PARTICIPANTS.find(p => cle(p.name) === cle(r.done_by));
+      if (person && totals[person.id] !== undefined) totals[person.id] += 10;
+    });
+  }
+
   return PARTICIPANTS
     .map(p => ({ p, xp: totals[p.id] || 0 }))
     .sort((a, b) => b.xp - a.xp);
