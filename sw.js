@@ -25,6 +25,10 @@
 // appareil à l'autre, ne compte plus que sur le téléphone où c'était coché).
 // v20 = la création d'un défi prévient maintenant si la sauvegarde en ligne échoue,
 // au lieu de disparaître en silence (cause du défi "champagne à la plage" disparu).
+// v21 = redéploiement propre du paquet du 26/07 (météo, Sonia 22h10, partages, XP
+//       du jour de départ, anti-défi-fantôme). Bump pour forcer la purge du cache
+//       sur tous les téléphones, y compris ceux restés sur un v20 partiel.
+const CACHE_VERSION = 'saraillon-v21';
 const CACHE_VERSION = 'saraillon-v20';
 const APP_SHELL = [
   './',
