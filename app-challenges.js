@@ -385,6 +385,14 @@ function computeXpLeaderboard() {
     });
   }
 
+  // ✅ Réservations (28/07) : 15 XP par réservation cochée « faite »,
+  //    créditée à la personne qui l'a validée (reservationsDone[key].person_id).
+  if (typeof reservationsDone === 'object' && reservationsDone) {
+    Object.values(reservationsDone).forEach(r => {
+      if (r && r.done && totals[r.person_id] !== undefined) totals[r.person_id] += 15;
+    });
+  }
+
   return PARTICIPANTS
     .map(p => ({ p, xp: totals[p.id] || 0 }))
     .sort((a, b) => b.xp - a.xp);

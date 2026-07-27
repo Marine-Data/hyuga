@@ -1745,12 +1745,14 @@ async function loadReservationsCloud() {
 }
 
 async function toggleReservation(key) {
-  const existing = reservationsDone[key];
-  const done = !(existing && existing.done);
+  const existing = reservationsDone[key] || {};
+  const done = !existing.done;
   reservationsDone[key] = {
     id: key, done,
     person_id: done && currentUser ? currentUser.id : null,
-    person_name: done && currentUser ? currentUser.name : null
+    person_name: done && currentUser ? currentUser.name : null,
+    assignee_id: existing.assignee_id != null ? existing.assignee_id : null,
+    assignee_name: existing.assignee_name != null ? existing.assignee_name : null
   };
   renderReservations();
   if (window.supabaseReady && window.syncToSupabase) {
@@ -1758,58 +1760,193 @@ async function toggleReservation(key) {
       id: key, done,
       person_id: reservationsDone[key].person_id,
       person_name: reservationsDone[key].person_name,
+      assignee_id: reservationsDone[key].assignee_id,
+      assignee_name: reservationsDone[key].assignee_name,
       updated_at: new Date().toISOString()
     }).catch(err => console.error('Sync réservations échouée:', err));
   }
-  if (done) showNotification('\u{1F4DE} Réservation notée comme faite', 'success');
+  if (done) {
+    showNotification('📞 Réservation faite · +15 XP 🐚', 'success');
+    // Rafraîchit le classement pour que les 15 XP apparaissent tout de suite
+    if (typeof renderHomeLeaderboard === 'function') { try { renderHomeLeaderboard(); } catch (e) {} }
+  }
+}
+
+// Style « Méditerranée » des réservations (design validé par Marine sur Canva).
+// Injecté une seule fois dans <head>, scopé avec le préfixe .resa- pour ne rien
+// impacter ailleurs.
+function injectReservationStyles() {
+  if (document.getElementById('resa-mediterranee-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'resa-mediterranee-styles';
+  s.textContent = `
+    .resa-hero { position: relative; overflow: hidden; border-radius: 20px; padding: 18px 18px 16px; margin-bottom: 14px; color: #fff; background: linear-gradient(135deg,#bf8628,#d4a76a,#e8c882); box-shadow: 0 14px 32px rgba(3,87,103,.18); }
+    .resa-hero::before { content: ""; position: absolute; width: 200px; height: 200px; right: -66px; top: -104px; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; box-shadow: 0 0 0 20px rgba(255,255,255,.05), 0 0 0 42px rgba(255,255,255,.04); }
+    .resa-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22px; background: rgba(255,255,255,.10); clip-path: polygon(0 48%,8% 25%,17% 48%,27% 72%,37% 48%,47% 23%,57% 48%,67% 72%,78% 48%,89% 22%,100% 48%,100% 100%,0 100%); }
+    .resa-hero-row { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; }
+    .resa-shell-mark { width: 46px; height: 46px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50% 50% 46% 46%; background: #dff9ed; font-size: 22px; box-shadow: inset 0 -4px 10px rgba(6,95,114,.15), 0 6px 14px rgba(2,66,78,.18); }
+    .resa-eyebrow { text-transform: uppercase; font-weight: 700; font-size: 9.5px; letter-spacing: .14rem; color: #f5e6d3; margin: 0; }
+    .resa-title { font-weight: 700; font-size: 20px; line-height: 1.15; color: #fff; margin: 1px 0 0; }
+    .resa-sub { font-size: 11.5px; color: #fbf2e2; margin: 2px 0 0; }
+    .resa-pct { text-align: right; }
+    .resa-pct b { font-size: 22px; font-weight: 700; color: #fff; line-height: 1; display: block; }
+    .resa-pct span { font-size: 8.5px; letter-spacing: .1rem; text-transform: uppercase; color: #fff3e2; }
+    .resa-track { position: relative; z-index: 2; height: 8px; border-radius: 999px; overflow: hidden; margin-top: 12px; background: rgba(255,255,255,.30); }
+    .resa-fill { height: 100%; border-radius: inherit; background: #fff; transition: width .4s ease; box-shadow: 0 0 12px rgba(255,255,255,.6); }
+    .resa-stack { display: flex; flex-direction: column; gap: 10px; }
+    .resa-card { position: relative; overflow: hidden; border-radius: 16px; padding: 13px 14px 17px; background: #fff; border: 1px solid rgba(25,163,173,.28); box-shadow: 0 6px 16px rgba(4,92,106,.08); cursor: pointer; }
+    .resa-card.done { padding-bottom: 14px; border-color: rgba(212,167,106,.45); background: linear-gradient(135deg,#f6e6c8,#e8c882); cursor: pointer; }
+    .resa-row { position: relative; z-index: 2; display: flex; align-items: flex-start; gap: 11px; }
+    .resa-icon { width: 38px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px; font-size: 19px; background: #dff0f2; }
+    .resa-card.done .resa-icon { background: #d4a76a; color: #fff; }
+    .resa-body { flex: 1; min-width: 0; }
+    .resa-name { font-weight: 700; font-size: 14.5px; color: #063d4a; line-height: 1.2; }
+    .resa-card.done .resa-name { color: #4a2f08; text-decoration: line-through; }
+    .resa-meta { font-size: 11px; color: #12798a; margin-top: 2px; }
+    .resa-card.done .resa-meta { color: #7a5314; }
+    .resa-assign { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 9px; }
+    .resa-assign-label { font-size: 11px; color: #287c83; }
+    .resa-pill { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid rgba(12,147,158,.3); border-radius: 999px; padding: 3px 10px 3px 4px; box-shadow: 0 3px 8px rgba(4,92,106,.07); }
+    .resa-pill span { font-size: 11px; font-weight: 700; color: #06495a; }
+    .resa-choose { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px dashed rgba(12,147,158,.45); border-radius: 999px; padding: 4px 11px; color: #087a83; font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .resa-done-line { font-size: 11px; color: #0f6e56; font-weight: 700; margin-top: 6px; }
+    .resa-card.done .resa-done-line { color: #3f2a06; }
+    .resa-xp { width: 56px; height: 50px; flex: 0 0 auto; display: grid; place-items: center; position: relative; background: linear-gradient(145deg,#fff3d8,#f5c984); clip-path: polygon(50% 0,68% 8%,84% 24%,96% 50%,91% 78%,72% 96%,50% 87%,28% 96%,9% 78%,4% 50%,16% 24%,32% 8%); filter: drop-shadow(0 4px 5px rgba(131,86,28,.14)); }
+    .resa-xp::before { content: ""; position: absolute; inset: 6px; clip-path: inherit; background: repeating-conic-gradient(from 250deg at 50% 90%, rgba(168,105,32,.16) 0 5deg, transparent 5deg 19deg); }
+    .resa-xp b { position: relative; z-index: 1; font-size: 11px; font-weight: 700; color: #7b4c17; white-space: nowrap; }
+    .resa-wave { position: absolute; left: 0; right: 0; bottom: -1px; height: 16px; z-index: 1; opacity: .6; background: linear-gradient(90deg, rgba(9,173,176,.14), rgba(35,194,190,.32)); clip-path: polygon(0 48%,8% 28%,16% 48%,25% 70%,34% 48%,43% 25%,52% 48%,61% 70%,70% 48%,79% 25%,88% 48%,96% 65%,100% 54%,100% 100%,0 100%); }
+    .resa-deco { position: absolute; right: 10px; bottom: 6px; font-size: 30px; opacity: .5; z-index: 1; }
+    .resa-foot { font-size: 10.5px; color: #12798a; text-align: center; margin-top: 14px; line-height: 1.5; }
+    .resa-ov { position: fixed; inset: 0; z-index: 3000; background: rgba(3,45,55,.5); display: flex; align-items: flex-end; justify-content: center; padding: 14px; }
+    .resa-sheet { width: 100%; max-width: 420px; background: #fff; border-radius: 20px; padding: 16px; box-shadow: 0 -10px 40px rgba(2,57,67,.3); }
+    .resa-sheet-title { font-weight: 700; font-size: 15px; color: #063d4a; margin-bottom: 12px; text-align: center; }
+    .resa-people { display: flex; flex-direction: column; gap: 6px; }
+    .resa-person { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid rgba(12,147,158,.18); background: #f6fdfb; font-size: 14px; font-weight: 600; color: #063d4a; cursor: pointer; font-family: inherit; text-align: left; }
+    .resa-person.is-current { border-color: #08aeb0; background: #e6f8f7; }
+    .resa-sheet-btn { width: 100%; margin-top: 8px; padding: 11px; border-radius: 12px; border: none; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .resa-clear { background: #fdeeea; color: #c1502f; }
+    .resa-cancel { background: #eef4f5; color: #3a5a60; }
+  `;
+  document.head.appendChild(s);
 }
 
 function renderReservations() {
+  injectReservationStyles();
   const container = document.getElementById('reservations-content');
   if (!container) return;
   const list = computeReservations();
   const faites = list.filter(r => reservationsDone[r.key] && reservationsDone[r.key].done).length;
   const pct = list.length ? Math.round((faites / list.length) * 100) : 0;
-  // La prochaine échéance non réservée est mise en avant : c'est celle à appeler aujourd'hui.
   const prochaine = list.find(r => !(reservationsDone[r.key] && reservationsDone[r.key].done));
 
   container.innerHTML = `
-    <div class="card" style="background: linear-gradient(135deg, var(--sea-deep, #0e7a90) 0%, var(--accent-cyan, #1fb6c9) 100%); color: #fff; padding: 18px; border-radius: 16px; margin-bottom: 16px;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="font-size: 26px;">\u{1F4DE}</div>
-        <div style="flex: 1;">
-          <div class="title-serif" style="font-size: 18px; color: #fff;">Réservations</div>
-          <div style="font-size: 12px; color: #d9f4f8;">${faites} faite${faites > 1 ? 's' : ''} sur ${list.length}</div>
+    <div class="resa-hero">
+      <div class="resa-hero-row">
+        <div class="resa-shell-mark" aria-hidden="true">🐚</div>
+        <div style="flex:1; min-width:0;">
+          <p class="resa-eyebrow">Carnet d'escapade</p>
+          <div class="resa-title">Réservations</div>
+          <p class="resa-sub">${faites} faite${faites > 1 ? 's' : ''} sur ${list.length} · cap sur la Méditerranée</p>
         </div>
-        <div style="font-size: 20px; font-weight: 800;">${pct}%</div>
+        <div class="resa-pct"><b>${pct}%</b><span>complété</span></div>
       </div>
-      <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,0.3); overflow: hidden; margin-top: 12px;">
-        <div style="height: 100%; width: ${pct}%; background: #fff; transition: width 0.4s ease;"></div>
-      </div>
+      <div class="resa-track"><div class="resa-fill" style="width:${pct}%"></div></div>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div class="resa-stack">
       ${list.map(r => {
         const st = reservationsDone[r.key] || {};
         const done = !!st.done;
         const urgent = !done && prochaine && prochaine.key === r.key;
-        const fond = done ? 'var(--bg-sunken)' : (urgent ? 'linear-gradient(135deg, #fdf3dd 0%, #fbe7bd 100%)' : 'var(--bg-raised)');
-        return `
-          <div onclick="toggleReservation('${r.key}')" style="cursor: pointer; display: flex; align-items: flex-start; gap: 11px; background: ${fond}; border-radius: 14px; padding: 13px 14px; box-shadow: 0 2px 8px rgba(12, 47, 58, 0.06); ${done ? 'opacity: 0.6;' : ''}">
-            <div style="font-size: 19px; flex-shrink: 0; line-height: 1.2;">${done ? '\u2705' : r.emoji}</div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 13.5px; font-weight: 700; color: var(--primary); ${done ? 'text-decoration: line-through;' : ''}">${escapeHtml(r.nom)}</div>
-              <div style="font-size: 11px; color: var(--primary-soft); margin-top: 2px;">${escapeHtml(r.jour)} ${escapeHtml(r.date.replace(' 2026', ''))}${r.lieu ? ' · ' + escapeHtml(r.lieu) : ''} · ${escapeHtml(r.combien)}</div>
-              ${done && st.person_name ? `<div style="font-size: 10.5px; color: var(--accent-cyan); margin-top: 3px; font-weight: 700;">Réservé par ${escapeHtml(st.person_name)}</div>` : ''}
-              ${urgent ? `<div style="font-size: 10.5px; color: #a8730f; margin-top: 3px; font-weight: 700;">⏰ La prochaine à appeler</div>` : ''}
+        const assignee = (st.assignee_id != null) ? PARTICIPANTS.find(p => String(p.id) === String(st.assignee_id)) : null;
+        const metaTxt = `${escapeHtml(r.jour)} ${escapeHtml(r.date.replace(' 2026', ''))}${r.lieu ? ' · ' + escapeHtml(r.lieu) : ''} · ${escapeHtml(r.combien)}`;
+        if (done) {
+          return `
+          <div class="resa-card done" onclick="toggleReservation('${r.key}')">
+            <div class="resa-row">
+              <div class="resa-icon" aria-hidden="true">✓</div>
+              <div class="resa-body">
+                <div class="resa-name">${escapeHtml(r.nom)}</div>
+                <div class="resa-meta">${metaTxt}</div>
+                <div class="resa-done-line">Réservé par ${escapeHtml(st.person_name || '?')} · +15 XP gagnés</div>
+              </div>
             </div>
-          </div>
-        `;
+            <div class="resa-deco" aria-hidden="true">🐚</div>
+          </div>`;
+        }
+        const assignHtml = assignee
+          ? `<span class="resa-pill">${avatarDefi(assignee, 18)}<span>${escapeHtml(assignee.name)}</span></span>`
+          : `<button class="resa-choose" onclick="assignReservation('${r.key}', event)">＋ choisir</button>`;
+        return `
+          <div class="resa-card" onclick="toggleReservation('${r.key}')">
+            <div class="resa-row">
+              <div class="resa-icon" aria-hidden="true">${r.emoji}</div>
+              <div class="resa-body">
+                <div class="resa-name">${escapeHtml(r.nom)}</div>
+                <div class="resa-meta">${metaTxt}</div>
+                <div class="resa-assign">
+                  <span class="resa-assign-label">À réserver par</span>
+                  <span onclick="assignReservation('${r.key}', event)" style="cursor:pointer;">${assignHtml}</span>
+                </div>
+                ${urgent ? `<div style="font-size:10.5px; color:#a8730f; margin-top:5px; font-weight:700;">⏰ La prochaine à appeler</div>` : ''}
+              </div>
+              <div class="resa-xp" aria-label="15 points d'expérience"><b>15 XP</b></div>
+            </div>
+            <div class="resa-wave" aria-hidden="true"></div>
+          </div>`;
       }).join('')}
     </div>
-    <div style="font-size: 10.5px; color: var(--primary-soft); text-align: center; margin-top: 14px; line-height: 1.5;">
-      Liste générée depuis le planning. Touche une ligne pour la cocher —<br>tout le groupe voit qui a appelé.
+    <div class="resa-foot">
+      Liste générée depuis le planning. Touche une carte pour la cocher (+15 XP) —<br>choisis qui s'en occupe, tout le groupe le voit.
     </div>
   `;
+}
+
+// Ouvre le sélecteur « qui réserve ». event.stopPropagation pour ne pas cocher la carte.
+function assignReservation(key, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  const current = (reservationsDone[key] || {}).assignee_id;
+  const ov = document.createElement('div');
+  ov.className = 'resa-ov';
+  ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+  ov.innerHTML = `
+    <div class="resa-sheet">
+      <div class="resa-sheet-title">Qui s'occupe de réserver ?</div>
+      <div class="resa-people">
+        ${PARTICIPANTS.map(p => `
+          <button class="resa-person ${String(current) === String(p.id) ? 'is-current' : ''}" onclick="setReservationAssignee('${key}', ${p.id})">
+            ${avatarDefi(p, 26)}<span>${escapeHtml(p.name)}</span>
+          </button>`).join('')}
+      </div>
+      ${current != null ? `<button class="resa-sheet-btn resa-clear" onclick="setReservationAssignee('${key}', null)">Retirer le responsable</button>` : ''}
+      <button class="resa-sheet-btn resa-cancel" onclick="this.closest('.resa-ov').remove()">Annuler</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function setReservationAssignee(key, personId) {
+  const existing = reservationsDone[key] || { id: key, done: false, person_id: null, person_name: null };
+  const p = (personId != null) ? PARTICIPANTS.find(x => String(x.id) === String(personId)) : null;
+  reservationsDone[key] = {
+    id: key,
+    done: !!existing.done,
+    person_id: existing.person_id != null ? existing.person_id : null,
+    person_name: existing.person_name != null ? existing.person_name : null,
+    assignee_id: p ? p.id : null,
+    assignee_name: p ? p.name : null
+  };
+  const ov = document.querySelector('.resa-ov'); if (ov) ov.remove();
+  renderReservations();
+  if (window.supabaseReady && window.syncToSupabase) {
+    window.syncToSupabase('reservations', {
+      id: key,
+      done: reservationsDone[key].done,
+      person_id: reservationsDone[key].person_id,
+      person_name: reservationsDone[key].person_name,
+      assignee_id: reservationsDone[key].assignee_id,
+      assignee_name: reservationsDone[key].assignee_name,
+      updated_at: new Date().toISOString()
+    }).catch(err => console.error('Sync responsable réservation échouée:', err));
+  }
 }
 
 function renderViePratique() {

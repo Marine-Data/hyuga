@@ -25,10 +25,13 @@
 // appareil à l'autre, ne compte plus que sur le téléphone où c'était coché).
 // v20 = la création d'un défi prévient maintenant si la sauvegarde en ligne échoue,
 // au lieu de disparaître en silence (cause du défi "champagne à la plage" disparu).
-// v21 = redéploiement propre du paquet du 26/07 (météo, Sonia 22h10, partages, XP
-//       du jour de départ, anti-défi-fantôme). Bump pour forcer la purge du cache
-//       sur tous les téléphones, y compris ceux restés sur un v20 partiel.
-const CACHE_VERSION = 'saraillon-v21';
+// v21 = redéploiement propre du paquet du 26/07 (météo, Sonia 22h10, partages, XP départ).
+// v22 = verrou d'identité (code secret par profil) retiré : il bloquait la famille alors
+//       que la RLS est ouverte et ne protégeait rien. L'app s'ouvre à nouveau directement.
+// v23 = réservations refaites (design Méditerranée : coquillages, vagues, sable) avec
+//       responsable "à réserver par" et +15 XP par réservation cochée. Planning : Olivades
+//       déplacé au vendredi 28 (6 pers). Push notifs sur chaque message du chat (côté serveur).
+const CACHE_VERSION = 'saraillon-v23';
 const APP_SHELL = [
   './',
   './index.html',

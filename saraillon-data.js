@@ -127,8 +127,7 @@ const planningData = [
   ]},
   { jour: "Lundi", date: "24 août 2026", activities: [
     { nom: "Surprises", emoji: "💎", horaires: "10h30 – 17h30", lieu: "Saraillon", inscription: false, repas: "", apporter: ["Son âme d'enfant 🧒"], comments: [], notes: "Premier jour avec tout le monde ! Réparties en 2 équipes. Vous n'êtes pas prêtes !" },
-    { nom: "Pizzas du Colombier", emoji: "🍕", horaires: "Midi", lieu: "Saraillon", inscription: false, reservation: "à commander", resaId: "pizzas-colombier", repas: "Déjeuner", apporter: [], comments: [], notes: "📞 À commander." },
-    { nom: "Restaurant La Ferme des Olivades", emoji: "🫒", horaires: "Soir", lieu: "Ollioules", inscription: false, reservation: "8 personnes", resaId: "olivades", repas: "Dîner", apporter: ["Tenue de soirée"], comments: [], notes: "Le restaurant de Marco. 📞 À réserver pour 8 personnes." }
+    { nom: "Pizzas du Colombier", emoji: "🍕", horaires: "Midi", lieu: "Saraillon", inscription: false, reservation: "à commander", resaId: "pizzas-colombier", repas: "Déjeuner", apporter: [], comments: [], notes: "📞 À commander." }
   ]},
   { jour: "Mardi", date: "25 août 2026", activities: [
     { nom: "Balade en bateau", emoji: "⛵", horaires: "Journée", lieu: "Îles du Levant ou Porquerolles", inscription: true, reservation: "selon les inscrites", resaId: "bateau", repas: "Pique-nique partagé", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil", "Chapeau / casquette", "Coupe-vent léger", "Anti-mal de mer", "Masque, tuba et palmes", "Pique-nique à partager", "Boissons", "Une bouteille de champagne 🍾"], comments: [], notes: "📞 À réserver. Prévoir le pique-nique et les boissons du bateau, le matériel de snorkeling et les médicaments contre le mal de mer. Inscrites : Mathilde, Nawaëlle, Marine, Delphine." },
@@ -149,9 +148,9 @@ const planningData = [
   { jour: "Vendredi", date: "28 août 2026", activities: [
     { nom: "Départs de Sonia et Mathilde", emoji: "🚌", horaires: "08h50", lieu: "Arrêt Ripelle / Gare de Toulon", inscription: false, repas: "", apporter: [], comments: [], notes: "Sonia : 09h35 à l'aéroport de Marseille (premiers bus à 05h00 pour la gare de Toulon), horaire du train de Toulon en attente. Mathilde : 09h50 en gare de Toulon — bus ligne 6, arrêt Ripelle devant la maison à 09h00, donc partir de la maison à 08h50. Horaires réseau Mistral : https://www.reseaumistral.com/se-deplacer/lignes/ligne-bus-6" },
     { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine de Saraillon", inscription: false, repas: "Petit-déj", apporter: ["Maillot de bain", "Serviette", "Crème solaire"], comments: [], notes: "Pour celles qui restent." },
-    { nom: "Plage de l'Almanarre", emoji: "🏖️", horaires: "Après-midi", lieu: "Hyères", inscription: false, repas: "", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau"], comments: [], notes: "" },
+    { nom: "Plage de l'Almanarre", emoji: "🏖️", horaires: "Après-midi", lieu: "Hyères", inscription: false, repas: "", apporter: ["Sac de plage", "Maillot de bain", "Serviette", "Crème solaire", "Chapeau / casquette", "Lunettes de soleil", "Grande bouteille d'eau"], comments: [], notes: "Draps de Sonia et Mathilde (reparties ce matin) à laver, étendre et ranger." },
     { nom: "Port du Niel et musée du Niel", emoji: "⚓", horaires: "Après-midi", lieu: "Presqu'île de Giens", inscription: false, repas: "", apporter: ["Chaussures confortables", "Cash / carte"], comments: [], notes: "" },
-    { nom: "Restaurant à Hyères", emoji: "🍽️", horaires: "Soir", lieu: "Hyères", inscription: false, reservation: "6 personnes", resaId: "resto-hyeres", repas: "Dîner", apporter: [], comments: [], notes: "Marine lave, étend et range les draps de Sonia et Mathilde." }
+    { nom: "Restaurant La Ferme des Olivades", emoji: "🫒", horaires: "Soir", lieu: "Ollioules", inscription: false, reservation: "6 personnes", resaId: "olivades", repas: "Dîner", apporter: ["Tenue de soirée"], comments: [], notes: "Le restaurant de Marco. 📞 Réservé pour 6 personnes." }
   ]},
   { jour: "Samedi", date: "29 août 2026", activities: [
     { nom: "Grasse matinée piscine", emoji: "🏊", horaires: "Matin", lieu: "Piscine de Saraillon", inscription: false, repas: "Petit-déj + Déjeuner", apporter: ["Maillot de bain", "Serviette", "Crème solaire", "Lunettes de soleil"], comments: [], notes: "" },
@@ -190,9 +189,9 @@ const planningData = [
 // pas non plus dans l'alerte "pas assez de monde", qui reste réservée aux vrais manques.
 const DAY_SKIPPED_CHORES = {
   2: { chores: ["Préparer dîner"], reason: "dîner au restaurant à l'Anse Magaud" },
-  3: { chores: ["Préparer déjeuner", "Préparer dîner"], reason: "pizzas du Colombier à midi, Olivades le soir" },
+  3: { chores: ["Préparer déjeuner"], reason: "pizzas du Colombier à midi" },
   6: { chores: ["Préparer dîner"], reason: "dîner au Colombier après la visite du village" },
-  7: { chores: ["Préparer dîner"], reason: "restaurant à Hyères" },
+  7: { chores: ["Préparer dîner"], reason: "restaurant La Ferme des Olivades (Ollioules)" },
   8: { chores: ["Préparer dîner"], reason: "dîner au restaurant au Mourillon" }
 };
 
