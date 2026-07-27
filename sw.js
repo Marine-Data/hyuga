@@ -29,7 +29,6 @@
 //       du jour de départ, anti-défi-fantôme). Bump pour forcer la purge du cache
 //       sur tous les téléphones, y compris ceux restés sur un v20 partiel.
 const CACHE_VERSION = 'saraillon-v21';
-const CACHE_VERSION = 'saraillon-v20';
 const APP_SHELL = [
   './',
   './index.html',
