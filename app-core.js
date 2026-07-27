@@ -257,22 +257,22 @@ async function desactiverNotificationsPush() {
 // hors-ligne comme avant) : elle échoue "ouverte" si Supabase Auth est injoignable, la RLS
 // refusera simplement les lectures/écritures cloud tant que le code n'est pas validé.
 async function ensurePersonClaimed(person) {
-  if (!person || !window.supabase) return true;
-  try {
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (!session) {
-      const { error } = await window.supabase.auth.signInAnonymously();
-      if (error) { console.error('Auth anonyme impossible:', error); return true; }
-    }
-    const { data: linkedId, error: rpcError } = await window.supabase.rpc('current_person_id');
-    if (rpcError) { console.error('Vérification identité impossible:', rpcError); return true; }
-    if (linkedId === person.id) return true; // déjà lié à ce profil sur cet appareil
-
-    return await new Promise((resolve) => { showPersonCodeModal(person, resolve); });
-  } catch (e) {
-    console.error('Erreur vérification identité:', e);
-    return true; // ne bloque jamais l'app hors-ligne
-  }
+  // 🔓 VERROU D'IDENTITÉ DÉSACTIVÉ (28/07/2026)
+  // Le code secret par profil imposait à TOUTE la famille de définir/saisir un code
+  // alors que la RLS Supabase est restée ouverte : ce code ne protégeait donc rien,
+  // mais bloquait l'accès à l'app à 3 semaines du départ. On rend la vérification
+  // inopérante — l'app s'ouvre directement, comme avant l'audit.
+  //
+  // Ce n'est PAS un simple contournement : les policies RLS sont toutes en accès
+  // "public" (vérifié le 28/07), donc l'app fonctionne parfaitement sans session
+  // d'authentification. Rien n'est cassé, rien n'est en suspens côté données.
+  //
+  // Les helpers showPersonCodeModal / submitPersonCode / claim_person restent en place
+  // (dormants) pour réactiver l'identité PROPREMENT plus tard — mais uniquement EN MÊME
+  // TEMPS que des policies RLS restrictives, sinon on recrée exactement le blocage
+  // actuel. Pour réactiver : restaurer le corps d'origine de cette fonction, rétablir
+  // la fonction Supabase current_person_id(), et refermer la RLS.
+  return true;
 }
 
 function showPersonCodeModal(person, onDone) {
