@@ -31,7 +31,11 @@
 // v23 = réservations refaites (design Méditerranée : coquillages, vagues, sable) avec
 //       responsable "à réserver par" et +15 XP par réservation cochée. Planning : Olivades
 //       déplacé au vendredi 28 (6 pers). Push notifs sur chaque message du chat (côté serveur).
-const CACHE_VERSION = 'saraillon-v23';
+// v24 = refonte complète du planning validée avec Marine : dim 23 pizzas sur la plage ;
+//       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
+//       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
+//       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
+const CACHE_VERSION = 'saraillon-v24';
 const APP_SHELL = [
   './',
   './index.html',
