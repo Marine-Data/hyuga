@@ -16,7 +16,10 @@ function renderPlanningActions() {
       <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
       <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
     `
-    : `<button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>`;
+    : `
+      <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
+      <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
+    `;
 }
 
 function renderPlanning() {

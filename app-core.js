@@ -2014,6 +2014,11 @@ function renderViePratique() {
       right: '→'
     },
     {
+      tab: 'inscriptions', icon: '✍️', bg: 'linear-gradient(135deg,#dff0f2,#0e7a90)',
+      title: 'Inscriptions', detail: 'Bateau et plongée — indique si tu participes',
+      right: '→'
+    },
+    {
       tab: 'reservations', icon: '📞', bg: 'linear-gradient(135deg,#dff0f2,#0e7a90)',
       title: 'Réservations', detail: resaTotal ? `${resaFaites} faite${resaFaites > 1 ? 's' : ''} sur ${resaTotal}` : 'Rien à réserver',
       right: resaTotal ? `${resaPct}%` : '—'
