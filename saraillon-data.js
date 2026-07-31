@@ -7,7 +7,6 @@
 
 // ---- Participants ----
 const PARTICIPANTS = [
-  { id: 1, name: "Delphine", pseudo: "", bio: "Passionnée et aventurière, cuisinière hors pair, énergie débordante 🔥", avatar: null, email: "delphine@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 2, name: "Chunfei", pseudo: "", bio: "Intense et franche, n'a pas la langue dans sa poche. Danseuse professionnelle et comédienne diplômée du Cours Florent 🎭", avatar: null, email: "chunfei@email.com", phone: "06 XX XX XX", regimes: "Omnivore", chores: true },
   { id: 3, name: "Mathilde", pseudo: "", bio: "Aventurière de l'extrême ⛵ navigatrice et exploratrice, féministe et bosseuse incroyable 💪", avatar: null, email: "mathilde@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
   { id: 4, name: "Nawaelle", pseudo: "", bio: "Artiste 👩‍🎨 créatrice aux mille talents : compositrice et chanteuse à la voix incroyable, cheffe cuisinière", avatar: null, email: "nawaelle@email.com", phone: "06 XX XX XX", regimes: "Végétarienne", chores: true },
