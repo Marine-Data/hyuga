@@ -702,3 +702,26 @@ function addChallengeComment(id) {
   }
 }
 
+
+// ---- Page XP dédiée (design "Olympiades", ouverte depuis le "XP" de l'accueil) ----
+// Surnoms affichés SUR CETTE PAGE uniquement (les pseudos sont vides dans les données).
+// Ajuste ici l'orthographe si besoin (ex. Heiiwa / Heiiiwa).
+function renderPageXp() {
+  const container = document.getElementById('page-xp-content');
+  if (!container) return;
+  const NICKNAMES = { 8: 'MIMA', 4: 'HEIIWA' }; // Marine -> MIMA, Nawaelle -> HEIIWA
+  const ranking = (typeof computeXpLeaderboard === 'function') ? computeXpLeaderboard() : [];
+  container.innerHTML = '<div class="xp-grid">' + ranking.map(function (r) {
+    var id = r.p.id;
+    var name = (NICKNAMES[id] || r.p.name).toUpperCase();
+    var photo = (typeof personalsData !== 'undefined' && personalsData[id] && personalsData[id].avatar) || null;
+    var inner = photo
+      ? '<img src="' + photo + '" alt="" style="width:100%;height:100%;object-fit:cover;">'
+      : '<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;color:#fff;font-size:22px;">' + (name.charAt(0) || '?') + '</span>';
+    return '<div class="xp-card">'
+      + '<div class="xp-xp">' + r.xp + ' XP</div>'
+      + '<div class="xp-avatar">' + inner + '</div>'
+      + '<div class="xp-name">' + name + '</div>'
+      + '</div>';
+  }).join('') + '</div>';
+}

@@ -1403,6 +1403,7 @@ function switchTab(tab) {
   // l'immersion s'arrêtait sur un rectangle blanc collé en bas de l'écran.
   document.body.classList.toggle('dans-les-defis', tab === 'challenges');
   if (tab === 'home') renderHome();
+  if (tab === 'page-xp') renderPageXp();
   if (tab === 'planning') renderPlanning();
   if (tab === 'challenges') { renderChallenges(); renderTresor(); renderMysteryPhoto(); }
   if (tab === 'inscriptions') renderInscriptions();
