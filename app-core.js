@@ -1011,6 +1011,10 @@ function saveAllData() {
     Object.entries(inscriptions).forEach(([key, value]) => {
       if (value === true) {
         const [personId, dayIdx, actIdx] = key.split('-').map(Number);
+        // 🛡️ Garde-fou anti-résurrection : ne jamais re-pousser l'inscription
+        // d'une personne qui n'est plus dans la liste des participantes (ex. Delphine
+        // retirée). Sinon saveAllData ressuscite les lignes supprimées côté serveur.
+        if (!PARTICIPANTS.some(p => p.id === personId)) return;
         window.syncToSupabase('inscriptions', { 
           person_id: personId, 
           day_idx: dayIdx, 
@@ -1403,7 +1407,6 @@ function switchTab(tab) {
   // l'immersion s'arrêtait sur un rectangle blanc collé en bas de l'écran.
   document.body.classList.toggle('dans-les-defis', tab === 'challenges');
   if (tab === 'home') renderHome();
-  if (tab === 'page-xp') renderPageXp();
   if (tab === 'planning') renderPlanning();
   if (tab === 'challenges') { renderChallenges(); renderTresor(); renderMysteryPhoto(); }
   if (tab === 'inscriptions') renderInscriptions();

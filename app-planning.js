@@ -14,10 +14,12 @@ function renderPlanningActions() {
     ? `
       <button class="tab-btn" onclick="closePlanningDay()">← Tous les jours</button>
       <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
+      <button class="tab-btn" onclick="goToValiseFromPratique()">🎒 Ma valise</button>
       <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
     `
     : `
       <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
+      <button class="tab-btn" onclick="goToValiseFromPratique()">🎒 Ma valise</button>
       <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
     `;
 }
@@ -269,6 +271,15 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
         }).join('')}
         <button class="btn btn-small" onclick="addApporterItem(${dayIdx},${actIdx})" style="margin-top: 8px; background: white; border: none; width: 100%; box-shadow: 0 2px 6px rgba(111, 184, 176, 0.1);">+ Ajouter un objet</button>
       </div>
+      ${activity.reservation ? `
+        <div onclick="switchTab('reservations')" style="cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px; background: linear-gradient(135deg, #FAEEDA 0%, #FDEECF 100%); border-radius: 8px; box-shadow: inset 4px 0 0 #f4b942; margin-bottom: 10px;">
+          <span style="font-size: 20px;">📞</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 700; font-size: 11px; color: #a5730f;">RÉSERVATION À FAIRE</div>
+            <div style="font-size: 12px; color: #7a5314;">${escapeHtml(activity.reservation)} — voir les réservations →</div>
+          </div>
+        </div>
+      ` : ''}
       ${activity.comments && activity.comments.length > 0 ? `
         <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
           ${activity.comments.map(c => `<div style="padding: 8px 10px; background: var(--bg-sunken); border-radius: 6px; font-size: 12px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05);">💬 <strong>${escapeHtml(c.author)}:</strong> ${escapeHtml(c.text)}</div>`).join('')}
@@ -288,6 +299,7 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
             <input type="checkbox" ${inscriptions[`${currentUser.id}-${dayIdx}-${actIdx}`] === true ? 'checked' : ''} onchange="toggleInscription(${dayIdx}, ${actIdx})" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan);">
             <label style="flex: 1; cursor: pointer; font-size: 13px; color: var(--primary); font-weight: 600;">Je m'inscris</label>
           </div>
+          <div onclick="switchTab('inscriptions')" style="cursor: pointer; margin-top: 10px; font-size: 11px; color: var(--accent-cyan); font-weight: 700;">Voir toutes les inscriptions →</div>
         </div>
       ` : ''}
       </div>
