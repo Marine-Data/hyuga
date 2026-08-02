@@ -1,5 +1,12 @@
 // ============== PLANNING ==============
 let selectedPlanningDay = null;
+let planningEditMode = false;
+let planningOpenDays = new Set([0]);
+function togglePlanningDay(i) {
+  if (planningOpenDays.has(i)) planningOpenDays.delete(i); else planningOpenDays.add(i);
+  const el = document.getElementById('plday-' + i);
+  if (el) el.classList.toggle('open');
+}
 
 // ✅ Barre d'actions du Planning, remplie selon le contexte. Avant, cette barre
 // affichait un faux bouton "📅 Planning" non cliquable (le titre est déjà sur le
@@ -9,28 +16,44 @@ let selectedPlanningDay = null;
 function renderPlanningActions() {
   const barre = document.getElementById('planning-actions');
   if (!barre) return;
+  if (!planningEditMode) {
+    barre.innerHTML = `
+      <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
+      <button class="tab-btn" onclick="togglePlanningEdit()" style="margin-left: auto;">✏️ Modifier</button>
+    `;
+    return;
+  }
   const surUneJournee = selectedPlanningDay !== null && planningData[selectedPlanningDay];
   barre.innerHTML = surUneJournee
     ? `
       <button class="tab-btn" onclick="closePlanningDay()">← Tous les jours</button>
-      <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
       <button class="tab-btn" onclick="goToValiseFromPratique()">🎒 Ma valise</button>
-      <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
+      <button class="tab-btn" onclick="togglePlanningEdit()" style="margin-left: auto;">✓ Terminer</button>
     `
     : `
-      <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
+      <button class="tab-btn" onclick="exportPlanning()">⬇️ Export</button>
       <button class="tab-btn" onclick="goToValiseFromPratique()">🎒 Ma valise</button>
-      <button class="tab-btn" onclick="exportPlanning()" style="margin-left: auto;">⬇️ Export</button>
+      <button class="tab-btn" onclick="togglePlanningEdit()" style="margin-left: auto;">✓ Terminer</button>
     `;
 }
 
 function renderPlanning() {
   renderPlanningActions();
-  if (selectedPlanningDay !== null && planningData[selectedPlanningDay]) {
-    renderPlanningDayDetail(selectedPlanningDay);
+  if (planningEditMode) {
+    if (selectedPlanningDay !== null && planningData[selectedPlanningDay]) {
+      renderPlanningDayDetail(selectedPlanningDay);
+    } else {
+      renderPlanningOverview();
+    }
   } else {
-    renderPlanningOverview();
+    renderPlanningAccordion();
   }
+}
+
+function togglePlanningEdit() {
+  planningEditMode = !planningEditMode;
+  if (!planningEditMode) selectedPlanningDay = null;
+  renderPlanning();
 }
 
 function renderPlanningOverview() {
@@ -250,6 +273,7 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
         <div style="flex: 1;">
           <label style="display: block; font-size: 10px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">📍 LIEU</label>
           <input type="text" value="${escapeHtml(activity.lieu || '')}" placeholder="Lieu" onblur="updateActivityField(${dayIdx},${actIdx},'lieu',this.value)" style="width: 100%; background: var(--bg-sunken); border-radius: 6px; padding: 8px; box-shadow: inset 0 1px 3px rgba(12, 47, 58, 0.05); font-size: 13px;">
+          ${activity.lieu ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.lieu)}" target="_blank" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#185FA5; text-decoration:none; font-weight:700; margin-top:5px;">📍 Ouvrir dans Maps →</a>` : ''}
         </div>
       </div>
       <div style="margin-bottom: 10px;">
@@ -278,6 +302,18 @@ function renderActivityDetailCard(dayIdx, activity, actIdx) {
             <div style="font-weight: 700; font-size: 11px; color: #a5730f;">RÉSERVATION À FAIRE</div>
             <div style="font-size: 12px; color: #7a5314;">${escapeHtml(activity.reservation)} — voir les réservations →</div>
           </div>
+        </div>
+      ` : ''}
+      ${Array.isArray(activity.options) && activity.options.length ? `
+        <div style="padding: 12px; background: var(--bg-sunken); border-radius: 8px; box-shadow: inset 4px 0 0 var(--accent-cyan); margin-bottom: 10px;">
+          <div style="font-weight: 700; font-size: 11px; color: var(--accent-cyan); margin-bottom: 4px;">🐚 OÙ ON VA ? — OPTIONS</div>
+          ${activity.options.map(o => `
+            <div style="padding: 8px 0; border-top: 0.5px solid var(--border);">
+              <div style="font-size: 13px; font-weight: 700; color: var(--primary);">${escapeHtml(o.nom)}${o.choix ? ' <span style="font-size: 9px; font-weight: 700; background: #E1F5EE; color: #0F6E56; padding: 2px 8px; border-radius: 20px;">Notre choix</span>' : ''}</div>
+              ${o.desc ? `<div style="font-size: 11px; color: var(--primary-light); margin: 2px 0 5px;">${escapeHtml(o.desc)}</div>` : ''}
+              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.maps || o.nom)}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #185FA5; text-decoration: none; font-weight: 700;">📍 Google Maps →</a>
+            </div>
+          `).join('')}
         </div>
       ` : ''}
       ${activity.comments && activity.comments.length > 0 ? `
@@ -336,13 +372,13 @@ function removeApporterItem(dayIdx, actIdx, itemIdx) {
 function toggleApporterItem(key) {
   checklistValise[key] = !checklistValise[key];
   saveAllData();
-  renderPlanning();
+  if (planningEditMode) renderPlanning();
 }
 
 function toggleInscription(dayIdx, actIdx) {
   // Utiliser le nouveau système toggleInscriptionTab avec currentUser
   toggleInscriptionTab(currentUser.id, dayIdx, actIdx);
-  renderPlanningDayDetail(dayIdx);
+  if (planningEditMode) renderPlanningDayDetail(dayIdx); else renderPlanning();
 }
 
 function exportPlanning() {
@@ -876,5 +912,158 @@ function renderChoreLogPanel() {
         `).join('')}
       </div>
     </div>
+  `;
+}
+// ============== NOUVELLE VUE PLANNING (lecture, accordéon Méditerranée) ==============
+function injectPlanningStyles() {
+  if (document.getElementById('pl-mediterranee-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'pl-mediterranee-styles';
+  s.textContent = `
+    .pl-hero{position:relative;overflow:hidden;border-radius:20px;padding:20px 18px;color:#fff;background:linear-gradient(135deg,#0e7a90,#1fb6c9);box-shadow:0 12px 30px rgba(3,87,103,.22);margin-bottom:14px}
+    .pl-hero-t{font-size:21px;font-weight:800;position:relative;z-index:2}
+    .pl-hero-s{font-size:12px;opacity:.9;margin-top:2px;position:relative;z-index:2}
+    .pl-shell{position:absolute;right:-8px;top:-10px;font-size:80px;opacity:.14}
+    .pl-wave{position:absolute;left:0;right:0;bottom:-1px;height:20px;background:rgba(255,255,255,.12);clip-path:polygon(0 45%,8% 22%,17% 45%,27% 68%,37% 45%,47% 20%,57% 45%,67% 68%,78% 45%,89% 20%,100% 45%,100% 100%,0 100%)}
+    .pl-valise-btn{position:relative;z-index:2;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;margin-top:12px;cursor:pointer;font-family:inherit}
+    .pl-day{background:var(--bg-raised,#fff);border-radius:16px;margin-bottom:10px;box-shadow:0 6px 16px rgba(4,92,106,.08);overflow:hidden}
+    .pl-dayhead{display:flex;align-items:center;gap:12px;padding:12px 13px;cursor:pointer}
+    .pl-badge{width:48px;height:48px;flex:0 0 auto;border-radius:13px;background:linear-gradient(135deg,#0e7a90,#1fb6c9);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;line-height:1}
+    .pl-j{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;opacity:.9}
+    .pl-n{font-size:19px;font-weight:800;margin-top:1px}
+    .pl-dtitle{flex:1;min-width:0}
+    .pl-t{font-size:14.5px;font-weight:800;color:var(--primary,#063d4a)}
+    .pl-s{font-size:11px;color:var(--primary-light,#6b8f96);margin-top:1px}
+    .pl-chev{color:#9fc0c6;font-size:19px;transition:transform .25s}
+    .pl-day.open .pl-chev{transform:rotate(180deg)}
+    .pl-detail{max-height:0;overflow:hidden;transition:max-height .35s ease}
+    .pl-day.open .pl-detail{max-height:4000px}
+    .pl-detail-in{padding:0 13px 12px}
+    .pl-act{display:flex;gap:11px;padding:11px 0;border-top:1px solid var(--border,#eef1f0)}
+    .pl-aicon{width:34px;height:34px;flex:0 0 auto;border-radius:10px;background:#e7f5f2;display:flex;align-items:center;justify-content:center;font-size:17px}
+    .pl-abody{flex:1;min-width:0}
+    .pl-aname{font-size:13.5px;font-weight:800;color:var(--primary,#063d4a)}
+    .pl-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+    .pl-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--bg-sunken,#eef6f7);color:#456b72;border:1px solid #dbe9ea;text-decoration:none;cursor:default}
+    .pl-maps{background:#e9f1fb;color:#185fa5;border-color:#cfe0f4}
+    .pl-resa{background:#faeeda;color:#854f0b;border-color:#f2d79a;cursor:pointer;font-weight:700}
+    .pl-pres{background:#eaf6f0;color:#0f6e56;border-color:#c9e6d9;cursor:pointer}
+    .pl-val{background:#fff6e6;color:#854f0b;border-color:#f2d79a;cursor:pointer;font-weight:700}
+    .pl-valise{margin-top:8px;background:linear-gradient(135deg,#fffaf0,#fef3dc);border:1px solid #f4e0b0;border-radius:12px;padding:10px 12px;max-height:0;overflow:hidden;transition:max-height .3s ease;box-shadow:inset 3px 0 0 #f4b942}
+    .pl-valise.open{max-height:900px}
+    .pl-valise-t{font-size:10px;font-weight:800;letter-spacing:.04em;color:#854f0b;margin-bottom:6px}
+    .pl-item{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:12.5px;cursor:pointer}
+    .pl-item input{width:17px;height:17px;accent-color:#0e7a90;flex:0 0 auto}
+    .pl-item.ok span{text-decoration:line-through;opacity:.5}
+    .pl-options{margin-top:8px;background:var(--bg-sunken,#eef6f7);border-radius:12px;padding:10px 12px;box-shadow:inset 3px 0 0 #1fb6c9}
+    .pl-options-t{font-size:10px;font-weight:800;letter-spacing:.04em;color:#0e7a90;margin-bottom:2px}
+    .pl-opt{padding:8px 0;border-top:1px solid var(--border,#e3ecec)}
+    .pl-opt-n{font-size:13px;font-weight:800;color:var(--primary,#063d4a)}
+    .pl-choix{font-size:9px;font-weight:800;background:#e1f5ee;color:#0f6e56;padding:2px 8px;border-radius:20px;margin-left:6px}
+    .pl-opt-d{font-size:11px;color:var(--primary-light,#6b8f96);margin:2px 0 5px}
+    .pl-opt-maps{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#185fa5;text-decoration:none;font-weight:700}
+    .pl-notes{font-size:12px;color:var(--primary-light,#5b7f86);margin-top:8px;line-height:1.5;white-space:pre-wrap}
+    .pl-inscr{margin-top:9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(31,182,201,.1),rgba(31,182,201,.03));border-radius:10px;padding:9px 11px;box-shadow:inset 3px 0 0 #1fb6c9}
+    .pl-inscr-me{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--primary,#063d4a);cursor:pointer}
+    .pl-inscr-me input{width:19px;height:19px;accent-color:#1fb6c9}
+    .pl-av{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#1D9E75,#0F6E56);color:#fff;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:-4px;border:1.5px solid #fff}
+    .pl-surprise{cursor:pointer;background:linear-gradient(135deg,#0e7a90,#1fb6c9);color:#fff;border-radius:9px;padding:8px 11px;font-size:11.5px;font-weight:700;margin:6px 0}
+  `;
+  document.head.appendChild(s);
+}
+
+function renderActivityRead(activity, dayIdx, actIdx) {
+  const apporter = Array.isArray(activity.apporter) ? activity.apporter : [];
+  const inscrits = activity.inscription ? PARTICIPANTS.filter(p => inscriptions[`${p.id}-${dayIdx}-${actIdx}`] === true) : [];
+  const vid = `plv-${dayIdx}-${actIdx}`;
+  const isSurprise = /surprise/i.test(activity.nom || '');
+
+  let chips = '';
+  if (activity.horaires) chips += `<span class="pl-chip">⏰ ${escapeHtml(activity.horaires)}</span>`;
+  if (activity.lieu) chips += `<a class="pl-chip pl-maps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.lieu)}" target="_blank">📍 ${escapeHtml(activity.lieu)} →</a>`;
+  if (activity.reservation) chips += `<span class="pl-chip pl-resa" onclick="switchTab('reservations')">📞 ${escapeHtml(activity.reservation)}</span>`;
+  if (apporter.length) chips += `<span class="pl-chip pl-val" onclick="document.getElementById('${vid}').classList.toggle('open')">🧳 À apporter · ${apporter.length}</span>`;
+  if (activity.inscription) chips += `<span class="pl-chip pl-pres" onclick="switchTab('inscriptions')">📋 ${inscrits.length} inscrite${inscrits.length > 1 ? 's' : ''}</span>`;
+
+  const valisePanel = apporter.length ? `
+    <div class="pl-valise" id="${vid}">
+      <div class="pl-valise-t">🎒 À METTRE DANS LA VALISE</div>
+      ${apporter.map((item, itemIdx) => {
+        const key = `${dayIdx}-${actIdx}-${itemIdx}`;
+        const packed = checklistValise[key] || false;
+        return `<label class="pl-item ${packed ? 'ok' : ''}"><input type="checkbox" ${packed ? 'checked' : ''} onchange="toggleApporterItem('${key}'); this.closest('.pl-item').classList.toggle('ok')"><span>${escapeHtml(item)}</span></label>`;
+      }).join('')}
+    </div>` : '';
+
+  const optionsBlock = (Array.isArray(activity.options) && activity.options.length) ? `
+    <div class="pl-options">
+      <div class="pl-options-t">🐚 OÙ ON VA ? — OPTIONS</div>
+      ${activity.options.map(o => `
+        <div class="pl-opt">
+          <div class="pl-opt-n">${escapeHtml(o.nom)}${o.choix ? ' <span class="pl-choix">Notre choix</span>' : ''}</div>
+          ${o.desc ? `<div class="pl-opt-d">${escapeHtml(o.desc)}</div>` : ''}
+          <a class="pl-opt-maps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.maps || o.nom)}" target="_blank">📍 Google Maps →</a>
+        </div>`).join('')}
+    </div>` : '';
+
+  const inscrBlock = activity.inscription ? `
+    <div class="pl-inscr">
+      <label class="pl-inscr-me"><input type="checkbox" ${inscriptions[`${currentUser.id}-${dayIdx}-${actIdx}`] === true ? 'checked' : ''} onchange="toggleInscription(${dayIdx}, ${actIdx})">Je participe</label>
+      ${inscrits.length ? `<div>${inscrits.map(p => `<span class="pl-av">${escapeHtml((p.name || '?').charAt(0))}</span>`).join('')}</div>` : ''}
+    </div>` : '';
+
+  const surpriseBanner = isSurprise ? `<div class="pl-surprise" onclick="switchTab('surprises')">🔐 Surprise du jour — touche pour entrer le code →</div>` : '';
+
+  return `
+    <div class="pl-act">
+      <div class="pl-aicon">${activity.emoji || '📌'}</div>
+      <div class="pl-abody">
+        <div class="pl-aname">${escapeHtml(activity.nom)}</div>
+        ${surpriseBanner}
+        <div class="pl-chips">${chips}</div>
+        ${valisePanel}
+        ${optionsBlock}
+        ${activity.notes ? `<div class="pl-notes">${escapeHtml(activity.notes)}</div>` : ''}
+        ${inscrBlock}
+      </div>
+    </div>`;
+}
+
+function renderPlanningAccordion() {
+  injectPlanningStyles();
+  const el = document.getElementById('planning-content');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="pl-hero">
+      <span class="pl-shell">🐚</span>
+      <div class="pl-hero-t">La semaine</div>
+      <div class="pl-hero-s">Saraillon · 21 – 30 août</div>
+      <button class="pl-valise-btn" onclick="goToValiseFromPratique()">🎒 Ma valise complète</button>
+      <div class="pl-wave"></div>
+    </div>
+    ${planningData.map((day, dayIdx) => {
+      const isDep = dayIdx === planningData.length - 1;
+      const shortDay = (day.jour || '').replace(/\s*\(.*\)/, '').slice(0, 3).toUpperCase();
+      const dayNum = ((day.date || '').match(/\d+/) || [dayIdx + 1])[0];
+      const nbActs = day.activities.length;
+      const did = `plday-${dayIdx}`;
+      const open = planningOpenDays.has(dayIdx) ? ' open' : '';
+      const body = isDep
+        ? day.activities.map(a => `
+            <div class="pl-act"><div class="pl-aicon">${a.emoji || '✓'}</div>
+              <div class="pl-abody"><div class="pl-aname">${escapeHtml(a.nom)}</div>
+              <div class="pl-chips">${a.horaires ? `<span class="pl-chip">⏰ ${escapeHtml(a.horaires)}</span>` : ''}</div>
+              ${a.notes ? `<div class="pl-notes">${escapeHtml(a.notes)}</div>` : ''}</div></div>`).join('')
+        : day.activities.map((a, actIdx) => renderActivityRead(a, dayIdx, actIdx)).join('');
+      return `
+        <div class="pl-day${open}" id="${did}">
+          <div class="pl-dayhead" onclick="togglePlanningDay(${dayIdx})">
+            <div class="pl-badge"><span class="pl-j">${shortDay}</span><span class="pl-n">${dayNum}</span></div>
+            <div class="pl-dtitle"><div class="pl-t">${escapeHtml(day.jour)}</div><div class="pl-s">${nbActs} activité${nbActs > 1 ? 's' : ''}</div></div>
+            <div class="pl-chev">⌄</div>
+          </div>
+          <div class="pl-detail"><div class="pl-detail-in">${body}</div></div>
+        </div>`;
+    }).join('')}
   `;
 }
