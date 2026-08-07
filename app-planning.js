@@ -1,7 +1,8 @@
 // ============== PLANNING ==============
 let selectedPlanningDay = null;
 let planningEditMode = false;
-let planningOpenDays = new Set([0]);
+let planningOpenDays = new Set();
+let planningOpenDaysInit = false;
 function togglePlanningDay(i) {
   if (planningOpenDays.has(i)) planningOpenDays.delete(i); else planningOpenDays.add(i);
   const el = document.getElementById('plday-' + i);
@@ -18,6 +19,7 @@ function renderPlanningActions() {
   if (!barre) return;
   if (!planningEditMode) {
     barre.innerHTML = `
+      <button class="tab-btn" onclick="goBackToPreviousTab()">← Retour</button>
       <button class="tab-btn" onclick="switchTab('inscriptions')">✍️ Inscriptions</button>
       <button class="tab-btn" onclick="togglePlanningEdit()" style="margin-left: auto;">✏️ Modifier</button>
     `;
@@ -1033,6 +1035,14 @@ function renderPlanningAccordion() {
   injectPlanningStyles();
   const el = document.getElementById('planning-content');
   if (!el) return;
+  // ✅ Un seul jour s'ouvre tout seul, et seulement pendant le séjour : le jour même.
+  // Avant, le jour 0 (vendredi) était forcé ouvert en permanence et occupait le haut
+  // de l'accordéon, revenant sans cesse quand on lisait un autre jour (très énervant).
+  if (!planningOpenDaysInit) {
+    planningOpenDaysInit = true;
+    const todayIdx = (typeof getTripDayIndex === 'function') ? getTripDayIndex(new Date()) : null;
+    if (todayIdx !== null) planningOpenDays.add(todayIdx);
+  }
   el.innerHTML = `
     <div class="pl-hero">
       <span class="pl-shell">🐚</span>
@@ -1059,7 +1069,7 @@ function renderPlanningAccordion() {
         <div class="pl-day${open}" id="${did}">
           <div class="pl-dayhead" onclick="togglePlanningDay(${dayIdx})">
             <div class="pl-badge"><span class="pl-j">${shortDay}</span><span class="pl-n">${dayNum}</span></div>
-            <div class="pl-dtitle"><div class="pl-t">${escapeHtml(day.jour)}</div><div class="pl-s">${nbActs} activité${nbActs > 1 ? 's' : ''}</div></div>
+            <div class="pl-dtitle"><div class="pl-t">${day.activities[0]?.emoji ? day.activities[0].emoji + ' ' : ''}${escapeHtml(day.activities[0]?.nom || day.jour)}</div><div class="pl-s">${nbActs} activité${nbActs > 1 ? 's' : ''}</div></div>
             <div class="pl-chev">⌄</div>
           </div>
           <div class="pl-detail"><div class="pl-detail-in">${body}</div></div>
