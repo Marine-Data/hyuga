@@ -192,7 +192,11 @@ function urlBase64ToUint8Array(base64String) {
 async function activerNotificationsPush() {
   if (!currentUser) { showNotification('⚠️ Sélectionne ton profil d\'abord', 'error'); return; }
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    showNotification('⚠️ Notifications push non supportées sur cet appareil/navigateur', 'error');
+    if (typeof isIOSDevice === 'function' && isIOSDevice() && typeof isAlreadyInstalled === 'function' && !isAlreadyInstalled()) {
+      showNotification('📲 Sur iPhone : menu Partager → « Sur l\'écran d\'accueil », puis rouvre l\'app depuis son icône et reviens activer les notifs.', 'error');
+    } else {
+      showNotification('⚠️ Notifications push non supportées sur cet appareil/navigateur', 'error');
+    }
     return;
   }
   try {
@@ -522,8 +526,6 @@ async function finishProfileSetup() {
   document.getElementById('modalProfileComplete').style.display = 'none';
 
   await enterMainApp();
-
-  requestNotificationPermission();
 }
 
 function goBackToCode() {

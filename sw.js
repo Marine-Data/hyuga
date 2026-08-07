@@ -35,7 +35,7 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-const CACHE_VERSION = 'saraillon-v30';
+const CACHE_VERSION = 'saraillon-v31';
 const APP_SHELL = [
   './',
   './index.html',
@@ -107,7 +107,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || '🏝️ SARAILLON', {
       body: data.body || '',
-      tag: 'saraillon-notif',
+      tag: 'saraillon-' + Date.now(),
       renotify: true,
       vibrate: [100, 50, 100]
     })
