@@ -1422,6 +1422,7 @@ function switchTab(tab) {
   if (tab === 'settings') renderSettings();
   if (tab === 'vie-pratique') renderViePratique();
   if (tab === 'reservations') renderReservations();
+  if (tab === 'page-xp') renderPageXp();
   
   document.getElementById('backBtn').style.display = tab !== 'home' ? 'inline-block' : 'none';
   const homeBtnEl = document.getElementById('homeBtn');
