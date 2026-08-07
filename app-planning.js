@@ -696,8 +696,12 @@ async function loadDepartureTasksCloud() {
   cloudDepartureTasks = rows;
   rows.forEach(r => { departureTasksDone[`${r.day_idx}-${r.act_idx}`] = !!r.done; });
   const activeTab = document.querySelector('.tab-content.active');
-  if (activeTab && activeTab.id === 'planning' && typeof renderDepartureDayChecklist === 'function') {
-    renderDepartureDayChecklist(selectedDay);
+  // ✅ Ne re-render QUE si on regarde vraiment le DÉTAIL du jour de départ (dernier jour).
+  // Avant, ça appelait renderDepartureDayChecklist(selectedDay) toutes les 25s dès qu'on
+  // était sur l'onglet planning, et selectedDay vaut 0 (jour des corvées, jamais changé
+  // par l'accordéon) → ça écrasait le planning général par le vendredi en pleine lecture.
+  if (activeTab && activeTab.id === 'planning' && selectedPlanningDay === planningData.length - 1 && typeof renderDepartureDayChecklist === 'function') {
+    renderDepartureDayChecklist(selectedPlanningDay);
   }
   if (typeof renderHomeLeaderboard === 'function') renderHomeLeaderboard();
 }
