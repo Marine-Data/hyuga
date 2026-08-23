@@ -47,6 +47,11 @@ let checklistValise = {};
 let reservationsDone = {};
 
 let shoppingList = [];
+// 🪦 Tombstone local des articles de courses supprimés : Supabase supprime bien la
+// ligne, mais une resynchro qui arrive juste avant la fin de la suppression pouvait
+// réinjecter l'article. On mémorise les id supprimés pendant la session et on les
+// filtre à chaque rechargement cloud, pour qu'un article barré/supprimé ne revienne pas.
+let deletedShoppingIds = new Set();
 let choreLog = []; // ✅ Historique des corvées accomplies : { id, personId, personName, choreName, emoji, xp, timestamp }
 let departureTasksDone = {}; // ✅ Tâches du jour de départ cochées : { "dayIdx-actIdx": true }
 let polls = [];
@@ -625,6 +630,20 @@ function loadAllData() {
     }
   });
 
+  // 🧹 Purge définitive des anciennes participantes (Delphine = id 1, Mathieu = id 7).
+  // Un vieux cache local peut réinjecter leur profil via le chargement ci-dessus
+  // (roster fusionné par position) : on les retire ici du roster ET des données de
+  // profil, à chaque chargement, pour qu'elles ne réapparaissent nulle part
+  // (XP, profils, avatars, likes, missions…).
+  [1, 7].forEach(oldId => {
+    const idx = PARTICIPANTS.findIndex(p => p.id === oldId);
+    if (idx !== -1) PARTICIPANTS.splice(idx, 1);
+    delete personalsData[oldId];
+  });
+  if (!currentUser || !PARTICIPANTS.some(p => p.id === currentUser.id)) {
+    currentUser = PARTICIPANTS[0];
+  }
+
   updateNotifBadge();
 }
 
@@ -687,7 +706,11 @@ async function loadFromSupabaseCloud() {
     const shopData = await window.loadFromSupabase('shopping_list');
     if (shopData && shopData.length > 0) {
       console.log(`✅ Loaded ${shopData.length} shopping items from Supabase`);
-      shoppingList = shopData.map(item => ({
+      shoppingList = shopData
+        // 🪦 On ignore tout article qu'on vient de supprimer localement (voir removeShop) :
+        // il ne doit pas réapparaître le temps que la suppression Supabase se propage.
+        .filter(item => !deletedShoppingIds.has(item.id) && !deletedShoppingIds.has(String(item.id)))
+        .map(item => ({
         id: item.id,
         item: item.item,
         done: item.done || false,
@@ -2182,8 +2205,13 @@ function renderHomeGroupSpirit() {
   const totalQuestSlots = challenges.length * PARTICIPANTS.length;
   const doneQuestSlots = challenges.reduce((sum, ch) => sum + ((ch.completedBy || []).length), 0);
 
-  const totalChoreSlots = cloudChoreAssignments.length;
-  const doneChoreSlots = cloudChoreAssignments.filter(r => r.done).length;
+  // 🐛 CORRECTIF : cloudChoreAssignments est déclaré dans app-planning.js, chargé APRÈS
+  // app-core.js. Si la jauge se dessinait avant, `cloudChoreAssignments` était en zone
+  // morte (ReferenceError) → la fonction plantait et la carte « Esprit de groupe »
+  // disparaissait en silence. On lit la valeur défensivement.
+  const _chores = (typeof cloudChoreAssignments !== 'undefined' && Array.isArray(cloudChoreAssignments)) ? cloudChoreAssignments : [];
+  const totalChoreSlots = _chores.length;
+  const doneChoreSlots = _chores.filter(r => r.done).length;
 
   const totalSlots = totalQuestSlots + totalChoreSlots;
   const doneSlots = doneQuestSlots + doneChoreSlots;
