@@ -197,13 +197,6 @@ function confirmRemoveShop(id) {
 
 function removeShop(id) {
   shoppingList = shoppingList.filter(i => i.id !== id);
-  // 🪦 On note l'id comme supprimé pour que la prochaine resynchro cloud ne le
-  // réinjecte pas (voir deletedShoppingIds + filtre au chargement dans app-core.js).
-  // C'était la cause du « je supprime un article et il revient à la réouverture ».
-  if (typeof deletedShoppingIds !== 'undefined') {
-    deletedShoppingIds.add(id);
-    deletedShoppingIds.add(String(id));
-  }
   // 🐛 CORRECTIF (22/07) : même bug que les désinscriptions — l'article était retiré
   // de l'écran mais jamais de Supabase. saveAllData() ne fait que pousser les articles
   // présents, il ne supprime rien. L'article revenait donc à la prochaine synchro (25s)

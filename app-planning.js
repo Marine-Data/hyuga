@@ -417,10 +417,7 @@ function selectDay(idx) {
   // groupe), au lieu de repartir d'un écran vide tant qu'on n'a pas re-tourné la roue.
   // dedupeChoreRows() protège contre d'anciennes lignes de test en double (avant le
   // correctif anti-doublon) : une seule ligne gardée par personne, la plus récente.
-  const dayRows = dedupeChoreRows(cloudChoreAssignments.filter(r => r.day_idx === idx))
-    // 🧹 On ignore toute corvée attribuée à une personne qui n'est plus dans le groupe
-    // (anciennes lignes de Delphine/Mathieu en base), sinon elle s'affiche en carte « ? ».
-    .filter(r => PARTICIPANTS.some(p => p.id === r.person_id));
+  const dayRows = dedupeChoreRows(cloudChoreAssignments.filter(r => r.day_idx === idx));
   currentChoreAssignments = dayRows
     .map(r => ({
       id: r.id,
@@ -802,9 +799,7 @@ async function loadChoreAssignmentsCloud() {
   if (!rows) return;
   cloudChoreAssignments = rows;
 
-  const dayRows = dedupeChoreRows(cloudChoreAssignments.filter(r => r.day_idx === selectedDay))
-    // 🧹 Idem : on écarte les corvées d'anciennes participantes (Delphine/Mathieu).
-    .filter(r => PARTICIPANTS.some(p => p.id === r.person_id));
+  const dayRows = dedupeChoreRows(cloudChoreAssignments.filter(r => r.day_idx === selectedDay));
   if (dayRows.length > 0) {
     currentChoreAssignments = dayRows
       .map(r => ({

@@ -35,14 +35,8 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-// v35 = Delphine & Mathieu purgés partout (roster, avatars, missions du jour, corvées) ;
-//       resto « La Ferme des Olivades » remplacé par « Le comptoir de Noé » (Hyères) le
-//       lundi 24 à 20h30 ; bateau mardi = toutes sauf Inès (6) + journée maison pour Inès ;
-//       dim 23 : marché le matin en plus de la grasse mat ; preuves de mission secrète
-//       acceptent la vidéo (compression photo auto) ; liste de courses : article supprimé ne
-//       revient plus (tombstone) ; jauge « esprit de groupe » ne plante plus.
-// v36 = code de la surprise (Olympiades) changé : MAGIA -> MATHIEU.
-const CACHE_VERSION = 'saraillon-v36';
+// v37 = RETOUR à la version stable de ce matin (synchro OK) pour dépanner le séjour. Les changements du jour (planning, code surprise) seront réappliqués ensuite.
+const CACHE_VERSION = 'saraillon-v37';
 const APP_SHELL = [
   './',
   './index.html',

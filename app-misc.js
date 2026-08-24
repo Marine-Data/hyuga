@@ -234,18 +234,9 @@ async function ensureTodaySecretMission() {
     .limit(1);
 
   if (!error && data && data.length > 0) {
-    const existing = data[0];
-    // 🧹 Si la mission du jour vise une ancienne participante (Delphine / Mathieu,
-    // retirées du groupe), leur prénom s'afficherait encore dans l'énoncé. On supprime
-    // alors cette mission périmée et on en régénère une avec une cible valide.
-    const targetStillHere = existing.target_id == null || PARTICIPANTS.some(p => p.id === existing.target_id);
-    if (targetStillHere) {
-      todaySecretMission = existing;
-      renderSecretMission();
-      return;
-    }
-    await window.supabase.from('secret_missions').delete().eq('id', existing.id);
-    // …et on enchaîne sur la génération d'une nouvelle mission ci-dessous.
+    todaySecretMission = data[0];
+    renderSecretMission();
+    return;
   }
 
   // Pas encore de mission pour aujourd'hui → on en génère une
@@ -306,8 +297,8 @@ function renderSecretMission() {
         <button class="btn btn-primary" style="width: 100%; border: none;" onclick="completeSecretMissionInfo()">Valider</button>
       ` : `
         <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent-cyan); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(31, 182, 201, 0.1);">
-          📷 Ajouter la preuve (photo ou vidéo)
-          <input type="file" accept="image/*,video/*" style="display: none;" onchange="completeSecretMissionAction(this)">
+          📷 Ajouter la preuve en photo
+          <input type="file" accept="image/*" style="display: none;" onchange="completeSecretMissionAction(this)">
         </label>
         <span id="secret-mission-progress" style="font-size: 11px; color: var(--primary-light); margin-left: 8px;"></span>
       `}
@@ -341,44 +332,11 @@ async function completeSecretMissionAction(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
   const progressEl = document.getElementById('secret-mission-progress');
-
-  // ✅ Photo OU vidéo, comme dans les quêtes/défis. Mêmes plafonds de taille.
-  const isVideo = file.type.startsWith('video/');
-  if (isVideo && file.size > 15 * 1024 * 1024) {
-    showNotification('⚠️ Vidéo trop lourde (max 15 Mo)', 'error');
-    inputEl.value = '';
-    return;
-  }
-  if (!isVideo && file.size > 8 * 1024 * 1024) {
-    showNotification('⚠️ Image trop lourde (max 8 Mo)', 'error');
-    inputEl.value = '';
-    return;
-  }
-
   if (progressEl) progressEl.textContent = '⏳ Envoi...';
 
   try {
-    let toUpload = file;
-    let ext = 'jpg';
-    if (isVideo) {
-      // Vidéo : envoyée telle quelle vers le stockage (pas de base64 qui gonflerait
-      // l'app), simplement plafonnée en taille — même approche simple que les défis.
-      ext = (file.type.split('/')[1] || 'mp4').replace('quicktime', 'mov');
-    } else {
-      // Image : on réduit automatiquement la taille avant l'envoi (1080px / 82%,
-      // même qualité que la galerie).
-      const compressedDataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => compressImage(e.target.result, resolve, 1080, 0.82);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      toUpload = await (await fetch(compressedDataUrl)).blob();
-      ext = 'jpg';
-    }
-
-    const path = `mission-${todaySecretMission.id}-${Date.now()}.${ext}`;
-    const publicUrl = await uploadFileToStorage('secret-missions', path, toUpload);
+    const path = `mission-${todaySecretMission.id}-${Date.now()}.jpg`;
+    const publicUrl = await uploadFileToStorage('secret-missions', path, file);
 
     todaySecretMission.photo_url = publicUrl;
     todaySecretMission.completed = true;
@@ -574,6 +532,35 @@ function resetAllChoreAssignments() {
   });
 }
 
+// ✅ Nettoyage ciblé : Marine et Mathieu ont été exclus de la rotation des corvées
+// après avoir déjà eu des lignes de test (tirages d'avant leur exclusion). On retire
+// ces anciennes lignes, SANS toucher aux vraies corvées des autres personnes, ni à
+// l'arrosage fixe de Marine (qui doit rester).
+function cleanupMarineMathieuOldChores() {
+  const mathieu = PARTICIPANTS.find(p => p.name === 'Mathieu');
+  const marine = PARTICIPANTS.find(p => p.name === 'Marine');
+  const toRemove = cloudChoreAssignments.filter(r =>
+    (mathieu && String(r.person_id) === String(mathieu.id)) ||
+    (marine && String(r.person_id) === String(marine.id) && r.chore_name !== 'Arrosage du jardin (le soir)')
+  );
+  if (toRemove.length === 0) {
+    showNotification('✅ Rien à nettoyer, Marine et Mathieu sont déjà propres', 'success');
+    return;
+  }
+  showConfirmation(`🧹 Retirer ${toRemove.length} ancienne(s) corvée(s) attribuée(s) à Marine/Mathieu avant leur exclusion ? Le reste (et l'arrosage de Marine) n'est pas touché.`, async () => {
+    for (const row of toRemove) {
+      await window.deleteFromSupabase('chore_assignments', row.id);
+    }
+    const removedIds = new Set(toRemove.map(r => r.id));
+    cloudChoreAssignments = cloudChoreAssignments.filter(r => !removedIds.has(r.id));
+    currentChoreAssignments = currentChoreAssignments.filter(a => !removedIds.has(a.id));
+    if (typeof renderChoresDisplay === 'function') renderChoresDisplay();
+    if (typeof updateSpinBtnLockState === 'function') updateSpinBtnLockState();
+    saveAllData();
+    showNotification(`✅ ${toRemove.length} ancienne(s) corvée(s) retirée(s)`, 'success');
+  });
+}
+
 function backupData() {
   const data = {
     personalsData,
@@ -699,7 +686,7 @@ async function uploadOlympiadesVideo(inputEl) {
 
 function revealSurprise() {
   const input = document.getElementById('surprise-code');
-  if (input.value.toUpperCase() === 'MATHIEU') {
+  if (input.value.toUpperCase() === 'MAGIA') {
     document.getElementById('surprise-content').innerHTML = `
       <div class="card" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); color: white; text-align: center; margin-top: 12px; border: none;">
         <h3 style="font-family: var(--font-display); font-weight: 500; font-size: 20px; margin-bottom: 4px;">🎉 Les Olympiades de Saraillon</h3>
