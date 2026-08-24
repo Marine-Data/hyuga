@@ -41,7 +41,8 @@
 //       dim 23 : marché le matin en plus de la grasse mat ; preuves de mission secrète
 //       acceptent la vidéo (compression photo auto) ; liste de courses : article supprimé ne
 //       revient plus (tombstone) ; jauge « esprit de groupe » ne plante plus.
-const CACHE_VERSION = 'saraillon-v35';
+// v36 = code de la surprise (Olympiades) changé : MAGIA -> MATHIEU.
+const CACHE_VERSION = 'saraillon-v36';
 const APP_SHELL = [
   './',
   './index.html',

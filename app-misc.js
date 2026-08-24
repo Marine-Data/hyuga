@@ -699,7 +699,7 @@ async function uploadOlympiadesVideo(inputEl) {
 
 function revealSurprise() {
   const input = document.getElementById('surprise-code');
-  if (input.value.toUpperCase() === 'MAGIA') {
+  if (input.value.toUpperCase() === 'MATHIEU') {
     document.getElementById('surprise-content').innerHTML = `
       <div class="card" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-pink)); color: white; text-align: center; margin-top: 12px; border: none;">
         <h3 style="font-family: var(--font-display); font-weight: 500; font-size: 20px; margin-bottom: 4px;">🎉 Les Olympiades de Saraillon</h3>
