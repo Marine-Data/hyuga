@@ -975,8 +975,14 @@ function updatePushActivationBanner() {
 }
 
 function saveAllData() {
+  // 🩹 CORRECTIF MÉMOIRE : les photos sont stockées en base64 (250–580 Ko chacune). On NE
+  // les met PLUS dans le stockage local du téléphone — sinon ~8 Mo dépassent le quota du
+  // navigateur (~5 Mo) et TOUT casse : "plus de mémoire locale", photos en mode dégradé,
+  // resync coupée. On garde seulement les infos légères de chaque photo (auteur, lieu,
+  // likes…) ; l'image elle-même est rechargée depuis le cloud à l'ouverture.
+  const galleryLight = galleryItems.map(g => ({ ...g, src: '' }));
   const data = {
-    inscriptions, challenges, challengesVersion: CHALLENGES_VERSION, shopping: shoppingList, gallery: galleryItems, feed, notifications,
+    inscriptions, challenges, challengesVersion: CHALLENGES_VERSION, shopping: shoppingList, gallery: galleryLight, feed, notifications,
     currentUser, participants: PARTICIPANTS, planning: planningData, planningVersion: PLANNING_VERSION, checklistValise, personalsData,
     polls, expenses, choreLog, departureTasksDone
   };
