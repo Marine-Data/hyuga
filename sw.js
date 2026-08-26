@@ -35,8 +35,8 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-// v37 = RETOUR à la version stable de ce matin (synchro OK) pour dépanner le séjour. Les changements du jour (planning, code surprise) seront réappliqués ensuite.
-const CACHE_VERSION = 'saraillon-v37';
+// v38 = correctif mémoire : les photos base64 ne saturent plus le stockage local des téléphones (cause de "plus de mémoire locale" + mode dégradé + resync coupée).
+const CACHE_VERSION = 'saraillon-v38';
 const APP_SHELL = [
   './',
   './index.html',
