@@ -35,8 +35,8 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-// v38 = correctif mémoire : les photos base64 ne saturent plus le stockage local des téléphones (cause de "plus de mémoire locale" + mode dégradé + resync coupée).
-const CACHE_VERSION = 'saraillon-v38';
+// v39 = file de synchro dédoublonnée : elle ne gonfle plus à l'infini (1881→1954…) et la file héritée de la panne s'effondre au démarrage. + v38 correctif mémoire photos.
+const CACHE_VERSION = 'saraillon-v39';
 const APP_SHELL = [
   './',
   './index.html',

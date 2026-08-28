@@ -1080,10 +1080,30 @@ function writeSyncQueue(queue) {
   try { localStorage.setItem('saraillon_sync_queue', JSON.stringify(queue)); } catch (e) {}
   window.__syncQueueLength = queue.length;
 }
+// 🩹 Clé unique d'une opération (table + identifiant). Sert à ne garder qu'UNE entrée
+// par élément dans la file : sans ça, un élément qui échoue à chaque sauvegarde (wifi
+// faible, requête qui expire) est ré-empilé indéfiniment et la file gonfle sans fin
+// (c'était la cause du compteur 1881 → 1954 → …). On garde la version la plus récente.
+function syncItemKey(item) {
+  const d = item.data || {};
+  let id = null;
+  if (d.id != null) id = 'id=' + d.id;
+  else if (d.endpoint != null) id = 'ep=' + d.endpoint;
+  else if (d.day_idx != null && d.act_idx != null) id = 'da=' + d.day_idx + '/' + d.act_idx + '/' + (d.person_id != null ? d.person_id : '');
+  else if (d.key != null) id = 'k=' + d.key + '/' + (d.person_id != null ? d.person_id : '');
+  else if (d.person_id != null) id = 'p=' + d.person_id;
+  else id = JSON.stringify(d);
+  return item.table + '|' + id;
+}
+function dedupeSyncQueue(queue) {
+  const lastIndex = new Map();
+  queue.forEach((item, i) => lastIndex.set(syncItemKey(item), i));
+  return queue.filter((item, i) => lastIndex.get(syncItemKey(item)) === i);
+}
 function queueFailedSync(table, data) {
   const queue = readSyncQueue();
   queue.push({ table, data, ts: Date.now() });
-  writeSyncQueue(queue);
+  writeSyncQueue(dedupeSyncQueue(queue));
 }
 window.flushSyncQueue = async function() {
   if (!window.supabaseReady || !navigator.onLine) return;
@@ -1099,6 +1119,10 @@ window.flushSyncQueue = async function() {
     showNotification('📡 Tout est resynchronisé !', 'success');
   }
 };
+// 🩹 Nettoyage unique au démarrage : on dédoublonne la file héritée de la panne
+// (des milliers d'entrées en double pour les mêmes éléments) → elle s'effondre en
+// une poignée d'éléments réellement en attente, qui se videront normalement.
+try { writeSyncQueue(dedupeSyncQueue(readSyncQueue())); } catch (e) {}
 window.__syncQueueLength = readSyncQueue().length;
 
 window.syncToSupabase = async (table, data, isRetry) => {
