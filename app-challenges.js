@@ -150,7 +150,7 @@ function renderChallenges() {
         ? `<video src="${ch.media.src}" style="width: 100%; max-height: 60vh; display: block;" controls playsinline preload="metadata"></video>`
         : `<img src="${ch.media.src}" style="width: 100%; height: auto; display: block;">`}</div>` : ''}
 
-      <div onclick="showLikersPanel(${JSON.stringify(completedBy)})" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+      <div onclick="showChallengeProofs(${ch.id})" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
         ${completedBy.length > 0 ? `<div style="display: flex;">${avatars}</div>` : ''}
         <span class="jeu-texte" style="font-size: 12.5px; color: rgba(232,246,250,0.8);">${completedBy.length === 0 ? 'Personne ne l\'a encore relevé' : `${completedBy.length} sur ${PARTICIPANTS.length} l'ont relevé`}</span>
       </div>
@@ -281,13 +281,13 @@ function submitChallengeProof(id, inputEl) {
   if (!ch) return;
 
   const isVideo = file.type.startsWith('video/');
-  if (isVideo && file.size > 15 * 1024 * 1024) {
-    showNotification('⚠️ Vidéo trop lourde (max 15 Mo)', 'error');
+  if (isVideo && file.size > 60 * 1024 * 1024) {
+    showNotification('⚠️ Vidéo trop lourde (max 60 Mo)', 'error');
     inputEl.value = '';
     return;
   }
-  if (!isVideo && file.size > 8 * 1024 * 1024) {
-    showNotification('⚠️ Image trop lourde (max 8 Mo)', 'error');
+  if (!isVideo && file.size > 15 * 1024 * 1024) {
+    showNotification('⚠️ Image trop lourde (max 15 Mo)', 'error');
     inputEl.value = '';
     return;
   }
@@ -310,18 +310,134 @@ function submitChallengeProof(id, inputEl) {
     renderHomeLeaderboard();
   };
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    if (isVideo) {
-      finalize(e.target.result);
-    } else {
-      // Même qualité que la galerie (1080px / 82%), pas la compression basse des avatars.
-      compressImage(e.target.result, finalize, 1080, 0.82);
+  // ✅ CORRECTIF : on envoie la preuve dans le Storage (comme la création de défi et la
+  // galerie) et on ne garde que son lien léger. Avant, la vidéo/photo était stockée en
+  // base64 DANS la ligne du défi → l'upsert Supabase était trop lourd et échouait → ni la
+  // preuve ni le « qui a relevé » n'arrivaient en ligne (visibles seulement sur le téléphone).
+  if (!window.supabaseReady) {
+    showNotification('⚠️ Hors ligne — la preuve doit être envoyée en ligne, réessaie avec du réseau.', 'error');
+    inputEl.value = '';
+    return;
+  }
+  showNotification('⏳ Envoi de la preuve…', 'success');
+  (async () => {
+    try {
+      let toUpload = file;
+      let ext = isVideo ? ((file.name.split('.').pop() || 'mp4').toLowerCase()) : 'jpg';
+      if (!isVideo) {
+        // Image : compression 1080px / 82% (comme la galerie) avant l'envoi.
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => compressImage(e.target.result, resolve, 1080, 0.82);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        toUpload = await (await fetch(dataUrl)).blob();
+      }
+      const chemin = `proof-${ch.id}-${currentUser.id}-${Date.now()}.${ext}`;
+      const url = await uploadFileToStorage('challenge-videos', chemin, toUpload);
+      finalize(url);
+    } catch (err) {
+      console.error('Envoi de la preuve échoué :', err);
+      showNotification('⚠️ Envoi de la preuve échoué (réseau ?). Réessaie.', 'error');
+      inputEl.value = '';
     }
-  };
-  reader.onerror = () => showNotification('⚠️ Erreur lors de la lecture du fichier', 'error');
-  reader.readAsDataURL(file);
+  })();
 }
+
+// ✅ NOUVEAU : visualiseur des preuves d'un défi. On tape sur « X l'ont relevé » et un
+// panneau montre la photo/vidéo envoyée par chacune. (Avant, les preuves étaient stockées
+// mais jamais affichées nulle part.)
+function showChallengeProofs(challengeId) {
+  const ch = (typeof challenges !== 'undefined' ? challenges : []).find(c => c.id === challengeId);
+  if (!ch) return;
+  const completedBy = ch.completedBy || [];
+  if (completedBy.length === 0) { showNotification('Personne ne l\'a encore relevé', 'success'); return; }
+  const proofs = ch.proofs || {};
+
+  document.getElementById('proofs-panel')?.remove();
+  document.getElementById('proofs-panel-backdrop')?.remove();
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'proofs-panel-backdrop';
+  backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998;';
+  backdrop.onclick = () => { document.getElementById('proofs-panel')?.remove(); backdrop.remove(); };
+
+  const container = document.createElement('div');
+  container.id = 'proofs-panel';
+  container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-raised); padding: 12px 20px 24px; border-radius: 16px 16px 0 0; max-height: 82vh; overflow-y: auto; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); z-index: 9999;';
+
+  const titre = ch.title || ch.titre || ch.questLabel || 'Défi';
+  const items = completedBy.map(pid => {
+    const p = PARTICIPANTS.find(pp => pp.id === pid);
+    const nom = p ? p.name : '?';
+    const pr = proofs[pid];
+    let media = '<div style="font-size:12.5px; color: var(--primary-light); font-style:italic; padding:4px 0;">— preuve pas encore synchronisée (rouvre l\'app avec du réseau) —</div>';
+    if (pr && typeof pr.src === 'string' && pr.src) {
+      const estVideo = pr.type === 'video' || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(pr.src) || pr.src.startsWith('data:video');
+      media = estVideo
+        ? `<video src="${pr.src}" style="width:100%; max-height:60vh; border-radius:10px; background:#000; display:block;" controls playsinline preload="metadata"></video>`
+        : `<img src="${pr.src}" style="width:100%; height:auto; border-radius:10px; display:block;">`;
+    }
+    return `<div style="margin-bottom:16px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:700; color: var(--primary);">
+        <span style="width:28px; height:28px; border-radius:50%; background: var(--bg-sunken); display:inline-flex; align-items:center; justify-content:center; color: var(--accent-pink);">${escapeHtml(nom.charAt(0))}</span>
+        ${escapeHtml(nom)}
+      </div>${media}
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="width:36px; height:4px; background: var(--border); border-radius:4px; margin:0 auto 14px;"></div>
+    <div style="font-size:14px; font-weight:700; margin-bottom:14px; color: var(--primary); display:flex; justify-content:space-between; align-items:center;">
+      📸 Preuves — ${escapeHtml(titre)}
+      <button onclick="document.getElementById('proofs-panel').remove(); document.getElementById('proofs-panel-backdrop').remove();" style="background:none; border:none; font-size:18px; color: var(--primary-light); cursor:pointer;">✕</button>
+    </div>
+    ${items}
+  `;
+  document.body.appendChild(backdrop);
+  document.body.appendChild(container);
+}
+
+// ✅ RÉCUPÉRATION des preuves déjà envoyées AVANT ce correctif : elles sont restées en
+// base64 sur le téléphone de la personne et ne sont jamais montées en ligne. On les envoie
+// dans le Storage, on remplace par un lien léger, puis on synchronise — comme ça les
+// anciennes preuves réapparaissent pour tout le monde.
+async function healChallengeProofs() {
+  if (!window.supabaseReady || typeof challenges === 'undefined' || !Array.isArray(challenges)) return;
+  let healed = 0;
+  for (const ch of challenges) {
+    if (!ch || !ch.proofs) continue;
+    for (const pid of Object.keys(ch.proofs)) {
+      const pr = ch.proofs[pid];
+      if (!pr || typeof pr.src !== 'string' || !pr.src.startsWith('data:')) continue;
+      try {
+        const isVideo = pr.type === 'video' || pr.src.startsWith('data:video');
+        const ext = isVideo ? 'mp4' : 'jpg';
+        const blob = await (await fetch(pr.src)).blob();
+        const chemin = `proof-${ch.id}-${pid}-${Date.now()}.${ext}`;
+        const url = await uploadFileToStorage('challenge-videos', chemin, blob);
+        ch.proofs[pid] = Object.assign({}, pr, { src: url });
+        healed++;
+      } catch (e) { console.warn('Preuve non récupérée (réseau ?)', ch.id, pid, e); }
+    }
+  }
+  if (healed > 0) {
+    if (typeof saveAllData === 'function') saveAllData();
+    if (typeof renderChallenges === 'function') renderChallenges();
+    console.log(`✅ ${healed} preuve(s) de défi remontée(s) dans le stockage.`);
+  }
+}
+
+// Au démarrage, dès que le réseau est prêt, on récupère les anciennes preuves base64.
+setTimeout(function _healProofsWhenReady(attempt) {
+  attempt = attempt || 0;
+  if (window.supabaseReady && typeof challenges !== 'undefined' && Array.isArray(challenges)) {
+    healChallengeProofs();
+  } else if (attempt < 20) {
+    setTimeout(() => _healProofsWhenReady(attempt + 1), 1500);
+  }
+}, 3000);
 
 function computeXpLeaderboard() {
   const totals = {};
