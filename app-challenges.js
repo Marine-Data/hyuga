@@ -481,12 +481,22 @@ function computeXpLeaderboard() {
   // treasureHuntItems.found_by stocke un NOM (currentUser.name), pas un person_id —
   // il faut le faire correspondre au bon participant avant d'additionner son XP.
   if (typeof treasureHuntItems !== 'undefined' && Array.isArray(treasureHuntItems)) {
-    treasureHuntItems.filter(i => i.found && i.found_by).forEach(i => {
-      // Comparaison tolérante : « Inès » saisi « Ines », ou une casse différente,
-      // ne doit pas faire disparaître les XP d'un objet trouvé.
-      const cle = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
-      const person = PARTICIPANTS.find(p => cle(p.name) === cle(i.found_by));
-      if (person && totals[person.id] !== undefined) totals[person.id] += (i.xp || 10);
+    // Comparaison tolérante : « Inès » saisi « Ines », ou une casse différente,
+    // ne doit pas faire disparaître les XP d'un objet trouvé.
+    const cle = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    treasureHuntItems.forEach(i => {
+      const finds = Array.isArray(i.finds) ? i.finds : [];
+      if (finds.length > 0) {
+        // ✅ Multi-récolteuses : chaque personne qui a récolté le trésor gagne ses XP.
+        finds.forEach(f => {
+          let person = (f.pid != null) ? PARTICIPANTS.find(p => String(p.id) === String(f.pid)) : null;
+          if (!person && f.name) person = PARTICIPANTS.find(p => cle(p.name) === cle(f.name));
+          if (person && totals[person.id] !== undefined) totals[person.id] += (i.xp || 10);
+        });
+      } else if (i.found && i.found_by) {
+        const person = PARTICIPANTS.find(p => cle(p.name) === cle(i.found_by));
+        if (person && totals[person.id] !== undefined) totals[person.id] += (i.xp || 10);
+      }
     });
   }
   // 🐛 CORRECTIF (audit 26/07) : les tâches du jour de départ comptent maintenant via

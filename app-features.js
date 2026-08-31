@@ -287,17 +287,55 @@ const DEFAULT_TREASURE_HUNT_ITEMS = [
 
 let treasureHuntItems = [];
 
+// ✅ MULTI-RÉCOLTEUSES : chaque trésor garde une liste `finds` = [{ pid, name, photo, at }].
+// Plusieurs personnes peuvent récolter le même objet, chacune avec sa photo.
+function _tresorFindIndex(item, pid) {
+  return (item.finds || []).findIndex(f => String(f.pid) === String(pid));
+}
+// Sync d'un trésor : on pousse la liste `finds`, en gardant found/found_by/photo_url à jour
+// (la 1re récolteuse) pour la rétro-compatibilité de l'affichage et du classement.
+function _syncTresor(item) {
+  const finds = Array.isArray(item.finds) ? item.finds : [];
+  item.found = finds.length > 0;
+  item.found_by = finds.length ? (finds[0].name || null) : null;
+  const withPhoto = finds.find(f => f.photo);
+  item.photo_url = withPhoto ? withPhoto.photo : null;
+  window.syncToSupabase('treasure_hunt_items', {
+    id: item.id, item: item.item, emoji: item.emoji, xp: item.xp,
+    found: item.found, found_by: item.found_by,
+    found_at: finds.length ? finds[finds.length - 1].at : null,
+    photo_url: item.photo_url, finds: finds
+  }).catch(err => console.error('Sync trésor échouée:', err));
+}
+
 async function loadTresorFromCloud() {
   if (!window.supabaseReady || !window.loadFromSupabase) return;
   const rows = await window.loadFromSupabase('treasure_hunt_items');
   if (rows && rows.length > 0) {
+    const prev = treasureHuntItems; // récoltes locales éventuelles pas encore poussées
     treasureHuntItems = rows.sort((a, b) => a.id - b.id);
+    treasureHuntItems.forEach(item => {
+      if (!Array.isArray(item.finds)) item.finds = [];
+      // Migration ancien modèle (found_by + photo_url uniques) → liste finds.
+      if (item.finds.length === 0 && item.found && item.found_by) {
+        const p = PARTICIPANTS.find(pp => (pp.name || '').toLowerCase() === (item.found_by || '').toLowerCase());
+        item.finds.push({ pid: p ? p.id : null, name: item.found_by, photo: item.photo_url || null, at: item.found_at || null });
+      }
+      // Fusion avec les récoltes locales (pour ne perdre la mienne si un autre appareil a
+      // poussé l'objet entre-temps) — dédoublonnage par personne.
+      const local = prev.find(pp => pp.id === item.id);
+      if (local && Array.isArray(local.finds)) {
+        local.finds.forEach(lf => {
+          if (!item.finds.some(f => String(f.pid) === String(lf.pid))) item.finds.push(lf);
+        });
+      }
+    });
   } else {
     // Rien en base encore : on initialise avec la liste par défaut et on synchronise
-    treasureHuntItems = DEFAULT_TREASURE_HUNT_ITEMS.map(i => ({ ...i, found: false, found_by: null, photo_url: null }));
+    treasureHuntItems = DEFAULT_TREASURE_HUNT_ITEMS.map(i => ({ ...i, found: false, found_by: null, photo_url: null, finds: [] }));
     treasureHuntItems.forEach(i => {
       window.syncToSupabase('treasure_hunt_items', {
-        id: i.id, item: i.item, emoji: i.emoji, xp: i.xp, found: false, found_by: null, photo_url: null
+        id: i.id, item: i.item, emoji: i.emoji, xp: i.xp, found: false, found_by: null, photo_url: null, finds: []
       }).catch(err => console.error('Sync trésor échouée:', err));
     });
   }
@@ -307,33 +345,22 @@ async function loadTresorFromCloud() {
 function toggleTresorItem(id) {
   const item = treasureHuntItems.find(i => i.id === id);
   if (!item) return;
-
-  const nowFound = !item.found;
-  item.found = nowFound;
-  item.found_by = nowFound ? currentUser.name : null;
-
-  window.syncToSupabase('treasure_hunt_items', {
-    id: item.id,
-    item: item.item,
-    emoji: item.emoji,
-    xp: item.xp,
-    found: nowFound,
-    found_by: item.found_by,
-    found_at: nowFound ? new Date().toISOString() : null,
-    photo_url: item.photo_url || null
-  }).catch(err => console.error('Sync trésor échouée:', err));
-
-  if (nowFound) {
+  item.finds = Array.isArray(item.finds) ? item.finds : [];
+  const idx = _tresorFindIndex(item, currentUser.id);
+  let added;
+  if (idx >= 0) { item.finds.splice(idx, 1); added = false; }
+  else { item.finds.push({ pid: currentUser.id, name: currentUser.name, photo: null, at: new Date().toISOString() }); added = true; }
+  _syncTresor(item);
+  if (added) {
     addNotification(`🗺️ ${currentUser.name} a trouvé "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
     addFeedEntry(`a trouvé un trésor : "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', item.id);
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
   }
-
   renderTresor();
 }
 
-// ✅ Upload direct de la photo-preuve d'un trésor, vers Supabase Storage (même
-// mécanisme que la vidéo des challenges) — coche automatiquement l'objet comme trouvé.
+// ✅ Upload de MA photo-preuve d'un trésor (chacune la sienne). On ajoute/remplace mon
+// entrée dans `finds` — sans écraser celle des autres.
 async function uploadTresorPhoto(id, inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -345,27 +372,20 @@ async function uploadTresorPhoto(id, inputEl) {
   if (progressEl) progressEl.textContent = '⏳ Envoi en cours...';
 
   try {
-    const path = `item-${id}-${Date.now()}.jpg`;
+    const path = `item-${id}-${currentUser.id}-${Date.now()}.jpg`;
     const publicUrl = await uploadFileToStorage('treasure-photos', path, file);
 
-    item.photo_url = publicUrl;
-    item.found = true;
-    item.found_by = currentUser.name;
+    item.finds = Array.isArray(item.finds) ? item.finds : [];
+    const entry = { pid: currentUser.id, name: currentUser.name, photo: publicUrl, at: new Date().toISOString() };
+    const idx = _tresorFindIndex(item, currentUser.id);
+    if (idx >= 0) item.finds[idx] = entry; else item.finds.push(entry);
 
-    window.syncToSupabase('treasure_hunt_items', {
-      id: item.id,
-      item: item.item,
-      emoji: item.emoji,
-      xp: item.xp,
-      found: true,
-      found_by: item.found_by,
-      found_at: new Date().toISOString(),
-      photo_url: publicUrl
-    }).catch(err => console.error('Sync trésor échouée:', err));
+    _syncTresor(item);
 
-    addNotification(`🗺️📸 ${currentUser.name} a trouvé "${item.item}" avec une photo à l'appui (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
+    addNotification(`🗺️📸 ${currentUser.name} a trouvé "${item.item}" avec une photo (+${item.xp} XP) !`, '🗺️', 'tresor', true, item.id);
     addFeedEntry(`a trouvé un trésor avec une photo : "${item.item}" (+${item.xp} XP) !`, '🗺️', 'tresor', item.id);
     if (typeof celebrateWithConfetti === 'function') celebrateWithConfetti();
+    if (inputEl) inputEl.value = '';
 
     renderTresor();
   } catch (err) {
@@ -408,33 +428,44 @@ function renderTresor() {
   `;
 
   html += treasureHuntItems.map(item => {
-    const trouve = !!item.found;
+    const finds = Array.isArray(item.finds) ? item.finds : [];
+    const trouve = finds.length > 0 || !!item.found;
+    const jaiTrouve = finds.some(f => String(f.pid) === String(currentUser.id));
+
+    const findsHtml = finds.map(f => {
+      const p = PARTICIPANTS.find(pp => String(pp.id) === String(f.pid));
+      const nom = (p && p.name) || f.name || '?';
+      return `
+        <div style="margin-top: 11px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11.5px; font-weight: 700; color: rgba(232,246,250,.85);">
+            <span style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,253,247,.1); display: inline-flex; align-items: center; justify-content: center; color: #f4b942; font-size: 12px;">${escapeHtml(nom.charAt(0))}</span>
+            ${escapeHtml(nom)}
+          </div>
+          ${f.photo ? `<div style="border-radius: 12px; overflow: hidden; max-height: 240px;"><img src="${f.photo}" style="width: 100%; height: auto; display: block;"></div>` : ''}
+        </div>`;
+    }).join('');
+
     return `
-      <div id="tresor-item-${item.id}" class="jeu-carte jeu-cadre${trouve ? ' est-complete' : ''}" style="--liseré: ${trouve ? '#f4b942' : 'rgba(255,253,247,.15)'}; gap: 11px;">
+      <div id="tresor-item-${item.id}" class="jeu-carte jeu-cadre${trouve ? ' est-complete' : ''}" style="--liser\u00e9: ${trouve ? '#f4b942' : 'rgba(255,253,247,.15)'}; gap: 11px;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <label style="cursor: pointer; flex-shrink: 0; width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 21px; background: rgba(255,253,247,.07); border: 1px solid ${trouve ? 'rgba(244,185,66,.5)' : 'rgba(255,253,247,.12)'};">
-            <span style="${trouve ? '' : 'opacity: .45; filter: grayscale(1);'}">${item.emoji || '🗺️'}</span>
-            <input type="checkbox" ${trouve ? 'checked' : ''} onchange="toggleTresorItem(${item.id})" style="display: none;">
-          </label>
+          <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 21px; background: rgba(255,253,247,.07); border: 1px solid ${trouve ? 'rgba(244,185,66,.5)' : 'rgba(255,253,247,.12)'};">
+            <span style="${trouve ? '' : 'opacity: .45; filter: grayscale(1);'}">${item.emoji || '\U0001f5fa\ufe0f'}</span>
+          </div>
           <div style="flex: 1; min-width: 0;">
             <div class="jeu-titre" style="font-size: 16px; color: #fffdf7; line-height: 1.25;">${escapeHtml(item.item)}</div>
-            ${item.found_by
-              ? `<div class="jeu-texte" style="font-size: 11.5px; color: rgba(232,246,250,.6); margin-top: 3px;">déniché par ${escapeHtml(item.found_by)}</div>`
-              : `<div class="jeu-arcade" style="font-size: 8px; color: rgba(232,246,250,0.4); margin-top: 5px;">Pas encore trouvé</div>`}
+            <div class="jeu-texte" style="font-size: 11.5px; color: rgba(232,246,250,.6); margin-top: 3px;">${finds.length === 0 ? 'Pas encore trouv\u00e9' : `${finds.length} r\u00e9colte${finds.length > 1 ? 's' : ''}`}</div>
           </div>
           <span class="jeu-score" style="flex-shrink: 0; font-size: 14px; color: #f4b942;">+${item.xp}</span>
         </div>
 
-        ${item.photo_url ? `
-          <div style="border-radius: 14px; overflow: hidden; max-height: 240px;">
-            <img src="${item.photo_url}" style="width: 100%; height: auto; display: block;">
-          </div>` : `
-          <label class="btn-go" style="display: flex; align-items: center; justify-content: center; gap: 9px; padding: 13px; cursor: pointer;">
-            <span style="font-size: 13px; color: #f4b942;">📷</span>
-            <span class="jeu-arcade" style="font-size: 10px; color: #f4b942; letter-spacing: 2px;">Preuve</span>
-            <input type="file" accept="image/*" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
-          </label>
-          <span id="tresor-progress-${item.id}" class="jeu-texte" style="font-size: 11px; color: rgba(232,246,250,0.6); text-align: center;"></span>`}
+        ${findsHtml}
+
+        <label class="btn-go" style="display: flex; align-items: center; justify-content: center; gap: 9px; padding: 13px; cursor: pointer; margin-top: 11px;">
+          <span style="font-size: 13px; color: #f4b942;">\U0001f4f7</span>
+          <span class="jeu-arcade" style="font-size: 10px; color: #f4b942; letter-spacing: 2px;">${jaiTrouve ? 'Changer ma preuve' : 'Ajouter ma preuve'}</span>
+          <input type="file" accept="image/*" style="display: none;" onchange="uploadTresorPhoto(${item.id}, this)">
+        </label>
+        <span id="tresor-progress-${item.id}" class="jeu-texte" style="font-size: 11px; color: rgba(232,246,250,0.6); text-align: center;"></span>
       </div>`;
   }).join('');
 
