@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Carnet de voyage · Saraillon 2026</title>
+<title>Carnet de voyage · Dernier été à Saraillon</title>
 <style>
 :root{--sea:#1690A3;--deep:#0c2f3a;--blue:#1D5FA8;--gold:#c99a3f;--gold2:#f4b942;--coral:#ef6a7c;--sand:#f3e6c0}
 *{box-sizing:border-box}
@@ -8,7 +8,7 @@ body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,sans-serif;color:var(-
 .wrap{max-width:1000px;margin:0 auto;padding:0 8px 60px}
 .cover{position:relative;text-align:center;color:#fff;padding:64px 22px 92px;background:linear-gradient(160deg,#1D5FA8,#1690A3 55%,#0e7a90);overflow:hidden}
 .cover .eyebrow{font-size:12px;letter-spacing:4px;text-transform:uppercase;opacity:.9;margin:0 0 12px;font-weight:700}
-.cover h1{font-family:Georgia,serif;font-size:52px;margin:0 0 12px;line-height:1;text-shadow:0 2px 22px rgba(0,0,0,.22)}
+.cover h1{font-family:Georgia,serif;font-size:clamp(30px,8vw,50px);margin:0 0 12px;line-height:1.06;text-shadow:0 2px 22px rgba(0,0,0,.22)}
 .cover .dates{font-size:18px;font-weight:600}.cover .place{opacity:.92;font-size:14px;margin-top:3px}
 .crew{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:20px}
 .crew span{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);padding:5px 12px;border-radius:999px;font-size:13px;font-weight:600}
@@ -91,7 +91,7 @@ html{scroll-behavior:smooth}
 <header class="cover">
   <span class="deco" style="top:18px;left:22px">🐚</span><span class="deco" style="top:30px;right:26px">🌴</span><span class="deco" style="bottom:70px;left:34px">🐬</span><span class="deco" style="bottom:74px;right:30px">☀️</span>
   <p class="eyebrow">Carnet de voyage</p>
-  <h1>Saraillon 2026</h1>
+  <h1>Dernier été à Saraillon</h1>
   <div class="dates">21 – 30 août 2026</div>
   <div class="place">📍 Le Revest-les-Eaux · entre Toulon &amp; Hyères</div>
   <div class="crew"><span>Chunfei</span><span>Mathilde</span><span>Nawaëlle</span><span>Sonia</span><span>Inès</span><span>Mima</span><span>Audrey</span></div>
@@ -164,7 +164,7 @@ html{scroll-behavior:smooth}
 <script>
 function goSommaire(){document.getElementById('sommaire').scrollIntoView({behavior:'smooth'});}
 function _toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);requestAnimationFrame(function(){t.classList.add('show')});setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove()},300)},2200);}
-function partagerCarnet(){var d={title:'Carnet de voyage · Saraillon 2026 🐚',text:'Nos vacances à Saraillon, jour par jour 💙',url:location.href};if(navigator.share){navigator.share(d).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(location.href).then(function(){_toast('Lien copié ! 🐚');}).catch(function(){_toast(location.href);});}else{_toast(location.href);}}
+function partagerCarnet(){var d={title:'Carnet de voyage · Dernier été à Saraillon 🐚',text:'Nos vacances à Saraillon, jour par jour 💙',url:location.href};if(navigator.share){navigator.share(d).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(location.href).then(function(){_toast('Lien copié ! 🐚');}).catch(function(){_toast(location.href);});}else{_toast(location.href);}}
 </script>
 <div id="lb" class="lb" onclick="closeLb()"><span class="lb-x">×</span><img id="lb-img" src="" alt=""></div>
 <script>
