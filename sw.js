@@ -35,8 +35,8 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-// v54 = carnet : mosaïque intelligente selon la taille réelle des photos (paysages larges, portraits étroits, sans trous).
-const CACHE_VERSION = 'saraillon-v54';
+// v55 = carnet : titre changé en « Dernier été à Saraillon ».
+const CACHE_VERSION = 'saraillon-v55';
 const APP_SHELL = [
   './',
   './index.html',
