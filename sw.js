@@ -35,8 +35,8 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-// v48 = carnet : section Défis // v47 = carnet : vidéo de la mission de Marine (compliment à Nawaëlle) intégrée. quêtes + vidéo du défi de Chunfei.
-const CACHE_VERSION = 'saraillon-v48';
+// v49 = carnet : 3 photos de la chasse au trésor (coucher de soleil, point de vue, groupe) intégrées.
+const CACHE_VERSION = 'saraillon-v49';
 const APP_SHELL = [
   './',
   './index.html',
