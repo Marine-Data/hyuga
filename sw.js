@@ -35,8 +35,8 @@
 //       lun 24 déjeuner au Colombier + courses 17h + dîner maison ; mar 25 bateau à 8 ;
 //       mer 26 plongée à 5 + boulangerie + dîner maison ; jeu 27 dîner maison (plus Colombier) ;
 //       ven 28 journée à définir ; sam 29 Petit Sud au Mourillon. Corvées repas recalculées.
-// v50 = carnet : corrections (Famous tableau, yoga, invitée surprise, Denver) + carte regroupée + bouton de partage.
-const CACHE_VERSION = 'saraillon-v50';
+// v52 = carnet : légendes en surimpression, marges mini, agrandissement plein écran (lightbox) au clic.
+const CACHE_VERSION = 'saraillon-v52';
 const APP_SHELL = [
   './',
   './index.html',
